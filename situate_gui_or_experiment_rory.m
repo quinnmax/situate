@@ -1,7 +1,7 @@
 
     
 
-    use_gui = false;
+    use_gui = true;
     % alternative is experiment mode
     
     situation = 'dogwalking';
@@ -11,9 +11,9 @@
     % situation = 'dogwalking_just_dog';
     
     
-    experiment_title = 'experiment_high_thresholds';
+    experiment_title = 'FC_NN_test';
 
-    use_training_testing_split_files = false;
+    use_training_testing_split_files = true;
     
     num_folds = 10;
     testing_data_max  = []; % empty will use as much as possible given the folds
@@ -30,11 +30,11 @@
     
     p.rcnn_boxes = false;
     
-    p.use_nn_model = false;
+    p.use_nn_model = true;
     
     % classifier
-        p.classification_method = 'IOU-oracle';
-        % p.classification_method = 'CNN-SVM'; % uses Rory's cnn code
+        % p.classification_method = 'IOU-oracle';
+        p.classification_method = 'CNN-SVM'; % uses Rory's cnn code
         
     % pipeline
         p.use_direct_scout_to_workspace_pipe = true; % hides stochastic agent stuff a bit, more comparable to other methods     
@@ -53,8 +53,8 @@
     % check-in and tweaking
         p.use_box_adjust = false; % based on Evan's classifiers
         % p.internal_support_threshold = .25; % scout -> reviewer threshold
-        p.total_support_threshold_1  = .9; % workspace provisional check-in threshold (search continues)
-        p.total_support_threshold_2  = .95;  % sufficient detection threshold (ie, good enough to end search for that oject)
+        p.total_support_threshold_1  = .25; % workspace provisional check-in threshold (search continues)
+        p.total_support_threshold_2  = .5;  % sufficient detection threshold (ie, good enough to end search for that oject)
 
     % set up visualization parameters
     if use_gui
