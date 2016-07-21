@@ -10,7 +10,7 @@
     % situation = 'handshaking';
     % situation = 'pingpong';
     
-    experiment_title = 'box_300';
+    experiment_title = 'box_350';
 
     
     
@@ -18,7 +18,7 @@
     
     num_folds = 10;
     testing_data_max  = 50; % empty will use as much as possible given the folds
-    training_data_max = 300; % empty will use as much as possible given the folds
+    training_data_max = 350; % empty will use as much as possible given the folds
     
     
     rng('default');

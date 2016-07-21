@@ -289,8 +289,13 @@ function [agent_pool, d, workspace] = agent_evaluate( agent_pool, agent_index, i
         % up any further. The scout will be killed in the iteration loop
         % per usual.
         [agent_pool]   = agent_evaluate_reviewer( agent_pool, length(agent_pool), p, workspace );
-        [workspace, d] = agent_evaluate_builder(  agent_pool, length(agent_pool), workspace, d, p );
-        agent_pool([end-1 end]) = [];
+        if isequal(agent_pool(end).type,'reviewer')
+            agent_pool(end) = [];
+        else
+            assert(isequal(agent_pool(end).type,'builder'));
+            [workspace, d] = agent_evaluate_builder(  agent_pool, length(agent_pool), workspace, d, p );
+            agent_pool([end-1 end]) = [];
+        end
     end
     
     if p.refresh_agent_pool_after_workspace_change && object_was_added
@@ -410,16 +415,17 @@ function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, im, im_
             
         end
         
-    % upate the agent pool based on what we found
-    % ie, spawn a reviewer
-        agent_pool(agent_index) = cur_agent;
         
-        % consider adding a reviewer to the pool
-        if cur_agent.support.internal > p.internal_support_threshold
-            agent_pool(end+1) = cur_agent;
-            agent_pool(end).type = 'reviewer';
-            agent_pool(end).urgency = p.agent_urgency_defaults.reviewer;
-        end
+    % put the updated version of the current agent back into its spot
+    % in the pool
+    agent_pool(agent_index) = cur_agent;
+        
+    % consider adding a reviewer to the pool
+    if cur_agent.support.internal > p.internal_support_threshold
+        agent_pool(end+1) = cur_agent;
+        agent_pool(end).type = 'reviewer';
+        agent_pool(end).urgency = p.agent_urgency_defaults.reviewer;
+    end
        
 end
 
@@ -440,7 +446,8 @@ function [agent_pool] = agent_evaluate_reviewer( agent_pool, agent_index, p, wor
     cur_agent = agent_pool(agent_index);
     cur_agent.support.external = 0;
     cur_agent.support.total = cur_agent.support.internal + cur_agent.support.external;
-   
+    agent_pool(agent_index) = cur_agent;
+    
     if cur_agent.support.total > p.total_support_threshold_1
         agent_pool(end+1) = cur_agent;
         agent_pool(end).type = 'builder';
