@@ -1,61 +1,63 @@
-function [] = cropper(fnames)
+% function [] = cropper(fnames)
 % make crop directories: rewrites at each call
-    fnames = 'fnames_split_01_test.txt'
-    Path = '/stash/mm-group/evan/crop_learn/data/PortlandSimpleDogWalking/';
+    fnames = '/u/eroche/dog_other_full.txt';
+    Path = '/stash/mm-group/evan/crop_learn/data/dog-other/';
     rng('shuffle');
     % imgType = '*.jpg'; 
     % labelType = '*.labl';
     % imgFolder  = dir(fullfile(Path,imgType));
     % labelFolder = dir(fullfile(Path,labelType)); 
     % len_folder = length(imgFolder);
-
-    end2 = textscan(fnames,'%s','delimiter','_')
-    split_type = strrep(end2{1}{4},'.txt','')
-
-    label_list = dataread('file',fnames,'%s','delimiter','\n');
+    label_list = dataread('file',fnames,'%s','delimiter','\n')
+    % end2 = textscan(fnames,'%s','delimiter','_')
+    % split_type = strrep(end2{1}{4},'.txt','')
+    split_type = 'train';
+    
     len_list = length(label_list);
     % training_split = 0.8;
     % a = 0.0; %range for translation, proportional to original bounding box
     % b = 1.0;
     % split = (b-a).*rand(len_folder,1)+a; 
 
-    here = pwd;
-    cd '/stash/mm-group/evan/crop_learn/data/croptest/'
-    rmdir(split_type,'s');
-    mkdir(split_type);
-    cd (split_type);
+%     here = pwd;
+%     cd '/stash/mm-group/evan/crop_learn/data/croptest/'
+%     rmdir(split_type,'s');
+%     mkdir(split_type);
+%     cd (split_type);
+% 
+%     mkdir('dog','down');
+%     mkdir('dog','up');
+%     mkdir('dog','left');
+%     mkdir('dog','right');
+%     mkdir('dog','shrink');
+%     mkdir('dog','expand');
+%     mkdir('dog','orig');
+%     mkdir('dog','background');
+% 
+%     mkdir('walker','down');
+%     mkdir('walker','up');
+%     mkdir('walker','left');
+%     mkdir('walker','right');
+%     mkdir('walker','shrink');
+%     mkdir('walker','expand');
+%     mkdir('walker','orig');
+%     mkdir('walker','background');
+% 
+%     mkdir('leash','down');
+%     mkdir('leash','up');
+%     mkdir('leash','left');
+%     mkdir('leash','right');
+%     mkdir('leash','shrink');
+%     mkdir('leash','expand');
+%     mkdir('leash','orig');
+%     mkdir('leash','background');
+%     cd (here);
 
-    mkdir('dog','down');
-    mkdir('dog','up');
-    mkdir('dog','left');
-    mkdir('dog','right');
-    mkdir('dog','shrink');
-    mkdir('dog','expand');
-    mkdir('dog','orig');
-    mkdir('dog','background');
-
-    mkdir('walker','down');
-    mkdir('walker','up');
-    mkdir('walker','left');
-    mkdir('walker','right');
-    mkdir('walker','shrink');
-    mkdir('walker','expand');
-    mkdir('walker','orig');
-    mkdir('walker','background');
-
-    mkdir('leash','down');
-    mkdir('leash','up');
-    mkdir('leash','left');
-    mkdir('leash','right');
-    mkdir('leash','shrink');
-    mkdir('leash','expand');
-    mkdir('leash','orig');
-    mkdir('leash','background');
-    cd (here);
-
-    for i = 1:len_list
-        image_path = strcat(Path,strrep(label_list(i),'.labl','.jpg'))
+    if ~exist('record','var')
+    for i = 64:len_list
+        image_path = strcat(Path,strrep(label_list(i),'.labl','.jpg'));
         images{i} = imread(image_path{1});
+        label_list(i) = strrep(label_list(i),'.jpg','.labl');
         temp = fopen(fullfile(Path,label_list{i}));
         temp2 = textscan(temp,'%s','delimiter','|');
         temp2{1} = strrep(temp2{1},'/','');
@@ -77,9 +79,10 @@ function [] = cropper(fnames)
         end 
         fclose(temp);
     end
+    end
 
 
-    for i = 1:len_list%cropping
+    for i = 64:len_list%cropping
         disp(i)
         if strcmp(split_type,'train') == 1
             folder = '/stash/mm-group/evan/crop_learn/data/croptest/train/';
@@ -100,16 +103,17 @@ function [] = cropper(fnames)
             ob_num = strcat('obj',num2str(k));
             ob_name = record(i).(ob_num);
             gen = strsplit(ob_name,'-');
+            ob_name = strcat('op_',ob_name);
 
-            if strcmp(gen{1},'leash') == 1
-                object = 'leash/';
-            elseif strcmp(gen{1},'dog') == 1
+%             if strcmp(gen{1},'leash') == 1
+%                 object = 'leash/';
+            if strcmp(gen{1},'dog') == 1
                 idx = 0;
                 object = 'dog/';
-                if strcmp(gen{2},'walker') == 1
-                    idx = 1;
-                    object = 'walker/';
-                end
+%                 if strcmp(gen{2},'walker') == 1
+%                     idx = 1;
+%                     object = 'walker/';
+%                 end
                 % if strcmp(gen{2+idx},'front') == 1
                 %     ori = 'front/';
                 % elseif strcmp(gen{2+idx},'back') == 1
@@ -131,7 +135,6 @@ function [] = cropper(fnames)
 
             %% generate 6 background crops per object on first parameter run
             background_cropper(i,object,images{i},x,y,w,h,folder,boxes)
-
             scale_factor = [0.3 0.4 0.5 0.6 0.7 0.8];
             orig_factor = [0 0.05 0.1 -0.05 -0.1 -0.15];
             fli = [0 1 -1 0 1 -1];

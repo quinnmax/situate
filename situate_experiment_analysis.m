@@ -46,10 +46,16 @@ fn  =[];
 %     fn{end+1} = 'situate_experiment_results_split_03_2016.06.19.02.27.26.mat';
 %     fn{end+1} = 'situate_experiment_results_split_02_2016.06.19.01.45.51.mat';
 %     fn{end+1} = 'situate_experiment_results_split_01_2016.06.19.01.09.33.mat';
-   
-    f = dir('Rory*.mat');
-    fn = map(num2cell(f), @(x) x.name);
-    
+         
+%    f = dir('Rory*.mat');
+%    fn = map(num2cell(f), @(x) x.name);
+
+fn{end+1} = '~/box_350_split_01_2016.07.20.18.50.16.mat';     
+fn{end+1} = '~/box_350_split_02_2016.07.20.21.40.45.mat';
+fn{end+1} = '/u/eroche/box_350_split_03_2016.07.21.00.21.23.mat'
+fn{end+1} = '/u/eroche/box_350_split_04_2016.07.21.02.56.21.mat'
+fn{end+1} = '/u/eroche/box_350_split_05_2016.07.21.05.38.53.mat'
+fn{end+1} = '/u/eroche/box_350_split_06_2016.07.21.08.28.26.mat
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
     
     include_prims = false;
@@ -78,7 +84,7 @@ proposals_display_limit = 1000;
             p_conditions_descriptions_temp{end+1} = temp_d.p_conditions_descriptions{j};
             workspace_entry_event_logs_temp{end+1} = temp_d.workspace_entry_event_logs(j,:);
             workspaces_final_temp{end+1} = {temp_d.workspaces_final{j,:}};
-            fnames_test_images_temp{end+1} = temp_d.fnames_im_test;
+            fnames_test_images_temp{end+1} = temp_d.fnames_lb_test;
         end
     end
     
