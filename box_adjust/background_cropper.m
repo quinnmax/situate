@@ -1,7 +1,7 @@
 function [] = background_cropper(id,object,base_image,x,y,w,h,folder,boxes)
     % test_folder = '/stash/mm-group/evan/crop_learn/data/fullset/test/';
     % training_folder = '/stash/mm-group/evan/crop_learn/data/fullset/training/';
-    baseFile = num2str(id);
+    baseFile = id;
     dim = size(base_image);
     im_x = dim(2);
     im_y = dim(1);
@@ -23,7 +23,7 @@ function [] = background_cropper(id,object,base_image,x,y,w,h,folder,boxes)
     crops = 1;
     idx = 1;
     tidx = 1;
-    while crops < 7
+    while crops < 5
         crop_box = [x_range(idx),y_range(idx),w_range(idx),h_range(idx)];
         overlap = 0;
         for ii = 1:numel(boxes)
@@ -32,7 +32,7 @@ function [] = background_cropper(id,object,base_image,x,y,w,h,folder,boxes)
             if (x1 < x2 + w2 && x1 + w1 >x2 && y1 < y2 + h2 && y1 + h1 > y2); 
             % if bboxOverlapRatio(crop_box,boxes{ii}) ~= 0
                 overlap = 1;
-                continue
+                break
             end
 
         end
@@ -42,6 +42,7 @@ function [] = background_cropper(id,object,base_image,x,y,w,h,folder,boxes)
             imwrite(crop,filename);
             idx = idx +1;
             crops = crops + 1;
+            continue
         end
         idx = idx +1;
         tidx = tidx +1;

@@ -6,14 +6,14 @@
 path_var = {'dog','walker','leash'};
 model_var = {strcat('dog_model_',fold,'.mat'),strcat('walker_model_',fold,'.mat'),strcat('leash_model_',fold,'.mat')};
 for ii = 1
-    orig   = image_files(strcat( '/stash/mm-group/evan/crop_learn/data/croptest/train/', path_var{ii}, '/orig/'));
-    up     = image_files(strcat( '/stash/mm-group/evan/crop_learn/data/croptest/train/', path_var{ii}, '/up/'));
-    down   = image_files(strcat( '/stash/mm-group/evan/crop_learn/data/croptest/train/', path_var{ii}, '/down/'));
-    left   = image_files(strcat( '/stash/mm-group/evan/crop_learn/data/croptest/train/', path_var{ii}, '/left/'));
-    right  = image_files(strcat( '/stash/mm-group/evan/crop_learn/data/croptest/train/', path_var{ii}, '/right/'));
-    expand = image_files(strcat( '/stash/mm-group/evan/crop_learn/data/croptest/train/', path_var{ii}, '/expand/'));
-    shrink = image_files(strcat( '/stash/mm-group/evan/crop_learn/data/croptest/train/', path_var{ii}, '/shrink/'));
-    back   = image_files(strcat( '/stash/mm-group/evan/crop_learn/data/croptest/train/', path_var{ii}, '/background/'));
+    orig   = image_files(strcat( '/stash/mm-group/evan/crop_learn/data/croptest/', path_var{ii}, '/train', '/orig/'));
+    up     = image_files(strcat( '/stash/mm-group/evan/crop_learn/data/croptest/', path_var{ii}, '/train',  '/up/'));
+    down   = image_files(strcat( '/stash/mm-group/evan/crop_learn/data/croptest/', path_var{ii}, '/train',  '/down/'));
+    left   = image_files(strcat( '/stash/mm-group/evan/crop_learn/data/croptest/', path_var{ii}, '/train',  '/left/'));
+    right  = image_files(strcat( '/stash/mm-group/evan/crop_learn/data/croptest/', path_var{ii}, '/train',  '/right/'));
+    expand = image_files(strcat( '/stash/mm-group/evan/crop_learn/data/croptest/', path_var{ii}, '/train',  '/expand/'));
+    shrink = image_files(strcat( '/stash/mm-group/evan/crop_learn/data/croptest/', path_var{ii}, '/train',  '/shrink/'));
+    back   = image_files(strcat( '/stash/mm-group/evan/crop_learn/data/croptest/', path_var{ii}, '/train',  '/background/'));
 	%%	
 	filenames = [down,up,left,right,shrink,expand,orig,back];
 	hogs = load_cnn_data(filenames);

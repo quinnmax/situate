@@ -1,4 +1,4 @@
-function imdb = proj6_part1_setup_data(averageImage)
+function imdb = cnn_data(averageImage)
 %code for Computer Vision, Georgia Tech by James Hays
 
 %This path is assumed to contain 'test' and 'train' which each contain 15
