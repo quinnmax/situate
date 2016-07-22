@@ -34,7 +34,6 @@ function [] = background_cropper(id,object,base_image,x,y,w,h,folder,boxes)
                 overlap = 1;
                 break
             end
-
         end
         if overlap == 0
             crop = imcrop(base_image,crop_box);
@@ -54,14 +53,16 @@ function [] = background_cropper(id,object,base_image,x,y,w,h,folder,boxes)
             idx = 1;
         end
         if tidx == 1500;
-            width_max = 100;
-            width_min = 50;
-            height_max = 100;
-            height_min = 50;
-            x_range = (im_x-(im_x*0.41)).*rand(500,1);
-            y_range = (im_y-(im_y*0.41)).*rand(500,1);
+            width_max = 55;
+            width_min = 25;
+            height_max = 55;
+            height_min = 25;
+            x_range = (im_x-55).*rand(500,1);
+            y_range = (im_y-55).*rand(500,1);
             w_range = (width_max-width_min).*rand(500,1)+width_min;
             h_range = (height_max-height_min).*rand(500,1)+height_min;
+            tidx = 1;
+            idx = 1;
         end
     end
 end

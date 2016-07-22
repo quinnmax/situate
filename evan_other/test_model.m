@@ -1,7 +1,9 @@
-model_var = '/stash/mm-group/evan/saved_models_box_adjust/dog_model_external.mat'
+%model_var = '/stash/mm-group/evan/saved_models_box_adjust/dog_model_external_2.mat'
+model_var = '/stash/mm-group/evan/crop_learn/models/svm_dog_background?.mat'
 load(model_var,'svm_model');
 path_var = 'dog';
 
+if ~exist('hogs','var')
 down = image_files(strcat('/stash/mm-group/evan/crop_learn/data/fullset/test/',path_var,'/down/'));
 up = image_files(strcat('/stash/mm-group/evan/crop_learn/data/fullset/test/',path_var,'/up/'));
 left = image_files(strcat('/stash/mm-group/evan/crop_learn/data/fullset/test/',path_var,'/left/'));
@@ -21,12 +23,14 @@ filenames = [down,up,left,right,shrink,expand,orig,back];
 	block = y(2)/8;
 	hogs2 = mat2cell(hogs,[rows],[block,block,block,block,block,block,block,block]);
     hogs3 = cell2mat(transpose(hogs2));
+end
 %%  
 vote_mat = zeros(examples,28);
 count_mat = zeros(examples,8);
 score_mat = zeros(examples,28);
 counts = zeros(8,8);
 for i = 1:28
+    disp(i);
 	[predictions,scores] = predict(svm_model{i},hogs3);
     predictions = str2num(char(predictions));
     vote_mat(:,i) = predictions;

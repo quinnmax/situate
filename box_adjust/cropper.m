@@ -1,7 +1,8 @@
 % function [] = cropper(fnames)
 % make crop directories: rewrites at each call
-    fnames = '/u/eroche/people_other_full.txt';
-    Path = '/stash/mm-group/evan/crop_learn/data/people-other/';
+
+    fnames = '/u/eroche/non_proto_full.txt';
+    Path = '/stash/mm-group/evan/crop_learn/data/PortlandNonProtoDogWalking/';
     rng('shuffle');
     % imgType = '*.jpg'; 
     % labelType = '*.labl';
@@ -19,39 +20,39 @@
     % b = 1.0;
     % split = (b-a).*rand(len_folder,1)+a; 
 
-    here = pwd;
-    cd '/stash/mm-group/evan/crop_learn/data/external_crops/'
-
-    mkdir(split_type);
-    cd (split_type);
-
-    mkdir('dog','down');
-    mkdir('dog','up');
-    mkdir('dog','left');
-    mkdir('dog','right');
-    mkdir('dog','shrink');
-    mkdir('dog','expand');
-    mkdir('dog','orig');
-    mkdir('dog','background');
-
-    mkdir('walker','down');
-    mkdir('walker','up');
-    mkdir('walker','left');
-    mkdir('walker','right');
-    mkdir('walker','shrink');
-    mkdir('walker','expand');
-    mkdir('walker','orig');
-    mkdir('walker','background');
-
-    mkdir('leash','down');
-    mkdir('leash','up');
-    mkdir('leash','left');
-    mkdir('leash','right');
-    mkdir('leash','shrink');
-    mkdir('leash','expand');
-    mkdir('leash','orig');
-    mkdir('leash','background');
-    cd (here);
+%     here = pwd;
+%     cd '/stash/mm-group/evan/crop_learn/data/external_crops/'
+% 
+%     mkdir(split_type);
+%     cd (split_type);
+% 
+%     mkdir('dog','down');
+%     mkdir('dog','up');
+%     mkdir('dog','left');
+%     mkdir('dog','right');
+%     mkdir('dog','shrink');
+%     mkdir('dog','expand');
+%     mkdir('dog','orig');
+%     mkdir('dog','background');
+% 
+%     mkdir('walker','down');
+%     mkdir('walker','up');
+%     mkdir('walker','left');
+%     mkdir('walker','right');
+%     mkdir('walker','shrink');
+%     mkdir('walker','expand');
+%     mkdir('walker','orig');
+%     mkdir('walker','background');
+% 
+%     mkdir('leash','down');
+%     mkdir('leash','up');
+%     mkdir('leash','left');
+%     mkdir('leash','right');
+%     mkdir('leash','shrink');
+%     mkdir('leash','expand');
+%     mkdir('leash','orig');
+%     mkdir('leash','background');
+%     cd (here);
 
     if ~exist('record','var')
     for i = 1:len_list
@@ -82,7 +83,7 @@
     end
 
 
-    for i = 1:len_list%cropping
+    for i = 1:len_list
         disp(i)
         if strcmp(split_type,'train') == 1
             folder = '/stash/mm-group/evan/crop_learn/data/external_crops/train/';
@@ -99,21 +100,44 @@
             h = record(i).(box)(4);
             boxes{k} = [x y w h];
         end
+        
+        obid = 1;
         for k = 1:num_objects
             ob_num = strcat('obj',num2str(k));
             ob_name = record(i).(ob_num);
             gen = strsplit(ob_name,'-');
-            ob_name = strcat('op_',ob_name,num2str(i),'_',num2str(k));
+            if strcmp(gen{1},'dog') == 1
+            elseif strcmp(gen{1},'pedestrian') == 1
+            else 
+                continue
+            end
+            box = strcat('obj',num2str(k),'_bbox');
+                x = record(i).(box)(1);
+                y = record(i).(box)(2);
+                w = record(i).(box)(3);
+                h = record(i).(box)(4);
+                obboxes{obid} = [x y w h];
+                obid = obid + 1; 
+        end
+
+        for k = 1:num_objects
+            ob_num = strcat('obj',num2str(k));
+            ob_name = record(i).(ob_num);
+            gen = strsplit(ob_name,'-');
+            ob_name = strcat('',ob_name,num2str(i),'_',num2str(k));
 
             if strcmp(gen{1},'leash') == 1
                 object = 'leash/';
+            elseif strcmp(gen{1},'pedestrian') == 1
+                object = 'walker/';
             elseif strcmp(gen{1},'dog') == 1
                 idx = 0;
                 object = 'dog/';
-                if strcmp(gen{2},'walker') == 1
-                    idx = 1;
-                    object = 'walker/';
-                end
+            if strcmp(gen{2},'walker') == 1
+                idx = 1;
+                object = 'walker/';
+            end
+
                 % if strcmp(gen{2+idx},'front') == 1
                 %     ori = 'front/';
                 % elseif strcmp(gen{2+idx},'back') == 1
@@ -132,6 +156,20 @@
             y = record(i).(box)(2);
             w = record(i).(box)(3);
             h = record(i).(box)(4);
+            
+            overlap = 0;
+            if k < length(obboxes);
+                for ii = k+1:numel(obboxes)
+                    x2 = obboxes{ii}(1); y2 = obboxes{ii}(2); w2 = obboxes{ii}(3); h2 = obboxes{ii}(4);
+                    if (x < x2 + w2 && x + w >x2 && y < y2 + h2 && y + h > y2); 
+                        overlap = 1;
+                        break
+                    end
+                end
+            end
+            if overlap == 1
+                continue
+            end
 
             %% generate 6 background crops per object on first parameter run
 %             background_cropper(i,object,images{i},x,y,w,h,folder,boxes)
@@ -206,4 +244,5 @@
             end
         end
     end
+    clearvars -except record images
 
