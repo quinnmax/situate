@@ -10,7 +10,7 @@ function [crops_target, crops_negative] = situate_crop_extractor( fname_lb, targ
     %   will apply to each label file in the label_file_cell_array, adding
     %   a layer of nesting to the output cell
     
-    iou_limit = .1;
+    iou_limit = .05;
     
     if iscell(fname_lb)
         

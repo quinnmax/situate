@@ -20,7 +20,7 @@ function [mu_bar Sigma_bar] = mvn_conditional( mu, Sigma, known_dimensions, know
     % indicated that there are 3 known values,
     % [.5 1 2] and [.5 1 0 2] will produce the same result.
     %
-    % see also mvn_conditional_ts
+    % see also mvn_conditional_ts, mvn_marginalize_and_condition
 
     % _2 will be for the known dimensions
 

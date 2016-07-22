@@ -58,12 +58,20 @@ function [inds,p] = sample_2d(pdf,n,x,y)
         y = 1:size(pdf,1);
     end
 
-    cumsum_pdf = cumsum(pdf(:));
-    sum_pdf = sum(pdf(:));
-    epsilon = .00000001;
-    if sum_pdf-1 < 0 || sum_pdf-1 > epsilon
-        cumsum_pdf = cumsum_pdf/sum_pdf;
+    
+    persistent pdf_persistent
+    persistent cumsum_pdf
+    persistent sum_pdf
+    if ~isequal(pdf_persistent, pdf)
+        cumsum_pdf = cumsum(pdf(:));
+        sum_pdf = sum(pdf(:));
+        pdf_persistent = pdf;
+        epsilon = .00000001;
+        if sum_pdf-1 < 0 || sum_pdf-1 > epsilon
+            cumsum_pdf = cumsum_pdf/sum_pdf;
+        end
     end
+    
     r = rand(1,n);
     s = zeros(1,n);
 

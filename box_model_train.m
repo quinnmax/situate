@@ -1,7 +1,6 @@
 
 function models = box_model_train( target_boxes, data_boxes_a, data_boxes_b, data_boxes_c )
 
-
 % models = box_model_train(target_boxes, data_boxes_a, data_boxes_b, data_boxes_c, specification);
 %
 % boxes should be xywh format (not centers)
@@ -16,8 +15,6 @@ function models = box_model_train( target_boxes, data_boxes_a, data_boxes_b, dat
 % see also
 %   box_model_ts.m
 %   box_model_apply.m
-
-
 
 args_exist = [false false false];
 if exist('target_boxes','var') && ~isempty(target_boxes)
@@ -154,10 +151,8 @@ models.note = {'wh_log uses natural log'; 'aa_log uses log2 for aspect ratio, lo
     [~,err3] = cholcov(models.Sigma_wh_log_target);
     [~,err4] = cholcov(models.Sigma_aa_target);
     [~,err5] = cholcov(models.Sigma_aa_log_target);
-    if any([err1 err2 err3 err4 err5])
-        error('some of the data is grumpy');
-    end
-    
+    assert( ~any([err1 err2 err3 err4 err5]) );
+        
     
    
     if number_localized_objs >= 1
@@ -179,9 +174,7 @@ models.note = {'wh_log uses natural log'; 'aa_log uses log2 for aspect ratio, lo
         [~,err3] = cholcov(models.Sigma_wh_log_ta);
         [~,err4] = cholcov(models.Sigma_aa_ta);
         [~,err5] = cholcov(models.Sigma_aa_log_ta);
-        if any([err1 err2 err3 err4 err5])
-            error('some of the data is grumpy');
-        end
+        assert( ~any([err1 err2 err3 err4 err5]) );
         
     end
 
@@ -204,9 +197,7 @@ models.note = {'wh_log uses natural log'; 'aa_log uses log2 for aspect ratio, lo
         [~,err3] = cholcov(models.Sigma_wh_log_tab);
         [~,err4] = cholcov(models.Sigma_aa_tab);
         [~,err5] = cholcov(models.Sigma_aa_log_tab);
-        if any([err1 err2 err3 err4 err5])
-            error('some of the data is grumpy');
-        end
+        assert( ~any([err1 err2 err3 err4 err5]) );
         
     end
     
@@ -229,9 +220,7 @@ models.note = {'wh_log uses natural log'; 'aa_log uses log2 for aspect ratio, lo
         [~,err3] = cholcov(models.Sigma_wh_log_tabc);
         [~,err4] = cholcov(models.Sigma_aa_tabc);
         [~,err5] = cholcov(models.Sigma_aa_log_tabc);
-        if any([err1 err2 err3 err4 err5])
-            error('some of the data is grumpy');
-        end
+        assert( ~any([err1 err2 err3 err4 err5]) );
         
     end
     
@@ -259,9 +248,6 @@ models.note = {'wh_log uses natural log'; 'aa_log uses log2 for aspect ratio, lo
     
     assert(isreal(models.mu_wh_target));
     assert(isreal(models.Sigma_wh_target));
-    
-    
-    
     
 end
     

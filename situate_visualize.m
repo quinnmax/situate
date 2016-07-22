@@ -1,6 +1,8 @@
 
 function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, cur_agent, population_count, scout_record, visualization_description )
 
+
+
 % [h, return_status_string] = situate_visualize( h, im, p, d, workspace, cur_agent, population_count, scout_record, visualization_description );
 %
 % to initialize
@@ -13,13 +15,14 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
 %   [h, return_status_string] = situate_visualize( h, im, p, d, workspace, [], population_count, scout_record, visualization_description )
 
     
+
     %% get set up 
     % see if this is an initial drawing, 
     % see if the workspace has been updated
     
-    min_frame_time = .2; % seconds
+    min_frame_time = .1; % seconds
     
-    global run_status;
+    global situate_visualizer_run_status;
     
     return_status_string = '';
     
@@ -41,9 +44,9 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
         set(0,'defaultLineLineWidth', 2)
         UserData = [];
         if  p.start_paused
-            run_status = 'unstarted';
+            situate_visualizer_run_status = 'unstarted';
         else
-            run_status = 'running';
+            situate_visualizer_run_status = 'running';
         end
         UserData.workspace_support_total = 0;
         tic;
@@ -64,7 +67,7 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
     end
     UserData.handles = [];
     
-    if any(strcmp(run_status,{'restart','next_image','end'}))
+    if any(strcmp(situate_visualizer_run_status,{'restart','next_image','end'}))
         % if we exited with one of these in user data, we should have
         % returned it in the return_string_status and the GUI loop should
         % have been killed.
@@ -74,7 +77,7 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
     if isempty(cur_agent) && ~isempty(workspace.boxes_r0rfc0cf)
         % if we have no most recent agent, but do have a real workspace,
         % then we're probably looking at a final display
-        run_status = 'end';
+        situate_visualizer_run_status = 'end';
     end
     
     set(h,'UserData',UserData);
@@ -141,7 +144,7 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
         % recent scout should have changed, so just draw that one if
         % possible
         
-        if initial_figure_generation || workspace_has_updated || strcmp(run_status,'end')
+        if initial_figure_generation || workspace_has_updated || strcmp(situate_visualizer_run_status,'end')
             
             % do a full redraw of each distribution
             for oi = 1:length(d)
@@ -154,7 +157,7 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
          
     %% draw the box distributions 
    
-    if initial_figure_generation || workspace_has_updated || strcmp(run_status,'end')
+    if initial_figure_generation || workspace_has_updated || strcmp(situate_visualizer_run_status,'end')
         
         for oi = 1:length(d)
             
@@ -320,7 +323,7 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
         % draw onto main figure
         subplot2(3,sp_cols,1,1,2,3); 
         hold on;
-        UserData.handles(end+1) = draw_box_r0rfc0cf(cur_agent.box.r0rfc0cf,'blue');
+        UserData.handles(end+1) = draw_box(cur_agent.box.r0rfc0cf, 'r0rfc0cf', 'blue');
         hold off;
 
         label_text = [cur_agent.interest '?'];
@@ -338,7 +341,7 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
         % draw onto location distribution maps
         subplot2(3,sp_cols,1,3+di);
         hold on
-        temp_h = draw_box_r0rfc0cf(cur_agent.box.r0rfc0cf,'blue');
+        temp_h = draw_box(cur_agent.box.r0rfc0cf, 'r0rfc0cf', 'blue');
         hold off;
         UserData.handles(end+1) = temp_h;
 
@@ -443,9 +446,9 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
             hold on;
             for wi = 1:size(workspace.boxes_r0rfc0cf,1)
                 if workspace.internal_support(wi) >= p.total_support_threshold_2
-                    UserData.handles(end+1) = draw_box_r0rfc0cf(workspace.boxes_r0rfc0cf(wi,:),bounding_box_format_found);
+                    UserData.handles(end+1) = draw_box(workspace.boxes_r0rfc0cf(wi,:), 'r0rfc0cf', bounding_box_format_found);
                 else
-                    UserData.handles(end+1) = draw_box_r0rfc0cf(workspace.boxes_r0rfc0cf(wi,:),bounding_box_format_provisional);
+                    UserData.handles(end+1) = draw_box(workspace.boxes_r0rfc0cf(wi,:), 'r0rfc0cf', bounding_box_format_provisional);
                 end
             end
 
@@ -564,7 +567,7 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
                 
                 subplot2(3,sp_cols,1,3+oi);
                 hold on
-                temp_h = draw_box_r0rfc0cf(workspace.boxes_r0rfc0cf(wi,:),bounding_box_format);
+                temp_h = draw_box(workspace.boxes_r0rfc0cf(wi,:), 'r0rfc0cf', bounding_box_format);
                 hold off;
                 UserData.handles(end+1) = temp_h;
                 
@@ -641,7 +644,7 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
     else
         UserData.last_draw_time = toc;
         set(h,'UserData',UserData); % for the toc
-        switch run_status
+        switch situate_visualizer_run_status
             case {'unstarted','paused','stepping','end'}
                 set(h,'UserData',UserData);
                 uiwait(h); 
@@ -649,8 +652,8 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
                 % which might change the user data in h, so we need to grab
                 % that as soon as we know it still exists
                 if ishandle(h), 
-                    if any(strcmp( run_status, {'restart','next_image'} ))
-                        return_status_string = run_status;
+                    if any(strcmp( situate_visualizer_run_status, {'restart','next_image'} ))
+                        return_status_string = situate_visualizer_run_status;
                     end
                 else
                     return_status_string = 'stop';
@@ -662,7 +665,7 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
             case {'next_image'}
                 return_status_string = 'next_image';
             otherwise
-                error(['unrecognized global run_status was: ' run_status]);
+                error(['unrecognized global situate_visualizer_run_status was: ' situate_visualizer_run_status]);
         end
         
     end
@@ -678,45 +681,45 @@ end
 
 function callback_btn_start_restart( source, callbackdata, h, btn_handles )
 
-    global run_status
+    global situate_visualizer_run_status
 
-    switch run_status
+    switch situate_visualizer_run_status
         case 'unstarted'
             source.String = 'Restart';
-            run_status = 'running';
+            situate_visualizer_run_status = 'running';
             uiresume(h);
         case {'stepping','running','paused','end','restart'}
             uiresume(h);
-            run_status = 'restart';
+            situate_visualizer_run_status = 'restart';
         otherwise
-            error(['unrecognized global run_status was: ' run_status]);
+            error(['unrecognized global situate_visualizer_run_status was: ' situate_visualizer_run_status]);
     end
     
 end
 
 function callback_btn_pause_resume( source, callbackdata, h, btn_handles )
    
-    global run_status
+    global situate_visualizer_run_status
 
-    switch run_status
+    switch situate_visualizer_run_status
         case 'running'
             source.String = 'Resume';
             btn_handles.btn_start_restart.String = 'Restart';
-            run_status = 'paused';
+            situate_visualizer_run_status = 'paused';
         case 'paused'
             source.String = 'Pause';
             btn_handles.btn_start_restart.String = 'Restart';
-            run_status = 'running';
+            situate_visualizer_run_status = 'running';
             uiresume(h);
         case 'stepping'
             source.String = 'Pause';
             btn_handles.btn_start_restart.String = 'Restart';
-            run_status = 'running';
+            situate_visualizer_run_status = 'running';
             uiresume(h);
          case {'unstarted','end'}
             % nothing
          otherwise
-            error(['unrecognized global run_status was: ' run_status]);
+            error(['unrecognized global situate_visualizer_run_status was: ' situate_visualizer_run_status]);
     end
     
 
@@ -724,34 +727,33 @@ end
    
 function callback_btn_step( source, callbackdata, h, btn_handles )
 
-    global run_status;
+    global situate_visualizer_run_status;
 
-    switch run_status
+    switch situate_visualizer_run_status
         case 'running'
             btn_handles.btn_pause_resume.String = 'Resume';
             btn_handles.btn_start_restart.String = 'Restart';
-            run_status = 'paused';
+            situate_visualizer_run_status = 'paused';
             uiwait(h);
         case 'paused'
             btn_handles.btn_pause_resume.String = 'Resume';
             btn_handles.btn_start_restart.String = 'Restart';
-            run_status = 'stepping';
+            situate_visualizer_run_status = 'stepping';
             uiresume(h);
         case 'stepping'
             btn_handles.btn_pause_resume.String = 'Resume';
             btn_handles.btn_start_restart.String = 'Restart';
-            run_status = 'stepping';
+            situate_visualizer_run_status = 'stepping';
             uiresume(h);
         case 'unstarted'
             btn_handles.btn_pause_resume.String = 'Resume';
             btn_handles.btn_start_restart.String = 'Restart';
-            run_status = 'stepping';
+            situate_visualizer_run_status = 'stepping';
             uiresume(h);
-        case 'end'
+        case {'end'}
             % nothing
-            msgbox('visualizer thinks the run_status is ''end''');
         otherwise
-            error(['unrecognized global run_status was: ' run_status]);
+            error(['unrecognized global situate_visualizer_run_status was: ' situate_visualizer_run_status]);
     end
     
  
@@ -759,8 +761,8 @@ end
 
 function callback_btn_next( source, callbackdata, h, btn_handles )
 
-    global run_status;
-    run_status = 'next_image';
+    global situate_visualizer_run_status;
+    situate_visualizer_run_status = 'next_image';
     uiresume(h);
     
 end

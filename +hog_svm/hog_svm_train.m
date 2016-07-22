@@ -1,4 +1,4 @@
-function returned_models = situate_build_hog_svm_models( fnames_lb_train, p )
+function returned_models = situate_hog_svm_train( fnames_lb_train, p )
 
     features_pos = cell(1,length(p.situation_objects));
     features_neg = cell(1,length(p.situation_objects));
@@ -20,6 +20,8 @@ function returned_models = situate_build_hog_svm_models( fnames_lb_train, p )
 
         end
         
+        progress(fi, length(fnames_lb_train), 'situate_hog_svm_train extracting features: ');
+        
     end
     
     % build 1vAll classifiers
@@ -30,9 +32,11 @@ function returned_models = situate_build_hog_svm_models( fnames_lb_train, p )
         labels = [true(size(features_pos{oi},1),1); false(size(features_neg{oi},1),1)];
         temp_model = fitcsvm(data,labels);
         models{oi} = fitSVMPosterior(temp_model);
+        
+        progress(oi, length(p.situation_objects), 'situate_hog_svm_train fitting SVMs: ');
     end
     
-    returned_models = models;
+    returned_models.models = models;
     returned_models.objects_in_indexing_order = p.situation_objects;
     
 end

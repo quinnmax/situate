@@ -1,34 +1,25 @@
 
 
 
-function [workspace,d,agent_pool,population_count,p,workspace_entry_events,visualizer_status_string,scout_record] = situate_sketch(im_fname, p, learned_stuff)
+function [ workspace, d, p, run_data, visualizer_status_string ] = situate_sketch( im_fname, p, learned_stuff )
+
+% [ workspace, d, p, run_data, visualizer_status_string ] = situate_sketch( im_fname, p, learned_stuff );
 
 
+    
     %% initialization
     % if inputs are not provided, it'll just run with some default values
     % on a default image.
     
-        % default image
-        if ~exist('im_fname','var') || isempty(im_fname)
-            im_fname = 'dogwalking1.jpg';
-            warning('situate_sketch: using default image');
-        end
-
-        % default running parameters
-        if ~exist('p','var') || isempty(p)
-            p = situate_parameters_initialize();
-            p.num_iterations = 1000;
-            warning('situate_sketch: using default parameters structure p');
-            p.show_visualization_on_iteration = true;
-        end
-
+        run_data = []; % store information about the run. includes workspace entry event history, scout record, and whatever else you'd like to pass back out
+    
     % load an image, label
         % im = imresize_px(double( imread(im_fname))/255, p.salience_model.redim );
         im = imresize_px(double( imread(im_fname))/255, p.image_redim_px);
         fname_lb = [im_fname(1:end-4) '.labl'];
-        label_original = situate_image_data(fname_lb);
-        label = situate_image_data_rescale( label_original, size(im,1), size(im,2) );
-        label = situate_image_data_label_adjust( label, p );
+        label_temp1 = situate_image_data(fname_lb);
+        label_temp2 = situate_image_data_rescale( label_temp1, size(im,1), size(im,2) );
+        label = situate_image_data_label_adjust( label_temp2, p );
         
     % workspace
         % this contains things that were found by a scout, accepted by a
@@ -55,7 +46,7 @@ function [workspace,d,agent_pool,population_count,p,workspace_entry_events,visua
         end
         
     % initialize scout record
-        scout_record = repmat( agent_initialize(), p.num_iterations, 1 );
+        run_data.scout_record = repmat( agent_initialize(), p.num_iterations, 1 );
         
     % initialize population counts for tracking purposes
         population_count          = [];
@@ -66,10 +57,10 @@ function [workspace,d,agent_pool,population_count,p,workspace_entry_events,visua
         
     if p.show_visualization_on_iteration || p.show_visualization_on_workspace_change || p.show_visualization_on_end
         % initialize the visualization
-        global run_status;
-        run_status = 'unstarted';
+        global situate_visualizer_run_status;
+        situate_visualizer_run_status = 'unstarted';
         [~,visualization_description] = fileparts(im_fname);
-        [h, visualizer_status_string] = situate_visualize( [], im, p, d, workspace, [], population_count, scout_record, visualization_description );
+        [h, visualizer_status_string] = situate_visualize( [], im, p, d, workspace, [], population_count, run_data.scout_record, visualization_description );
         % see if an exit command came from the GUI
         if ~ishandle(h), visualizer_status_string = 'stop'; end
         if any( strcmp( visualizer_status_string, {'next_image','restart','stop'} ) )
@@ -84,14 +75,14 @@ function [workspace,d,agent_pool,population_count,p,workspace_entry_events,visua
     for iteration = 1:p.num_iterations
         
         % get updated population counts for the begining of the iteration
-            population_count(iteration).scout    = sum( strcmp( 'scout',    {agent_pool.type} ) );
-            population_count(iteration).reviewer = sum( strcmp( 'reviewer', {agent_pool.type} ) );
-            population_count(iteration).builder  = sum( strcmp( 'builder',  {agent_pool.type} ) );
-
+            for agent_type = {'scout','reviewer','builder'}
+                population_count(iteration).(agent_type{:}) = sum( strcmp( agent_type{:}, {agent_pool.type} ) );
+            end
+            
         % select and evaluate an agent
-            workspace_total_support_pre = sum(workspace.total_support);
-            agent_index = sample_1d( [agent_pool.urgency], 1 );
-            [agent_pool,d,workspace] = agent_evaluate( agent_pool, agent_index, im, label, d, p, workspace );
+            workspace_total_support_pre  = sum(workspace.total_support);
+            agent_index                  = sample_1d( [agent_pool.urgency], 1 );
+            [agent_pool,d,workspace]     = agent_evaluate( agent_pool, agent_index, im, label, d, p, workspace );
             workspace_total_support_post = sum(workspace.total_support);
             
             evaluated_agent_snapshot = agent_pool(agent_index);
@@ -105,18 +96,18 @@ function [workspace,d,agent_pool,population_count,p,workspace_entry_events,visua
                 cur_workspace_entry_index = find( strcmp( evaluated_agent_snapshot.interest, workspace.labels ) );
                 cur_internal_support  = workspace.internal_support(cur_workspace_entry_index);
                 cur_total_support = workspace.total_support(cur_workspace_entry_index);
-                workspace_entry_events(iteration,:) = { iteration, evaluated_agent_snapshot.interest, cur_internal_support, cur_total_support };
+                workspace_entry_events (iteration,:) = { iteration, evaluated_agent_snapshot.interest, cur_internal_support, cur_total_support };
             end
         
             % update record of scouting behavior
-            scout_record(iteration) = evaluated_agent_snapshot;
+            run_data.scout_record(iteration) = evaluated_agent_snapshot;
             
             % update the visualization
             if p.show_visualization_on_iteration
                 if mod(iteration,p.show_visualization_on_iteration_mod)==0
                     [~,fname_no_path] = fileparts(im_fname); 
                     visualization_description = {fname_no_path; [num2str(iteration) '/' num2str(p.num_iterations)]};
-                    [h, visualizer_status_string] = situate_visualize( h, im, p, d, workspace, evaluated_agent_snapshot, population_count, scout_record, visualization_description );
+                    [h, visualizer_status_string] = situate_visualize( h, im, p, d, workspace, evaluated_agent_snapshot, population_count, run_data.scout_record, visualization_description );
                     % see if an exit command came from the GUI
                     if ~ishandle(h), visualizer_status_string = 'stop'; end
                     if any( strcmp( visualizer_status_string, {'next_image','restart','stop'} ) )
@@ -126,7 +117,7 @@ function [workspace,d,agent_pool,population_count,p,workspace_entry_events,visua
             elseif p.show_visualization_on_workspace_change && workspace_object_was_added
                 [~,fname_no_path] = fileparts(im_fname); 
                 visualization_description = {fname_no_path; [num2str(iteration) '/' num2str(p.num_iterations)]};
-                [h, visualizer_status_string] = situate_visualize( h, im, p, d, workspace, evaluated_agent_snapshot, population_count, scout_record, visualization_description );
+                [h, visualizer_status_string] = situate_visualize( h, im, p, d, workspace, evaluated_agent_snapshot, population_count, run_data.scout_record, visualization_description );
                 % see if an exit command came from the GUI
                 if ~ishandle(h), visualizer_status_string = 'stop'; end
                 if any( strcmp( visualizer_status_string, {'next_image','restart','stop'} ) )
@@ -182,20 +173,24 @@ function [workspace,d,agent_pool,population_count,p,workspace_entry_events,visua
     if ~isempty(agent_pool)
 
         % count number of each agent type, one last time before exiting
-        population_count(iteration+1).scout    = sum( strcmp( 'scout',    {agent_pool.type} ) );
-        population_count(iteration+1).reviewer = sum( strcmp( 'reviewer', {agent_pool.type} ) );
-        population_count(iteration+1).builder  = sum( strcmp( 'builder',  {agent_pool.type} ) );
+        for agent_type = {'scout','reviewer','builder'}
+            population_count(iteration).(agent_type{:}) = sum( strcmp( agent_type{:}, {agent_pool.type} ) );
+        end
 
     end
     
-    empty_workspace_entry_events_inds = cellfun( @isempty, workspace_entry_events(:,1) );
-    workspace_entry_events(empty_workspace_entry_events_inds,:) = [];
+    empty_workspace_entry_events_inds = cellfun( @isempty, workspace_entry_events (:,1) );
+    workspace_entry_events (empty_workspace_entry_events_inds,:) = [];
+    
+    run_data.population_count = population_count;
+    run_data.agent_pool = agent_pool;
+    run_data.workspace_entry_events = workspace_entry_events;
       
     if p.show_visualization_on_end
         if ~exist('h','var'), h = []; end
         [~,fname_no_path] = fileparts(im_fname); 
         visualization_description = {fname_no_path; [num2str(iteration) '/' num2str(p.num_iterations)]};
-        [h, visualizer_status_string] = situate_visualize( h, im, p, d, workspace, [], population_count, scout_record, visualization_description );
+        [h, visualizer_status_string] = situate_visualize( h, im, p, d, workspace, [], population_count, run_data.scout_record, visualization_description );
         % interpret closing the window as 'no thank you'
         if ~ishandle(h), visualizer_status_string = 'stop'; end
         if strcmp( visualizer_status_string, {'next_image','restart','stop'})
@@ -365,7 +360,9 @@ function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, im, im_
     % figure out the internal support
         switch p.classification_method
             case 'HOG-SVM'
-                error('hog-svm eval needs to be updated');
+                model_ind = find(strcmp(cur_agent.interest,p.situation_objects),1);
+                model = d(model_ind).learned_stuff.hog_svm_models.models{ model_ind };
+                internal_support_score_function_raw = @(b_xywh) hog_svm.hog_svm_apply( model, im, b_xywh );
             case 'IOU-oracle'
                 relevant_label_ind = find(strcmp(cur_agent.interest,im_label.labels_adjusted),1,'first');
                 if isempty(relevant_label_ind), error('couldn''t find the relevent object in the label file, so IOU oracle won''t work'); end
@@ -387,7 +384,7 @@ function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, im, im_
     
             cur_box_adjust_model        = d(di).learned_stuff.box_adjust_models;
             num_adjustment_iterations   = 9;
-            updated_box_xywh            = box_adjust.apply_box_adjust_models_mq( cur_box_adjust_model, cur_agent.interest, im, cur_agent.box.xywh, num_adjustment_iterations );
+            [updated_box_xywh, box_adjust_iterations] = box_adjust.apply_box_adjust_models_mq( cur_box_adjust_model, cur_agent.interest, im, cur_agent.box.xywh, num_adjustment_iterations );
             
             % get updated internal support score
             new_internal_support = internal_support_score_function(updated_box_xywh);
@@ -415,17 +412,16 @@ function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, im, im_
             
         end
         
+    % upate the agent pool based on what we found
+    % ie, spawn a reviewer
+        agent_pool(agent_index) = cur_agent;
         
-    % put the updated version of the current agent back into its spot
-    % in the pool
-    agent_pool(agent_index) = cur_agent;
-        
-    % consider adding a reviewer to the pool
-    if cur_agent.support.internal > p.internal_support_threshold
-        agent_pool(end+1) = cur_agent;
-        agent_pool(end).type = 'reviewer';
-        agent_pool(end).urgency = p.agent_urgency_defaults.reviewer;
-    end
+        % consider adding a reviewer to the pool
+        if cur_agent.support.internal > p.internal_support_threshold
+            agent_pool(end+1) = cur_agent;
+            agent_pool(end).type = 'reviewer';
+            agent_pool(end).urgency = p.agent_urgency_defaults.reviewer;
+        end
        
 end
 
@@ -447,7 +443,7 @@ function [agent_pool] = agent_evaluate_reviewer( agent_pool, agent_index, p, wor
     cur_agent.support.external = 0;
     cur_agent.support.total = cur_agent.support.internal + cur_agent.support.external;
     agent_pool(agent_index) = cur_agent;
-    
+
     if cur_agent.support.total > p.total_support_threshold_1
         agent_pool(end+1) = cur_agent;
         agent_pool(end).type = 'builder';
