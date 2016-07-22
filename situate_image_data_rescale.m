@@ -24,7 +24,7 @@ function d_r = situate_image_data_rescale( d, arg1, arg2 )
         imshow(im);
         hold on;
         plot(d.box_centers(:,2),d.box_centers(:,1),'or');
-        draw_box_xywh(d.boxes);
+        draw_box(d.boxes,'xywh');
         hold off;
 
         rescale_size_px = 100000;
@@ -41,7 +41,7 @@ function d_r = situate_image_data_rescale( d, arg1, arg2 )
         imshow(im_r);
         hold on;
         plot(d_r.box_centers(:,2),d_r.box_centers(:,1),'or');
-        draw_box_xywh(d_r.boxes);
+        draw_box(d_r.boxes, 'xywh');
         hold off;
         
     elseif nargin < 2 || nargin > 3
@@ -53,7 +53,7 @@ function d_r = situate_image_data_rescale( d, arg1, arg2 )
         linear_scaling_factor = arg1;
 
         d_r = d;
-        %d_r.boxes = linear_scaling_factor * d_r.boxes;
+        d_r.boxes = linear_scaling_factor * d_r.boxes;
         d_r.im_w  = linear_scaling_factor * d.im_w;
         d_r.im_h  = linear_scaling_factor * d.im_h;
     

@@ -1,5 +1,5 @@
 
-function [d,box,w,h,rc,cc] = situate_sample_box( d, parameters_struct )
+function [d,box_r0rfc0cf,w,h,rc,cc] = situate_sample_box( d, parameters_struct )
 
 
 
@@ -14,6 +14,23 @@ function [d,box,w,h,rc,cc] = situate_sample_box( d, parameters_struct )
 %   the box is in [r0 rf c0 cf] format
 
 
+    if isfield(parameters_struct,'rcnn_boxes') && parameters_struct.rcnn_boxes
+        % pick a box using the saved rcnn box scores
+        box_ind = sample_1d( d.learned_stuff.faster_rcnn_data.box_scores );
+        box_xywh = double(d.learned_stuff.faster_rcnn_data.boxes_xywh(box_ind,:));
+        c0 = box_xywh(1);
+        r0 = box_xywh(2);
+        w  = box_xywh(3);
+        h  = box_xywh(4);
+        rf = r0 + h - 1;
+        cf = c0 + w - 1;
+        rc = r0 + h/2;
+        cc = c0 + w/2;
+        box_r0rfc0cf = [r0 rf c0 cf];
+        return
+    end
+       
+    
 
     switch d.location_sampling_method
         case 'ior_peaks'
@@ -121,9 +138,9 @@ function [d,box,w,h,rc,cc] = situate_sample_box( d, parameters_struct )
     c0 = cc - round(w/2);
     cf = c0  + w - 1;
     
-    box = [r0 rf c0 cf];
+    box_r0rfc0cf = [r0 rf c0 cf];
     
-    d.sampled_boxes_record_r0rfc0cf(end+1,:) = box;
+    d.sampled_boxes_record_r0rfc0cf(end+1,:) = box_r0rfc0cf;
     d.sampled_boxes_record_centers(end+1,:)  = [rc cc];
     
 end

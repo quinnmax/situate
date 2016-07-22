@@ -18,7 +18,6 @@ function selected_model_fname = situate_check_for_existing_model( model_director
 
         % get the training fnames, no path, sorted
         temp = load(fullfile(model_directory, model_files(mi).name), 'fnames_lb_train');
-        
         if isfield(temp,'fnames_lb_train')
             model_fnames_train = temp.fnames_lb_train;
             for fi = 1:length(model_fnames_train)

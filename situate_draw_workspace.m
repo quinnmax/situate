@@ -2,12 +2,17 @@
 
 function h = situate_draw_workspace( input, p, workspace )
 
-
-
+    % h = situate_draw_workspace( input, p, workspace )
+    %
+    %   h is the handle to the output figure, specifically the image
+    %   input can be an image fname, an image matrix, or a handle to an
+    %       exisiting figure
+    %   p is a situate parameters structure
+    %   workspace is the situate workspace to draw
+   
 
     bounding_box_format_found = 'r';
     bounding_box_format_provisional = 'r--';
-
 
     switch class(input)
         case 'char'
@@ -25,17 +30,15 @@ function h = situate_draw_workspace( input, p, workspace )
             error('what that?');
     end
 
-    
-    
     hold on;
     
     % draw workspace boxes onto image
     for wi = 1:size(workspace.boxes,1)
         % designate under .5 iou boxes with a dashed box
         if workspace.internal_support(wi) >= p.total_support_threshold_2
-            h(end+1) = draw_box_r0rfc0cf(workspace.boxes(wi,:),bounding_box_format_found);
+            h(end+1) = draw_box(workspace.boxes(wi,:), 'r0rfc0cf', bounding_box_format_found);
         else
-            h(end+1) = draw_box_r0rfc0cf(workspace.boxes(wi,:),bounding_box_format_provisional);
+            h(end+1) = draw_box(workspace.boxes(wi,:), 'r0rfc0cf', bounding_box_format_provisional);
         end
     end
 

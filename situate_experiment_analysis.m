@@ -1,68 +1,35 @@
 
 
+function situate_experiment_analysis( results_directory )
 
-fn  =[];  
 
-% % 4d IOR results
-%         fn{end+1} = '/Users/Max/Dropbox/Projects/situate/situate_experiment_mm_1_results2016.05.05.12.37.44.mat';
-%         fn{end+1} = '/Users/Max/Dropbox/Projects/situate/situate_experiment_mm_1_results2016.05.05.13.58.21.mat';
-%         fn{end+1} = '/Users/Max/Dropbox/Projects/situate/situate_experiment_mm_1_results2016.05.05.15.55.05.mat';
-%         fn{end+1} = '/Users/Max/Dropbox/Projects/situate/situate_experiment_mm_1_results2016.05.05.19.21.37.mat';
-%         fn{end+1} = '/Users/Max/Dropbox/Projects/situate/situate_experiment_mm_1_results2016.05.06.10.11.53.mat';
-% 
 
-% 	% local inhibition salience
-%         fn{end+1}  = '/Users/Max/Dropbox/Projects/situate/situate_experiment_results_split_01_2016.06.14.17.35.20.mat';
-%         fn{end+1}  = '/Users/Max/Dropbox/Projects/situate/situate_experiment_results_split_02_2016.06.14.19.04.27.mat';
-%         fn{end+1}  = '/Users/Max/Dropbox/Projects/situate/situate_experiment_results_split_03_2016.06.14.20.38.48.mat';
-%         fn{end+1}  = '/Users/Max/Dropbox/Projects/situate/situate_experiment_results_split_04_2016.06.14.22.13.24.mat';
-%         fn{end+1}  = '/Users/Max/Dropbox/Projects/situate/situate_experiment_results_split_05_2016.06.14.23.45.02.mat';
-%         fn{end+1}  = '/Users/Max/Dropbox/Projects/situate/situate_experiment_results_split_06_2016.06.15.01.14.34.mat';
-%         fn{end+1}  = '/Users/Max/Dropbox/Projects/situate/situate_experiment_results_split_07_2016.06.15.02.47.02.mat';
-%         fn{end+1}  = '/Users/Max/Dropbox/Projects/situate/situate_experiment_results_split_08_2016.06.15.04.20.01.mat';
-%         fn{end+1}  = '/Users/Max/Dropbox/Projects/situate/situate_experiment_results_split_09_2016.06.15.05.55.02.mat';
-%         fn{end+1} = '/Users/Max/Dropbox/Projects/situate/situate_experiment_results_split_10_2016.06.15.07.25.03.mat';
+if ~exist( 'results_directory', 'var' ) || ~isdir(results_directory)
 
-% sampling results (multiple runs)
-%     fn{end+1}  = '/Users/Max/Dropbox/Projects/situate/situate_experiment_results_split_01_2016.05.25.19.07.12.mat';
-%     fn{end+1}  = '/Users/Max/Dropbox/Projects/situate/situate_experiment_results_split_02_2016.05.25.19.53.05.mat';
-%     fn{end+1}  = '/Users/Max/Dropbox/Projects/situate/situate_experiment_results_split_03_2016.05.25.02.29.51.mat';
-%     fn{end+1}  = '/Users/Max/Dropbox/Projects/situate/situate_experiment_results_split_04_2016.05.25.03.23.40.mat';
-%     fn{end+1}  = '/Users/Max/Dropbox/Projects/situate/situate_experiment_results_split_05_2016.05.25.04.13.40.mat';
-%     fn{end+1}  = '/Users/Max/Dropbox/Projects/situate/situate_experiment_results_split_06_2016.05.25.04.50.10.mat';
-%     fn{end+1}  = '/Users/Max/Dropbox/Projects/situate/situate_experiment_results_split_07_2016.05.25.05.32.59.mat';
-%     fn{end+1}  = '/Users/Max/Dropbox/Projects/situate/situate_experiment_results_split_08_2016.05.25.06.20.54.mat';
-%     fn{end+1}  = '/Users/Max/Dropbox/Projects/situate/situate_experiment_results_split_09_2016.05.25.07.04.47.mat';
-%     fn{end+1}  = '/Users/Max/Dropbox/Projects/situate/situate_experiment_results_split_10_2016.05.25.07.42.35.mat';
-% 
-% % final runs
-%     fn{end+1} = 'situate_experiment_results_split_10_2016.06.19.07.07.12.mat';
-%     fn{end+1} = 'situate_experiment_results_split_09_2016.06.19.06.26.50.mat';
-%     fn{end+1} = 'situate_experiment_results_split_08_2016.06.19.05.46.40.mat';
-%     fn{end+1} = 'situate_experiment_results_split_07_2016.06.19.05.06.04.mat';
-%     fn{end+1} = 'situate_experiment_results_split_06_2016.06.19.04.26.42.mat';
-%     fn{end+1} = 'situate_experiment_results_split_05_2016.06.19.03.52.20.mat';
-%     fn{end+1} = 'situate_experiment_results_split_04_2016.06.19.03.11.26.mat';
-%     fn{end+1} = 'situate_experiment_results_split_03_2016.06.19.02.27.26.mat';
-%     fn{end+1} = 'situate_experiment_results_split_02_2016.06.19.01.45.51.mat';
-%     fn{end+1} = 'situate_experiment_results_split_01_2016.06.19.01.09.33.mat';
-         
-%    f = dir('Rory*.mat');
-%    fn = map(num2cell(f), @(x) x.name);
-
-fn{end+1} = '~/box_350_split_01_2016.07.20.18.50.16.mat';     
-fn{end+1} = '~/box_350_split_02_2016.07.20.21.40.45.mat';
-fn{end+1} = '/u/eroche/box_350_split_03_2016.07.21.00.21.23.mat'
-fn{end+1} = '/u/eroche/box_350_split_04_2016.07.21.02.56.21.mat'
-fn{end+1} = '/u/eroche/box_350_split_05_2016.07.21.05.38.53.mat'
-fn{end+1} = '/u/eroche/box_350_split_06_2016.07.21.08.28.26.mat
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
+    % from a directory
+    results_directory = '/Users/Max/Desktop/experiment_name_22-Jul-2016/';
     
-    include_prims = false;
+end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+temp = dir(fullfile(results_directory, '*.mat'));
+fn = cellfun( @(x) fullfile(results_directory,x), {temp.name}, 'UniformOutput', false );
+
+
+
+% explicit filenames
+% fn  =[];  
+% fn{end+1} = '/Users/Max/Dropbox/Projects/situate/situate_experiment_mm_1_results2016.05.05.12.37.44.mat';
+% fn{end+1} = '/Users/Max/Dropbox/Projects/situate/situate_experiment_mm_1_results2016.05.05.13.58.21.mat';
+% fn{end+1} = '/Users/Max/Dropbox/Projects/situate/situate_experiment_mm_1_results2016.05.05.15.55.05.mat';
+% fn{end+1} = '/Users/Max/Dropbox/Projects/situate/situate_experiment_mm_1_results2016.05.05.19.21.37.mat';
+% fn{end+1} = '/Users/Max/Dropbox/Projects/situate/situate_experiment_mm_1_results2016.05.06.10.11.53.mat';
+
+
+
+
+
     
-
+    
 proposals_display_limit = 1000;
     
 
@@ -84,20 +51,21 @@ proposals_display_limit = 1000;
             p_conditions_descriptions_temp{end+1} = temp_d.p_conditions_descriptions{j};
             workspace_entry_event_logs_temp{end+1} = temp_d.workspace_entry_event_logs(j,:);
             workspaces_final_temp{end+1} = {temp_d.workspaces_final{j,:}};
-            fnames_test_images_temp{end+1} = temp_d.fnames_lb_test;
+            fnames_test_images_temp{end+1} = temp_d.fnames_im_test;
         end
     end
     
-    [unique_descriptions, ~, group_assignment_inds] = unique( p_conditions_descriptions_temp );
+    [unique_descriptions, ~] = unique( p_conditions_descriptions_temp );
     num_methods = length(unique_descriptions);
     
     description_counts = counts(p_conditions_descriptions_temp);
-    if ~all(eq(description_counts(1), description_counts)), warning('different numbers of runs for different experimental conditions'); end
+    if ~all(eq(description_counts(1), description_counts)), error('different numbers of runs for different experimental conditions'); end
     num_folds = max(description_counts);
     
     images_per_run = cellfun( @length, workspaces_final_temp );
-    if ~all(eq(images_per_run(1),images_per_run)), warning('different numbers of images in different runs'); end
+    if ~all(eq(images_per_run(1),images_per_run)), error('different numbers of images in different runs'); end
     num_images_per_fold = max(images_per_run);
+    
     
     
     % reshape everything
@@ -187,12 +155,7 @@ proposals_display_limit = 1000;
     second_detections = median(  detection_times,     4);
     third_detections  = max(     detection_times, [], 4);
     
-    if include_prims
-        prims_detection3 = situate_analysis_li_yuns_data();
-        third_detections(end+1,:,:) = prims_detection3;
-        unique_descriptions{end+1} = 'randomized prims';
-        num_methods = num_methods + 1;
-    end
+  
         
     
 % reshape for detections as a function of number of proposals
@@ -225,47 +188,20 @@ proposals_display_limit = 1000;
     
     detections_at_num_proposals_sum = sum(detections_at_num_proposals_mu,2);
     
+    
 
-%% modify for pretty display descriptions.
-% make sure the order matches display( unique_descriptions' );
+%% define methods to include, set their order, and define the line specifications
 
-display_descriptions = {};
-space1 = 16;
-space2 = 11;
-space3 = 5;
-
-title_string = sprintf( '%-*s %-*s %-*s %s', space1, 'Location Prior', space2, 'Box Prior', space3,  'Situation Model', repmat(char(160),1,1) );    
-
-display_descriptions{end+1} = sprintf( '%-*s %-*s %-*s', space1, 'Salience', space2, 'Learned', space3, 'Learned' );
-display_descriptions{end+1} = sprintf( '%-*s %-*s %-*s', space1, 'Salience', space2, 'Learned', space3, 'Learned (No Provisional)' );
-display_descriptions{end+1} = sprintf( '%-*s %-*s %-*s', space1, 'Salience', space2, 'Uniform', space3, 'Learned' );
-
-display_descriptions{end+1} = sprintf( '%-*s %-*s %-*s', space1, 'Salience', space2, 'Learned', space3, 'None' );
-display_descriptions{end+1} = sprintf( '%-*s %-*s %-*s', space1, 'Salience', space2, 'Learned', space3, 'Learned' );
-display_descriptions{end+1} = sprintf( '%-*s %-*s %-*s', space1, 'Salience', space2, 'Uniform', space3, 'None' );
-
-display_descriptions{end+1} = sprintf( '%-*s %-*s %-*s', space1, 'Uniform',  space2, 'Learned', space3, 'None' );
-display_descriptions{end+1} = sprintf( '%-*s %-*s %-*s', space1, 'Uniform',  space2, 'Uniform', space3, 'None' );
-display_descriptions{end+1} = sprintf( '%-*s %-*s %-*s', space1, 'Uniform',  space2, 'Uniform', space3, 'Learned' );
-
-display_descriptions{end+1} = sprintf( '%-*s %-*s %-*s', space1, 'Uniform',  space2, 'Learned', space3, 'None' );
-display_descriptions{end+1} = sprintf( '%-*s %-*s %-*s', space1, 'Uniform',  space2, 'Learned', space3, 'Learned' );
-display_descriptions{end+1} = sprintf( '%-*s %-*s %-*s', space1, 'Uniform',  space2, 'Uniform', space3, 'None' );
-
-display_descriptions{end+1} = sprintf( '%-*s %-*s %-*s', space1, 'RP',       space2, 'RP',      space3, 'None' );
-display(display_descriptions');
-
-
-%% define methods to include and order
-
-include_methods = find([1 1 0, 0 0 1, 0 0 0, 1 1 1, 1]);
+%include_methods = find([1 1 0, 0 0 1, 0 0 0, 1 1 1, 1]);
+include_methods = find(true(1,length(unique_descriptions)));
 
 % assign colors to methods
-colors = color_fade([1 0 1; 0 0 0; 0 .75 0], length(include_methods ) );
-colors = sqrt(colors);
+colors = cool(length(include_methods));
+%colors = color_fade([1 0 1; 0 0 0; 0 .75 0], length(include_methods ) );
+%colors = sqrt(colors);
 
-linespec = {'-','--','-.','-','--','-.','-'};
-linespec = repmat(linespec,1,5);
+linespec = {'-','--','-.'};
+linespec = repmat(linespec,1,ceil(length(include_methods)/length(linespec)));
 
 detections_at_num_proposals_squeezed = squeeze(sum(detections_at_num_proposals,  2));
 [~,sort_order] = sort(sum(detections_at_num_proposals_squeezed(:,1:proposals_display_limit),2), 'descend');
@@ -276,10 +212,6 @@ for mi = 1:length(sort_order)
         display_order = [display_order sort_order(mi)];
     end
 end
-
-rp_ind = find(strcmp(unique_descriptions,'randomized prims'));
-display_order_no_prims = display_order;
-% display_order_no_prims( find( eq( display_order_no_prims, rp_ind ) ) ) = [];
 
 
 
@@ -311,8 +243,9 @@ display_order_no_prims = display_order;
     ylim([0 1.1*num_images_per_fold*num_folds]);
     
     % legend(unique_descriptions(sort_order),'Location','Northeast');
-    h_temp = legend(display_descriptions(display_order),'Location','eastoutside','FontName','FixedWidth');
-    %h_temp.Title.String = title_string;
+    title_string = 'location prior, box prior, conditioning';
+    h_temp = legend(unique_descriptions(display_order),'Location','eastoutside','FontName','FixedWidth');
+    h_temp.Title.String = title_string;
     h_temp.FontSize = 8;
    
     h2.Position = [440 537 560 220];
@@ -327,10 +260,10 @@ display_order_no_prims = display_order;
     clear temp_a temp_b temp_c
     fprintf('Median time to first detection\n')
     fprintf('  location: box shape; conditioning \n');
-    for mi = display_order_no_prims
+    for mi = display_order
         temp_a = reshape(first_detections(mi,:,:),1,[]);
         temp_b = prctile(temp_a,50);
-        fprintf( '  %-50s  ', display_descriptions{mi} );
+        fprintf( '  %-50s  ', unique_descriptions{mi} );
         fprintf( '%*.1f\n',10, temp_b );
     end
     fprintf('\n\n');
@@ -338,10 +271,10 @@ display_order_no_prims = display_order;
     clear temp_a temp_b temp_c
     fprintf('Median time to second detection \n')
     fprintf('  location: box shape; conditioning \n');
-    for mi = display_order_no_prims
+    for mi = display_order
         temp_a = reshape(second_detections(mi,:,:),1,[]);
         temp_b = prctile( temp_a, 50 );
-        fprintf( '  %-50s  ', display_descriptions{mi} );
+        fprintf( '  %-50s  ', unique_descriptions{mi} );
         fprintf( '%*.1f\n',10, temp_b );
     end
     fprintf('\n\n');
@@ -352,7 +285,7 @@ display_order_no_prims = display_order;
     for mi = display_order
         temp_a = reshape(third_detections(mi,:,:),1,[]);
         temp_b = prctile( temp_a, 50 );
-        fprintf( '  %-50s  ', display_descriptions{mi} );
+        fprintf( '  %-50s  ', unique_descriptions{mi} );
         fprintf( '%*.1f\n',10, temp_b );
     end
     fprintf('\n\n');
@@ -360,11 +293,11 @@ display_order_no_prims = display_order;
     clear temp_a temp_b temp_c
     fprintf('Median time from first to second detection \n')
     fprintf('  location: box shape; conditioning \n');
-    for mi = display_order_no_prims
+    for mi = display_order
         temp_a = reshape(first_detections(mi,:,:),1,[]);
         temp_b = reshape(second_detections(mi,:,:),1,[]);
         miss_list_c = prctile( temp_b - temp_a, 50 );
-        fprintf( '  %-50s  ', display_descriptions{mi} );
+        fprintf( '  %-50s  ', unique_descriptions{mi} );
         fprintf( '%*.1f\n',10, miss_list_c );
     end
     fprintf('\n\n');
@@ -372,11 +305,11 @@ display_order_no_prims = display_order;
     clear temp_a temp_b temp_c
     fprintf('Median time from second to third detection \n')
     fprintf('  location: box shape; conditioning \n');
-    for mi = display_order_no_prims
+    for mi = display_order
         temp_a = reshape(second_detections(mi,:,:),1,[]);
         temp_b = reshape(third_detections(mi,:,:),1,[]);
         miss_list_c = prctile( temp_b - temp_a, 50 );
-        fprintf( '  %-50s  ', display_descriptions{mi} );
+        fprintf( '  %-50s  ', unique_descriptions{mi} );
         fprintf( '%*.1f\n',10, miss_list_c );
     end
     fprintf('\n\n');
@@ -387,7 +320,7 @@ display_order_no_prims = display_order;
     for mi = display_order
         temp_a = reshape(third_detections(mi,:,:),1,[]);
         temp_b = sum( gt(temp_a,proposals_display_limit) );
-        fprintf( '  %-50s  ', display_descriptions{mi} );
+        fprintf( '  %-50s  ', unique_descriptions{mi} );
         fprintf( '%*d\n',10, temp_b );
     end
     fprintf('\n\n');
@@ -448,7 +381,7 @@ end
             if mod(i,num_examples_per_fig) == 1
                 figure;
                 subplot2(examples_num_rows + 1,examples_num_cols, 1,1,1,examples_num_cols);
-                h = draw_box_xywh([0 0 1 1]);
+                h = draw_box([0 0 1 1],'xywh');
                 t = {};
                 t{1} = unique_descriptions{mi};
                 t{2} = sprintf('number images not completed:  %*d', 3, failed_completions );

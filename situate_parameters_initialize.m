@@ -12,6 +12,8 @@ function p = situate_parameters_initialize()
     p.refresh_agent_pool_after_workspace_change = true;
     
     
+    p.use_box_adjust = false; % based on Evan's classifiers
+    
     p.salience_model = hmaxq_model_initialize();
     p.image_redim_px = 250000;
     

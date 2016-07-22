@@ -27,8 +27,6 @@ function [dist_xy, dist_box] = box_model_apply( d, output_size, box_a_raw, box_b
     %   box_model_train.m 
     %   box_model_ts.m 
     
-    
-    
     num_args = 0;
     if exist('d','var') && ~isempty(d), num_args = num_args + 1; end
     if exist('output_size','var') && ~isempty(output_size), num_args = num_args + 1; end
@@ -37,13 +35,10 @@ function [dist_xy, dist_box] = box_model_apply( d, output_size, box_a_raw, box_b
     if exist('box_c_raw','var') && ~isempty(box_c_raw), num_args = num_args + 1; end
     
     switch num_args
-        
         case 0, 
             error('box_model_apply:distribution structure not provided');
-        
         case 1,
             error('box_model_apply:output size not specified'); 
-            
     end
     
     % get our input grid figured out
@@ -107,6 +102,7 @@ function [dist_xy, dist_box] = box_model_apply( d, output_size, box_a_raw, box_b
             p_xy_target_flat = mvnpdf( ...
                 [ target_X(:) target_Y(:) repeated_box_a_center ], ...
                 d.mu_xy_ta, d.Sigma_xy_ta );
+            
             dist_xy = reshape( p_xy_target_flat, [im_y im_x] );
             
             % box distributions
@@ -223,7 +219,6 @@ function [dist_xy, dist_box] = box_model_apply( d, output_size, box_a_raw, box_b
             error('too many input boxes');
     
     end
-
     
     % note: debug
     assert(isreal(dist_xy));
@@ -236,8 +231,13 @@ function [dist_xy, dist_box] = box_model_apply( d, output_size, box_a_raw, box_b
     assert(isreal(dist_box.Sigma_aa));
     assert(isreal(dist_box.mu_aa_log));
     assert(isreal(dist_box.Sigma_aa_log));
-
+    
 end
+ 
+    
+    
+    
+    
     
     
     
