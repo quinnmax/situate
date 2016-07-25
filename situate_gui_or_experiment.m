@@ -331,36 +331,6 @@ end
             end
            
     end    
-    
-<<<<<<< 31d0529c3ea1fb8e693348fde50b6a058b73c624
-=======
-    % set directories for potentialy saved models
-    if any(strcmp([ p_conditions.classification_method ],'CNN-SVM'))
-        possible_paths_cnn_svm_models = { ...
-            '/Users/Max/Documents/MATLAB/data/situate_saved_models/cnn_svm/', ...
-            'saved_models_cnn_svm/', ...
-            '+cnn/'};
-        saved_model_path_cnn_svm = possible_paths_cnn_svm_models{ find(cellfun(@(x) exist(x,'dir'),possible_paths_cnn_svm_models), 1, 'first' ) };
-    end
-    
-    if any(strcmp([ p_conditions.classification_method ],'HOG-SVM'))
-        possible_paths_hog_svm_models = {...
-            '/Users/Max/Documents/MATLAB/data/situate_saved_models/hog_svm/', ...
-            'saved_models_hog_svm/', ...
-            '+hog_svm/'};
-        saved_model_path_hog_svm = possible_paths_hog_svm_models{ find(cellfun(@(x) exist(x,'dir'),possible_paths_hog_svm_models), 1, 'first' )};
-    end
-
-    if any([ p_conditions.use_box_adjust ])
-        possible_paths_box_adjust_models = {...
-            '/stash/mm-group/evan/saved/models/box_adjust' ...
-            '/Users/Max/Documents/MATLAB/data/situate_saved_models/box_adjust/', ...
-            'saved_models_box_adjust/', ...
-            '+box_adjust/'};
-        saved_model_path_box_adjust = possible_paths_box_adjust_models{ find(cellfun(@(x) exist(x,'dir'),possible_paths_box_adjust_models), 1, 'first' )};
-    end
->>>>>>> just working on making the mvn conditioning and sampling a little more efficient. it's the bottleneck right now
-
 
     
 %% run the main loop 
