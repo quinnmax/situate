@@ -35,10 +35,14 @@ function [] = situate_gui_or_experiment()
     rng(1);
     %rng('shuffle');
 
+    
+    
 % make sure the path is set up properly
     situate_gui_or_experiment_path = fileparts(which('situate_gui_or_experiment'));
     addpath(fullfile(situate_gui_or_experiment_path));
     addpath(genpath(fullfile(situate_gui_or_experiment_path, 'tools')));
+    
+    
     
     
 %% shared situate parameteres 
@@ -94,14 +98,13 @@ function [] = situate_gui_or_experiment()
     
     
 %% situation definitions 
-%
-% edit: this should be selectable from the gui form
 
 situations_struct = situate_situation_definitions();
 
 p.situation_objects                 = situations_struct.(situation).situation_objects;
 p.situation_objects_possible_labels = situations_struct.(situation).situation_objects_possible_labels;
 
+situate_data_path = [];
 existing_path_ind = find(cellfun( @(x) exist(x,'dir'), situations_struct.(situation).possible_paths ));
 if ~isempty(existing_path_ind) 
     situate_data_path = situations_struct.(situation).possible_paths{existing_path_ind};
