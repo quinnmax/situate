@@ -37,6 +37,10 @@ function d_r = situate_image_data_rescale( d, arg1, arg2 )
     % if it's solo
     switch nargin
     
+<<<<<<< 36041c5590a8ddbc23649424c1dacbd85ed4a85e
+=======
+    
+>>>>>>> just working on making the mvn conditioning and sampling a little more efficient. it's the bottleneck right now
         case 2
              
             linear_scaling_factor = arg1;

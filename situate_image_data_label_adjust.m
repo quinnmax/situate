@@ -2,7 +2,11 @@ function image_data_out = situate_image_data_label_adjust( image_data_in, p )
 
 
 
+<<<<<<< 36041c5590a8ddbc23649424c1dacbd85ed4a85e
 % label_out = situate_image_data_label_adjust( image_data_in, p );
+=======
+%  label_out = situate_image_data_label_adjust( image_data_in, p );
+>>>>>>> just working on making the mvn conditioning and sampling a little more efficient. it's the bottleneck right now
 %
 %   add labels_adjusted to the situate_image_data_struct
 %   using the mapping from p.situation_objects_possible_labels to
