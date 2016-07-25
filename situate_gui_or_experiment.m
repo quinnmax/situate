@@ -29,6 +29,8 @@ function [] = situate_gui_or_experiment()
     testing_data_max  = 1;   % empty will use as much as possible given the folds.
     training_data_max = 10; % empty will use as much as possible given the folds. 
                              % if you use less than 50, the multivariate normals will probably bust.
+                             
+    run_analysis_after_completion = false;
 
     rng(1);
     %rng('shuffle');
@@ -110,8 +112,6 @@ else
         situate_data_path = uigetdir(pwd); 
     end
 end
-
-
 
 
 %% experimental situate parameters 
@@ -233,8 +233,9 @@ end
     fname_blacklist = {}; 
     % fname_blacklist should be used if there's some saved off model that 
     % we want to mess with. 
-    % Everything in the blacklist will fully ignored. it won't end up in
-    % the training or testing sets.
+    % Everything in the fname_blacklist will be excluded from both the
+    % training and testing images that are used for learning the
+    % conditional model stuff
     
     if use_existing_training_testing_split_files
         
@@ -331,16 +332,39 @@ end
            
     end    
     
+<<<<<<< 31d0529c3ea1fb8e693348fde50b6a058b73c624
+=======
+    % set directories for potentialy saved models
+    if any(strcmp([ p_conditions.classification_method ],'CNN-SVM'))
+        possible_paths_cnn_svm_models = { ...
+            '/Users/Max/Documents/MATLAB/data/situate_saved_models/cnn_svm/', ...
+            'saved_models_cnn_svm/', ...
+            '+cnn/'};
+        saved_model_path_cnn_svm = possible_paths_cnn_svm_models{ find(cellfun(@(x) exist(x,'dir'),possible_paths_cnn_svm_models), 1, 'first' ) };
+    end
+    
+    if any(strcmp([ p_conditions.classification_method ],'HOG-SVM'))
+        possible_paths_hog_svm_models = {...
+            '/Users/Max/Documents/MATLAB/data/situate_saved_models/hog_svm/', ...
+            'saved_models_hog_svm/', ...
+            '+hog_svm/'};
+        saved_model_path_hog_svm = possible_paths_hog_svm_models{ find(cellfun(@(x) exist(x,'dir'),possible_paths_hog_svm_models), 1, 'first' )};
+    end
+
+    if any([ p_conditions.use_box_adjust ])
+        possible_paths_box_adjust_models = {...
+            '/stash/mm-group/evan/saved/models/box_adjust' ...
+            '/Users/Max/Documents/MATLAB/data/situate_saved_models/box_adjust/', ...
+            'saved_models_box_adjust/', ...
+            '+box_adjust/'};
+        saved_model_path_box_adjust = possible_paths_box_adjust_models{ find(cellfun(@(x) exist(x,'dir'),possible_paths_box_adjust_models), 1, 'first' )};
+    end
+>>>>>>> just working on making the mvn conditioning and sampling a little more efficient. it's the bottleneck right now
 
 
+    
 %% run the main loop 
 
-    scout_record = []; 
-        % this is just used when classification method is 'crop generator', 
-        % which is to say, we want to keep images that are sent to the 
-        % oracle using whatever settings we currently have. probably not 
-        % the best way to do it, should probably toss it.
-    
     for fold_ind = 1:num_folds
         
         learned_stuff = []; % contains everything we gather from training data, so is reset at the start of each fold
@@ -502,7 +526,7 @@ end
                     progress_string = [p_conditions_descriptions{experiment_ind} ', ' num2str(num_iterations_run), ' steps, ' num2str(toc) 's'];
                     progress(cur_image_ind,length(fnames_im_test),progress_string);
                    
-                    % deal with GUI inputs
+                    % deal with GUI response
                     if use_gui
 
                         switch visualizer_status_string
@@ -560,18 +584,13 @@ end
         end
         
     end
-        
-    
 
-
-    run_analysis_now = false;
-    if run_analysis_now    
+    if run_analysis_after_completion    
         situate_experiment_analysis( results_directory );
     end
 
 
 end
-
 
 function model_directories_struct = get_directories_for_necessary_models( p_conditions )
 
@@ -606,6 +625,8 @@ function model_directories_struct = get_directories_for_necessary_models( p_cond
     end
 
 end
+
+
 
 
 
