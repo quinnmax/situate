@@ -26,6 +26,8 @@
     testing_data_max  = 3;   % empty will use as much as possible given the folds.
     training_data_max = 100; % empty will use as much as possible given the folds. 
                              % if you use less than 50, the multivariate normals will probably bust.
+                             
+    run_analysis_after_completion = false;
 
     rng(1);
     %rng('shuffle');
@@ -100,8 +102,6 @@ if isempty(situate_data_path) || ~exist(situate_data_path,'dir')
     situate_data_path = uigetdir([],'Select path containing situate images and label files');
 end
     
-
-
 
 
 %% experimental situate parameters 
@@ -223,8 +223,9 @@ end
     fname_blacklist = {}; 
     % fname_blacklist should be used if there's some saved off model that 
     % we want to mess with. 
-    % Everything in the blacklist will fully ignored. it won't end up in
-    % the training or testing sets.
+    % Everything in the fname_blacklist will be excluded from both the
+    % training and testing images that are used for learning the
+    % conditional model stuff
     
     if use_existing_training_testing_split_files
         
@@ -321,7 +322,6 @@ end
            
     end    
     
-
     % set directories for potentialy saved models
     if any(strcmp([ p_conditions.classification_method ],'CNN-SVM'))
         possible_paths_cnn_svm_models = { ...
@@ -329,6 +329,14 @@ end
             'saved_models_cnn_svm/', ...
             '+cnn/'};
         saved_model_path_cnn_svm = possible_paths_cnn_svm_models{ find(cellfun(@(x) exist(x,'dir'),possible_paths_cnn_svm_models), 1, 'first' ) };
+    end
+    
+    if any(strcmp([ p_conditions.classification_method ],'HOG-SVM'))
+        possible_paths_hog_svm_models = {...
+            '/Users/Max/Documents/MATLAB/data/situate_saved_models/hog_svm/', ...
+            'saved_models_hog_svm/', ...
+            '+hog_svm/'};
+        saved_model_path_hog_svm = possible_paths_hog_svm_models{ find(cellfun(@(x) exist(x,'dir'),possible_paths_hog_svm_models), 1, 'first' )};
     end
 
     if any([ p_conditions.use_box_adjust ])
@@ -340,24 +348,10 @@ end
         saved_model_path_box_adjust = possible_paths_box_adjust_models{ find(cellfun(@(x) exist(x,'dir'),possible_paths_box_adjust_models), 1, 'first' )};
     end
 
-    if any(strcmp([ p_conditions.classification_method ],'HOG-SVM'))
-        possible_paths_hog_svm_models = {...
-            '/Users/Max/Documents/MATLAB/data/situate_saved_models/hog_svm/', ...
-            'saved_models_hog_svm/', ...
-            '+hog_svm/'};
-        saved_model_path_hog_svm = possible_paths_hog_svm_models{ find(cellfun(@(x) exist(x,'dir'),possible_paths_hog_svm_models), 1, 'first' )};
-    end
 
-
-
+    
 %% run the main loop 
 
-    scout_record = []; 
-        % this is just used when classification method is 'crop generator', 
-        % which is to say, we want to keep images that are sent to the 
-        % oracle using whatever settings we currently have. probably not 
-        % the best way to do it, should probably toss it.
-    
     for fold_ind = 1:num_folds
         
         learned_stuff = []; % contains everything we gather from training data, so is reset at the start of each fold
@@ -513,7 +507,7 @@ end
                     progress_string = [p_conditions_descriptions{experiment_ind} ', ' num2str(num_iterations_run), ' steps, ' num2str(toc) 's'];
                     progress(cur_image_ind,length(fnames_im_test),progress_string);
                    
-                    % deal with GUI inputs
+                    % deal with GUI response
                     if use_gui
 
                         switch return_status_string
@@ -575,10 +569,12 @@ end
     
      
 
-run_analysis_now = false;
-if run_analysis_now    
+
+if run_analysis_after_completion    
     situate_experiment_analysis( results_directory );
 end
+
+
 
 
 

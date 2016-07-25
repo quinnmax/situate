@@ -2,7 +2,7 @@ function image_data_out = situate_image_data_label_adjust( image_data_in, p )
 
 
 
-%  label_out = situate_image_data_label_adjust( label_in, p );
+%  label_out = situate_image_data_label_adjust( image_data_in, p );
 %
 %   add labels_adjusted to the situate_image_data_struct
 %   using the mapping from p.situation_objects_possible_labels to p.situation_objects 
@@ -10,7 +10,7 @@ function image_data_out = situate_image_data_label_adjust( image_data_in, p )
 global assignment_counter
 if isempty(assignment_counter), assignment_counter = 0; end
 
-    if length(image_data_in) > 1 
+    if isstruct(image_data_in) && length(image_data_in) > 1 
     % we're looking at a struct array, so we need to go through and make new ones
         
         image_data_out = situate_image_data_label_adjust( image_data_in(1), p );
@@ -19,6 +19,13 @@ if isempty(assignment_counter), assignment_counter = 0; end
             image_data_out(i) = situate_image_data_label_adjust( image_data_in(i), p );
         end
         
+    elseif iscellstr(image_data_in)
+        % we just have file names, so get the image data first, and then do the
+        % adjustment
+        fnames_in = image_data_in;
+        image_data_temp = situate_image_data(fnames_in);
+        image_data_out = situate_image_data_label_adjust( image_data_temp, p );
+
     else
     % we've got a singular struct, so just make the adjustment and return it
         
