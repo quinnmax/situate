@@ -1,6 +1,10 @@
 function models = create_cnn_svm_models( training_images, p )
 %UNTITLED Summary of this function goes here
     
+
+    p.use_nn_model = false;
+
+
     for type = 1:numel(p.situation_objects)
         disp(['Creating CNN-SVM model for ' p.situation_objects{type}]);
 
@@ -18,19 +22,17 @@ function models = create_cnn_svm_models( training_images, p )
             labels = +strcmp(labels, 'pos');
             nn_model = fitnet([500, 100]);
             nn_model = train(nn_model,data',labels);%,'useParallel','yes','useGPU','yes');
-        
             models{type, 1} = nn_model;
         else
             svm_model = fitcsvm(data, labels, 'Standardize', 'on');
             svm_model = fitSVMPosterior(svm_model);
-
             models{type, 1} = svm_model.compact;
         end
 %         models{type, 2} = feature_vectors;
     end
     
     fnames_lb_train = training_images;
-    save(['saved_models_cnn_svm/cnnsvm_' num2str(now) '.mat'], 'models', 'fnames_lb_train');
+    %save(['saved_models_cnn_svm/cnnsvm_' num2str(now) '.mat'], 'models', 'fnames_lb_train');
 end
 
 function data = cnn_features( images )

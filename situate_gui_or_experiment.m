@@ -1,9 +1,13 @@
 
     
+function [] = situate_gui_or_experiment()
+
 % basic setup
 
-    addpath(genpath(pwd));
-
+    situate_gui_or_experiment_path = strsplit(which('situate_gui_or_experiment'),filesep);
+    cd([filesep fullfile(situate_gui_or_experiment_path{1:end-1}) filesep]);
+    addpath('tools');
+    
     use_gui = true; 
     % use_gui limits the testing data and the limits the run to one
     % experimental condition and one fold (as specified in the experimental
@@ -26,9 +30,9 @@
     results_directory = fullfile('/Users/',char(java.lang.System.getProperty('user.name')),'/Desktop/', [experiment_title '_' datestr(now,'yyyy.mm.dd.HH.MM.SS')]);
     if ~exist(results_directory,'dir'), mkdir(results_directory); display(['made directory ' results_directory]); end
 
-    num_folds = 2;
-    testing_data_max  = 3;   % empty will use as much as possible given the folds.
-    training_data_max = 100; % empty will use as much as possible given the folds. 
+    num_folds = 1;
+    testing_data_max  = 1;   % empty will use as much as possible given the folds.
+    training_data_max = 10; % empty will use as much as possible given the folds. 
                              % if you use less than 50, the multivariate normals will probably bust.
 
     rng(1);
@@ -46,9 +50,9 @@
     p.rcnn_boxes = false;
     
     % classifier
-        p.classification_method  = 'IOU-oracle';
-        %p.classification_method  = 'CNN-SVM'; % uses Rory's cnn code
-        %p.classification_method  = 'HOG-SVM';
+        % p.classification_method  = 'IOU-oracle';
+        p.classification_method  = 'CNN-SVM'; % uses Rory's cnn code
+        % p.classification_method  = 'HOG-SVM';
         
     % pipeline
         p.use_direct_scout_to_workspace_pipe = true; % hides stochastic agent stuff a bit, more comparable to other methods     
@@ -329,33 +333,6 @@ end
     end    
     
 
-    % set directories for potentialy saved models
-    if any(strcmp([ p_conditions.classification_method ],'CNN-SVM'))
-        possible_paths_cnn_svm_models = { ...
-            '/Users/Max/Documents/MATLAB/data/situate_saved_models/cnn_svm/', ...
-            'saved_models_cnn_svm/', ...
-            '+cnn/'};
-        saved_model_path_cnn_svm = possible_paths_cnn_svm_models{ find(cellfun(@(x) exist(x,'dir'),possible_paths_cnn_svm_models), 1, 'first' ) };
-    end
-
-    if any([ p_conditions.use_box_adjust ])
-        possible_paths_box_adjust_models = {...
-            '/stash/mm-group/evan/saved/models/box_adjust' ...
-            '/Users/Max/Documents/MATLAB/data/situate_saved_models/box_adjust/', ...
-            'saved_models_box_adjust/', ...
-            '+box_adjust/'};
-        saved_model_path_box_adjust = possible_paths_box_adjust_models{ find(cellfun(@(x) exist(x,'dir'),possible_paths_box_adjust_models), 1, 'first' )};
-    end
-
-    if any(strcmp([ p_conditions.classification_method ],'HOG-SVM'))
-        possible_paths_hog_svm_models = {...
-            '/Users/Max/Documents/MATLAB/data/situate_saved_models/hog_svm/', ...
-            'saved_models_hog_svm/', ...
-            '+hog_svm/'};
-        saved_model_path_hog_svm = possible_paths_hog_svm_models{ find(cellfun(@(x) exist(x,'dir'),possible_paths_hog_svm_models), 1, 'first' )};
-    end
-
-
 
 %% run the main loop 
 
@@ -412,6 +389,8 @@ end
                         end
                     end
                     
+                    model_directories_struct = get_directories_for_necessary_models( cur_experiment_parameters );
+                    
                     % build or load models for whatever is needed in the
                     % current condition ( classifiers, box adjust models,
                     % conditional distributions ) using the current
@@ -436,13 +415,13 @@ end
                         if cur_experiment_parameters.use_box_adjust
                             if isfield(learned_stuff, 'box_adjust_models'),
                                 % do nothing, it's already been dtrained with this data set
-                            elseif ~isempty(situate_check_for_existing_model( saved_model_path_box_adjust, fnames_lb_train ))
-                                learned_stuff.box_adjust_models = load(situate_check_for_existing_model( saved_model_path_box_adjust, fnames_lb_train ));
+                            elseif ~isempty(situate_check_for_existing_model( model_directories_struct.box_adjust, fnames_lb_train ))
+                                learned_stuff.box_adjust_models = load(situate_check_for_existing_model( model_directories_struct.box_adjust, fnames_lb_train ));
                                 display('loaded saved box_adjust_model');
                             else
                                 box_adjust_models = box_adjust.build_box_adjust_models_mq( fnames_lb_train, p );
                                 box_adjust_models.fnames_lb_train = fnames_lb_train;
-                                saved_model_fname = fullfile(saved_model_path_box_adjust, ['box_adjust_models_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
+                                saved_model_fname = fullfile(model_directories_struct.box_adjust, ['box_adjust_models_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
                                 save( saved_model_fname, '-struct', 'box_adjust_models' );
                                 learned_stuff.box_adjust_models = box_adjust_models;
                             end
@@ -452,13 +431,13 @@ end
                         if strcmp( 'CNN-SVM', cur_experiment_parameters.classification_method )
                             if isfield(learned_stuff, 'cnn_svm_models'), 
                                 % do nothing, it's already been dtrained with this data set
-                            elseif ~isempty(situate_check_for_existing_model( saved_model_path_cnn_svm, fnames_lb_train ))
-                                learned_stuff.cnn_svm_models = load(situate_check_for_existing_model( saved_model_path_cnn_svm, fnames_lb_train ));
+                            elseif ~isempty(situate_check_for_existing_model( model_directories_struct.cnn_svm, fnames_lb_train ))
+                                learned_stuff.cnn_svm_models = load(situate_check_for_existing_model( model_directories_struct.cnn_svm, fnames_lb_train ));
                                 display('loaded saved cnn_svm_model');
                             else
                                 cnn_svm_models.models          = cnn.create_cnn_svm_models(fnames_lb_train, p);
                                 cnn_svm_models.fnames_lb_train = fnames_lb_train;
-                                saved_model_fname = fullfile(saved_model_path_cnn_svm, ['cnn_svm_models_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
+                                saved_model_fname = fullfile(model_directories_struct.cnn_svm, ['cnn_svm_models_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
                                 save( saved_model_fname, '-struct', 'cnn_svm_models' );
                                 learned_stuff.cnn_svm_models = cnn_svm_models;
                             end
@@ -468,13 +447,13 @@ end
                         if strcmp( 'HOG-SVM', cur_experiment_parameters.classification_method )
                             if isfield(learned_stuff, 'hog_svm_models'), 
                                 % do nothing, it's already been dtrained with this data set
-                            elseif ~isempty(situate_check_for_existing_model( saved_model_path_hog_svm, fnames_lb_train ))
-                                learned_stuff.hog_svm_models = load(situate_check_for_existing_model( saved_model_path_hog_svm, fnames_lb_train ));
+                            elseif ~isempty(situate_check_for_existing_model( model_directories_struct.hog_svm, fnames_lb_train ))
+                                learned_stuff.hog_svm_models = load(situate_check_for_existing_model( model_directories_struct.hog_svm, fnames_lb_train ));
                                 display('loaded saved hog_svm_model');
                             else
                                 hog_svm_models = hog_svm.hog_svm_train(fnames_lb_train, p);
                                 hog_svm_models.fnames_lb_train = fnames_lb_train;
-                                saved_model_fname = fullfile(saved_model_path_hog_svm, ['hog_svm_models_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
+                                saved_model_fname = fullfile(model_directories_struct.hog_svm, ['hog_svm_models_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
                                 save( saved_model_fname, '-struct', 'hog_svm_models' );
                                 learned_stuff.hog_svm_models = hog_svm_models;
                             end
@@ -584,14 +563,50 @@ end
     end
         
     
-     
 
-run_analysis_now = false;
-if run_analysis_now    
-    situate_experiment_analysis( results_directory );
+
+    run_analysis_now = false;
+    if run_analysis_now    
+        situate_experiment_analysis( results_directory );
+    end
+
+
 end
 
 
+function model_directories_struct = get_directories_for_necessary_models( p_conditions )
+
+    model_directories_struct = [];
+
+    if any(strcmp([ p_conditions.classification_method ],'CNN-SVM'))
+        possible_paths_cnn_svm_models = { ...
+            '/Users/Max/Documents/MATLAB/data/situate_saved_models/cnn_svm/', ...
+            'saved_models_cnn_svm/', ...
+            '+cnn/'};
+        existing_model_path_ind = find(cellfun(@(x) exist(x,'dir'),possible_paths_cnn_svm_models), 1, 'first' );
+        model_directories_struct.cnn_svm = possible_paths_cnn_svm_models{ existing_model_path_ind };
+    end
+
+    if any([ p_conditions.use_box_adjust ])
+        possible_paths_box_adjust_models = {...
+            '/stash/mm-group/evan/saved/models/box_adjust' ...
+            '/Users/Max/Documents/MATLAB/data/situate_saved_models/box_adjust/', ...
+            'saved_models_box_adjust/', ...
+            '+box_adjust/'};
+        existing_model_path_ind = find(cellfun(@(x) exist(x,'dir'),possible_paths_cnn_svm_models), 1, 'first' );
+        model_directories_struct.box_adjust = possible_paths_cnn_svm_models{ existing_model_path_ind };
+    end
+
+    if any(strcmp([ p_conditions.classification_method ],'HOG-SVM'))
+        possible_paths_hog_svm_models = {...
+            '/Users/Max/Documents/MATLAB/data/situate_saved_models/hog_svm/', ...
+            'saved_models_hog_svm/', ...
+            '+hog_svm/'};
+        existing_model_path_ind = find(cellfun(@(x) exist(x,'dir'),possible_paths_cnn_svm_models), 1, 'first' );
+        model_directories_struct.hog_svm = possible_paths_cnn_svm_models{ existing_model_path_ind };
+    end
+
+end
 
 
 
