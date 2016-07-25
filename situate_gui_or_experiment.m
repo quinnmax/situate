@@ -4,7 +4,7 @@
 
     addpath(genpath(pwd));
 
-    use_gui = false; 
+    use_gui = true; 
     % use_gui limits the testing data and the limits the run to one
     % experimental condition and one fold (as specified in the experimental
     % setup, you can still modify settings in the settings GUI)
@@ -13,6 +13,8 @@
     % situation = 'dogwalking_no_leash';
     % situation = 'handshaking';
     % situation = 'pingpong';
+    % see situate_situation_definitions to add more
+   
 
     experiment_title = 'experiment_name';
     
@@ -90,18 +92,21 @@
 %
 % edit: this should be selectable from the gui form
 
-
-
 situations_struct = situate_situation_definitions();
 
 p.situation_objects                 = situations_struct.(situation).situation_objects;
 p.situation_objects_possible_labels = situations_struct.(situation).situation_objects_possible_labels;
-situate_data_path                   = situations_struct.(situation).data_path;
 
-if isempty(situate_data_path) || ~exist(situate_data_path,'dir')
-    situate_data_path = uigetdir([],'Select path containing situate images and label files');
+existing_path_ind = find(cellfun( @(x) exist(x,'dir'), situations_struct.(situation).possible_paths ));
+if ~isempty(existing_path_ind) 
+    situate_data_path = situations_struct.(situation).possible_paths{existing_path_ind};
+else
+    while isempty(situate_data_path) || ~exist(situate_data_path,'dir')
+        h = msgbox( ['Select directory containing images of ' situation] );
+        uiwait(h);
+        situate_data_path = uigetdir(pwd); 
+    end
 end
-    
 
 
 
@@ -510,7 +515,11 @@ end
                     tic;
                     [workspaces_final{experiment_ind,cur_image_ind},d,~,run_data,visualizer_status_string] = situate_sketch(cur_fname, cur_experiment_parameters, learned_stuff);
                     
-                    workspace_entry_event_logs{experiment_ind,cur_image_ind} = run_data.workspace_entry_events;
+                    if isfield(run_data,'workspace_entry_events');
+                        workspace_entry_event_logs{experiment_ind,cur_image_ind} = run_data.workspace_entry_events;
+                    else
+                        workspace_entry_event_logs = 'GUI didn''t produce workspace log';
+                    end
                     num_iterations_run = sum(cellfun(@(x) ~isempty(x),{run_data.scout_record.interest}));
                     progress_string = [p_conditions_descriptions{experiment_ind} ', ' num2str(num_iterations_run), ' steps, ' num2str(toc) 's'];
                     progress(cur_image_ind,length(fnames_im_test),progress_string);
@@ -518,7 +527,7 @@ end
                     % deal with GUI inputs
                     if use_gui
 
-                        switch return_status_string
+                        switch visualizer_status_string
                             case 'restart'
                                 % cur_image_ind = cur_image_ind;
                                 % keep_going = true;
