@@ -34,14 +34,11 @@ function [] = situate_gui_or_experiment()
 
     rng(1);
     %rng('shuffle');
-
-    
     
 % make sure the path is set up properly
     situate_gui_or_experiment_path = fileparts(which('situate_gui_or_experiment'));
     addpath(fullfile(situate_gui_or_experiment_path));
     addpath(genpath(fullfile(situate_gui_or_experiment_path, 'tools')));
-    
     
     
     
@@ -99,23 +96,23 @@ function [] = situate_gui_or_experiment()
     
 %% situation definitions 
 
-situations_struct = situate_situation_definitions();
+    situations_struct = situate_situation_definitions();
 
-p.situation_objects                 = situations_struct.(situation).situation_objects;
-p.situation_objects_possible_labels = situations_struct.(situation).situation_objects_possible_labels;
+    p.situation_objects                 = situations_struct.(situation).situation_objects;
+    p.situation_objects_possible_labels = situations_struct.(situation).situation_objects_possible_labels;
 
-situate_data_path = [];
-existing_path_ind = find(cellfun( @(x) exist(x,'dir'), situations_struct.(situation).possible_paths ));
-if ~isempty(existing_path_ind) 
-    situate_data_path = situations_struct.(situation).possible_paths{existing_path_ind};
-else
     situate_data_path = [];
-    while ~exist('situate_data_path','dir') || isempty(situate_data_path)
-        h = msgbox( ['Select directory containing images of ' situation] );
-        uiwait(h);
-        situate_data_path = uigetdir(pwd); 
+    existing_path_ind = find(cellfun( @(x) exist(x,'dir'), situations_struct.(situation).possible_paths ));
+    if ~isempty(existing_path_ind) 
+        situate_data_path = situations_struct.(situation).possible_paths{existing_path_ind};
+    else
+        situate_data_path = [];
+        while ~exist('situate_data_path','dir') || isempty(situate_data_path)
+            h = msgbox( ['Select directory containing images of ' situation] );
+            uiwait(h);
+            situate_data_path = uigetdir(pwd); 
+        end
     end
-end
 
 
 
@@ -223,7 +220,6 @@ end
     temp.location_sampling_method_after_conditioning    = 'sampling';
     p_conditions_descriptions{end+1} = description;
     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
-  
     
    % validate the options before we start running with them
    %    this just checks that methods_before and method_after type stuff is
@@ -321,7 +317,7 @@ end
 
             end
 
-            % save splits to files
+        % save splits to files
             if ~isdir(results_directory), mkdir(results_directory); end
             for i = 1:length(data_folds)
                 fname_train_out = fullfile(results_directory, [experiment_title '_fnames_split_' num2str(i,'%02d') '_train.txt']);
@@ -389,7 +385,7 @@ end
                         end
                     end
                     
-                    model_directories_struct = get_directories_for_necessary_models( cur_experiment_parameters );
+                    model_directories_struct = check_models( cur_experiment_parameters );
                     
                     % build or load models for whatever is needed in the
                     % current condition ( classifiers, box adjust models,
@@ -570,7 +566,7 @@ end
 
 end
 
-function model_directories_struct = get_directories_for_necessary_models( p_conditions )
+function model_directories_struct = check_models( p_conditions )
 
     model_directories_struct = [];
 
@@ -582,7 +578,31 @@ function model_directories_struct = get_directories_for_necessary_models( p_cond
         existing_model_path_ind = find(cellfun(@(x) exist(x,'dir'),possible_paths_cnn_svm_models), 1, 'first' );
         model_directories_struct.cnn_svm = possible_paths_cnn_svm_models{ existing_model_path_ind };
     end
-
+    
+    % see if matconvnet has been built. if not, see if we can
+    % install it
+    
+    try 
+        test_image = imread('cameraman.tif');
+        test_image(:,:,2) = test_image(end:-1:1,:,1);
+        test_image(:,:,3) = test_image(:,end:-1:1,1);
+        dummy_data = cnn.cnn_process( test_image );
+    catch
+        original_dir = pwd;
+        cd matconvnet;
+        addpath matlab;
+        vl_compilenn;
+        run matlab/vl_setupnn;
+        cd(original_dir);
+        
+        % if it bonks again, have to try something else
+        test_image = imread('cameraman.tif');
+        test_image(:,:,2) = test_image(end:-1:1,:,1);
+        test_image(:,:,3) = test_image(:,end:-1:1,1);
+        dummy_data = cnn.cnn_process( test_image );
+        
+    end
+  
     if any([ p_conditions.use_box_adjust ])
         possible_paths_box_adjust_models = {...
             '/stash/mm-group/evan/saved/models/box_adjust' ...

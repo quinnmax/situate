@@ -316,8 +316,6 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
     if ~isempty(cur_agent) && isequal( cur_agent.type, 'scout' )
         
         di = find(strcmp(cur_agent.interest,p.situation_objects));
-        % edit: hack to update the visualization, but not actually coming
-        % from the associated distribution. 
         if length(di) > 1, di = di(randi(length(di))); end
         
         % draw onto main figure
@@ -489,8 +487,6 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
                 area_ratio   = (width * height) / d(1).image_size_px;
  
                 oi = find(strcmp(workspace.labels{wi},p.situation_objects));
-                % edit: hack, only one generated it, and i'm drawing it on a
-                % random one.
                 if length(oi) > 1, oi = oi(randi(length(oi))); end
                 
                 switch d(oi).box_display.method
