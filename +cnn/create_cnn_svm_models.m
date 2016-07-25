@@ -36,5 +36,11 @@ function models = create_cnn_svm_models( training_images, p )
 end
 
 function data = cnn_features( images )
-    data = cell2mat(map(images, @(x) cnn.cnn_process(x)))';
+    % data = cell2mat(map(images, @(x) cnn.cnn_process(x)))';
+    data = cell(1,length(images));
+    for i = 1:length(images)
+        data{i} = cnn.cnn_process(images{i});
+        progress(i,length(images),'extracting CNN features');
+    end
+    data = cell2mat(data)';
 end

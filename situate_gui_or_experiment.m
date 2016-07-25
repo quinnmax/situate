@@ -26,8 +26,8 @@ function [] = situate_gui_or_experiment()
     if ~exist(results_directory,'dir'), mkdir(results_directory); display(['made directory ' results_directory]); end
 
     num_folds = 1;
-    testing_data_max  = 1;      % empty will use as much as possible given the folds.
-    training_data_max = 10;     % empty will use as much as possible given the folds. 
+    testing_data_max  = 2;      % empty will use as much as possible given the folds.
+    training_data_max = 15;     % empty will use as much as possible given the folds. 
                                 % if you use less than 50, the multivariate normals will probably bust.
                              
     run_analysis_after_completion = false;
@@ -107,7 +107,7 @@ function [] = situate_gui_or_experiment()
         situate_data_path = situations_struct.(situation).possible_paths{existing_path_ind};
     else
         situate_data_path = [];
-        while ~exist('situate_data_path','dir') || isempty(situate_data_path)
+        while ~exist('situate_data_path','var') || isempty(situate_data_path) || ~isdir(situate_data_path)
             h = msgbox( ['Select directory containing images of ' situation] );
             uiwait(h);
             situate_data_path = uigetdir(pwd); 
@@ -387,7 +387,8 @@ function [] = situate_gui_or_experiment()
                     
                     model_directories_struct = check_models( cur_experiment_parameters );
                     
-                    % build or load models for whatever is needed in the
+                    %% build or load models for whatever
+                    % is needed in the
                     % current condition ( classifiers, box adjust models,
                     % conditional distributions ) using the current
                     % training data
@@ -473,7 +474,7 @@ function [] = situate_gui_or_experiment()
                             end  
                         end
 
-                    % run on the current image
+                    %% run on the current image
                     cur_fname = fnames_im_test{cur_image_ind};
 
                         % if using the precomputed rcnn boxes, grab the set for
