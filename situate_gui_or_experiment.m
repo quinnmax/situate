@@ -4,7 +4,7 @@ function [] = situate_gui_or_experiment()
 
 % basic setup
 
-    use_gui = true; 
+    use_gui = false; 
     % use_gui limits the testing data and the limits the run to one
     % experimental condition and one fold (as specified in the experimental
     % setup, you can still modify settings in the settings GUI)
@@ -26,9 +26,11 @@ function [] = situate_gui_or_experiment()
     if ~exist(results_directory,'dir'), mkdir(results_directory); display(['made directory ' results_directory]); end
 
     num_folds = 1;
-    testing_data_max  = 1;   % empty will use as much as possible given the folds.
-    training_data_max = 10; % empty will use as much as possible given the folds. 
-                             % if you use less than 50, the multivariate normals will probably bust.
+    testing_data_max  = 1;      % empty will use as much as possible given the folds.
+    training_data_max = 10;     % empty will use as much as possible given the folds. 
+                                % if you use less than 50, the multivariate normals will probably bust.
+                             
+    run_analysis_after_completion = false;
 
     rng(1);
     %rng('shuffle');
@@ -104,13 +106,13 @@ existing_path_ind = find(cellfun( @(x) exist(x,'dir'), situations_struct.(situat
 if ~isempty(existing_path_ind) 
     situate_data_path = situations_struct.(situation).possible_paths{existing_path_ind};
 else
-    while isempty(situate_data_path) || ~exist(situate_data_path,'dir')
+    situate_data_path = [];
+    while ~exist('situate_data_path','dir') || isempty(situate_data_path)
         h = msgbox( ['Select directory containing images of ' situation] );
         uiwait(h);
         situate_data_path = uigetdir(pwd); 
     end
 end
-
 
 
 
@@ -233,8 +235,9 @@ end
     fname_blacklist = {}; 
     % fname_blacklist should be used if there's some saved off model that 
     % we want to mess with. 
-    % Everything in the blacklist will fully ignored. it won't end up in
-    % the training or testing sets.
+    % Everything in the fname_blacklist will be excluded from both the
+    % training and testing images that are used for learning the
+    % conditional model stuff
     
     if use_existing_training_testing_split_files
         
@@ -330,17 +333,12 @@ end
             end
            
     end    
+
     
-
-
+    
 %% run the main loop 
 
-    scout_record = []; 
-        % this is just used when classification method is 'crop generator', 
-        % which is to say, we want to keep images that are sent to the 
-        % oracle using whatever settings we currently have. probably not 
-        % the best way to do it, should probably toss it.
-    
+
     for fold_ind = 1:num_folds
         
         learned_stuff = []; % contains everything we gather from training data, so is reset at the start of each fold
@@ -502,7 +500,7 @@ end
                     progress_string = [p_conditions_descriptions{experiment_ind} ', ' num2str(num_iterations_run), ' steps, ' num2str(toc) 's'];
                     progress(cur_image_ind,length(fnames_im_test),progress_string);
                    
-                    % deal with GUI inputs
+                    % deal with GUI response
                     if use_gui
 
                         switch visualizer_status_string
@@ -560,18 +558,14 @@ end
         end
         
     end
-        
     
-
-
-    run_analysis_now = false;
-    if run_analysis_now    
+    
+    
+    if run_analysis_after_completion
         situate_experiment_analysis( results_directory );
     end
 
-
 end
-
 
 function model_directories_struct = get_directories_for_necessary_models( p_conditions )
 
@@ -604,7 +598,7 @@ function model_directories_struct = get_directories_for_necessary_models( p_cond
         existing_model_path_ind = find(cellfun(@(x) exist(x,'dir'),possible_paths_cnn_svm_models), 1, 'first' );
         model_directories_struct.hog_svm = possible_paths_cnn_svm_models{ existing_model_path_ind };
     end
-
+    
 end
 
 
@@ -618,4 +612,3 @@ end
 
 
 
-    

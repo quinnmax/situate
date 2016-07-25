@@ -2,15 +2,35 @@ function image_data_out = situate_image_data_label_adjust( image_data_in, p )
 
 
 
-%  label_out = situate_image_data_label_adjust( label_in, p );
+<<<<<<< HEAD
+<<<<<<< 0de97f7a360c61505ffc8d68993658e91e859092
+<<<<<<< 36041c5590a8ddbc23649424c1dacbd85ed4a85e
+% label_out = situate_image_data_label_adjust( image_data_in, p );
+=======
+%  label_out = situate_image_data_label_adjust( image_data_in, p );
+>>>>>>> just working on making the mvn conditioning and sampling a little more efficient. it's the bottleneck right now
+=======
+% label_out = situate_image_data_label_adjust( image_data_in, p );
+>>>>>>> I rearranged some spaces or something
+=======
+% label_out = situate_image_data_label_adjust( image_data_in, p );
+>>>>>>> 001f7ca76567702a100826f6e7a7d7390723c57e
 %
 %   add labels_adjusted to the situate_image_data_struct
-%   using the mapping from p.situation_objects_possible_labels to p.situation_objects 
+%   using the mapping from p.situation_objects_possible_labels to
+%   p.situation_objects.
+%
+% If there are multiple final labels to which a raw label can be assigned,
+% then there's a global iteration that changes which it is assigned to.
+% This means if there are two final labels {player1, player2}, and they
+% both accept the same set of raw labels {player front, player back, etc},
+% then the first raw_label will go to player1, and the next to player2,
+% then back to player1.
 
 global assignment_counter
 if isempty(assignment_counter), assignment_counter = 0; end
 
-    if length(image_data_in) > 1 
+    if isstruct(image_data_in) && length(image_data_in) > 1 
     % we're looking at a struct array, so we need to go through and make new ones
         
         image_data_out = situate_image_data_label_adjust( image_data_in(1), p );
@@ -19,6 +39,13 @@ if isempty(assignment_counter), assignment_counter = 0; end
             image_data_out(i) = situate_image_data_label_adjust( image_data_in(i), p );
         end
         
+    elseif iscellstr(image_data_in)
+        % we just have file names, so get the image data first, and then do the
+        % adjustment
+        fnames_in = image_data_in;
+        image_data_temp = situate_image_data(fnames_in);
+        image_data_out = situate_image_data_label_adjust( image_data_temp, p );
+
     else
     % we've got a singular struct, so just make the adjustment and return it
         
