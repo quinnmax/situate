@@ -4,7 +4,7 @@ function [] = situate_gui_or_experiment()
 
 % basic setup
 
-    use_gui = true; 
+    use_gui = false; 
     % use_gui limits the testing data and the limits the run to one
     % experimental condition and one fold (as specified in the experimental
     % setup, you can still modify settings in the settings GUI)
