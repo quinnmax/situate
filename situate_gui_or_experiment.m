@@ -4,10 +4,6 @@ function [] = situate_gui_or_experiment()
 
 % basic setup
 
-    situate_gui_or_experiment_path = strsplit(which('situate_gui_or_experiment'),filesep);
-    cd([filesep fullfile(situate_gui_or_experiment_path{1:end-1}) filesep]);
-    addpath('tools');
-    
     use_gui = true; 
     % use_gui limits the testing data and the limits the run to one
     % experimental condition and one fold (as specified in the experimental
@@ -19,7 +15,6 @@ function [] = situate_gui_or_experiment()
     % situation = 'pingpong';
     % see situate_situation_definitions to add more
    
-
     experiment_title = 'experiment_name';
     
     % if you want to use pre-existing fold files, 
@@ -38,6 +33,10 @@ function [] = situate_gui_or_experiment()
     rng(1);
     %rng('shuffle');
 
+% make sure the path is set up properly
+    situate_gui_or_experiment_path = fileparts(which('situate_gui_or_experiment'));
+    addpath(fullfile(situate_gui_or_experiment_path));
+    addpath(genpath(fullfile(situate_gui_or_experiment_path, 'tools')));
     
     
 %% shared situate parameteres 
@@ -50,8 +49,8 @@ function [] = situate_gui_or_experiment()
     p.rcnn_boxes = false;
     
     % classifier
-        % p.classification_method  = 'IOU-oracle';
-        p.classification_method  = 'CNN-SVM'; % uses Rory's cnn code
+        p.classification_method  = 'IOU-oracle';
+        % p.classification_method  = 'CNN-SVM'; % uses Rory's cnn code
         % p.classification_method  = 'HOG-SVM';
         
     % pipeline
