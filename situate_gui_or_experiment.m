@@ -26,9 +26,9 @@ function [] = situate_gui_or_experiment()
     if ~exist(results_directory,'dir'), mkdir(results_directory); display(['made directory ' results_directory]); end
 
     num_folds = 1;
-    testing_data_max  = 1;   % empty will use as much as possible given the folds.
-    training_data_max = 10; % empty will use as much as possible given the folds. 
-                             % if you use less than 50, the multivariate normals will probably bust.
+    testing_data_max  = 1;      % empty will use as much as possible given the folds.
+    training_data_max = 10;     % empty will use as much as possible given the folds. 
+                                % if you use less than 50, the multivariate normals will probably bust.
                              
     run_analysis_after_completion = false;
 
@@ -106,12 +106,14 @@ existing_path_ind = find(cellfun( @(x) exist(x,'dir'), situations_struct.(situat
 if ~isempty(existing_path_ind) 
     situate_data_path = situations_struct.(situation).possible_paths{existing_path_ind};
 else
-    while isempty(situate_data_path) || ~exist(situate_data_path,'dir')
+    situate_data_path = [];
+    while ~exist('situate_data_path','dir') || isempty(situate_data_path)
         h = msgbox( ['Select directory containing images of ' situation] );
         uiwait(h);
         situate_data_path = uigetdir(pwd); 
     end
 end
+
 
 
 %% experimental situate parameters 
@@ -335,6 +337,7 @@ end
     
     
 %% run the main loop 
+
 
     for fold_ind = 1:num_folds
         
@@ -595,7 +598,7 @@ function model_directories_struct = get_directories_for_necessary_models( p_cond
         existing_model_path_ind = find(cellfun(@(x) exist(x,'dir'),possible_paths_cnn_svm_models), 1, 'first' );
         model_directories_struct.hog_svm = possible_paths_cnn_svm_models{ existing_model_path_ind };
     end
-
+    
 end
 
 
@@ -609,6 +612,3 @@ end
 
 
 
-
-
-    

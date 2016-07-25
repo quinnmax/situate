@@ -2,6 +2,7 @@ function image_data_out = situate_image_data_label_adjust( image_data_in, p )
 
 
 
+<<<<<<< HEAD
 <<<<<<< 0de97f7a360c61505ffc8d68993658e91e859092
 <<<<<<< 36041c5590a8ddbc23649424c1dacbd85ed4a85e
 % label_out = situate_image_data_label_adjust( image_data_in, p );
@@ -11,6 +12,9 @@ function image_data_out = situate_image_data_label_adjust( image_data_in, p )
 =======
 % label_out = situate_image_data_label_adjust( image_data_in, p );
 >>>>>>> I rearranged some spaces or something
+=======
+% label_out = situate_image_data_label_adjust( image_data_in, p );
+>>>>>>> 001f7ca76567702a100826f6e7a7d7390723c57e
 %
 %   add labels_adjusted to the situate_image_data_struct
 %   using the mapping from p.situation_objects_possible_labels to
