@@ -2,6 +2,8 @@
     
 % basic setup
 
+    addpath(genpath(pwd))
+
     use_gui = false; 
     % use_gui limits the testing data and the limits the run to one
     % experimental condition and one fold (as specified in the experimental
