@@ -37,7 +37,6 @@ function d_r = situate_image_data_rescale( d, arg1, arg2 )
     % if it's solo
     switch nargin
     
-    
         case 2
              
             linear_scaling_factor = arg1;
