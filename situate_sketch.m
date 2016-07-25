@@ -1,7 +1,7 @@
 
 
 
-function [ workspace, d, p, run_data, visualizer_status_string ] = situate_sketch( im_fname, p, learned_stuff )
+function [ workspace, d, p, run_data, situate_visualizer_run_status ] = situate_sketch( im_fname, p, learned_stuff )
 
 % [ workspace, d, p, run_data, visualizer_status_string ] = situate_sketch( im_fname, p, learned_stuff );
 
@@ -60,15 +60,13 @@ function [ workspace, d, p, run_data, visualizer_status_string ] = situate_sketc
         global situate_visualizer_run_status;
         situate_visualizer_run_status = 'unstarted';
         [~,visualization_description] = fileparts(im_fname);
-        [h, visualizer_status_string] = situate_visualize( [], im, p, d, workspace, [], population_count, run_data.scout_record, visualization_description );
+        [h, situate_visualizer_run_status] = situate_visualize( [], im, p, d, workspace, [], population_count, run_data.scout_record, visualization_description );
         % see if an exit command came from the GUI
-        if ~ishandle(h), visualizer_status_string = 'stop'; end
-        if any( strcmp( visualizer_status_string, {'next_image','restart','stop'} ) )
+        if ~ishandle(h), situate_visualizer_run_status = 'stop'; end
+        if any( strcmp( situate_visualizer_run_status, {'next_image','restart','stop'} ) )
             return;
         end
     end
-    
-    
     
     %% the iteration loop
     
@@ -107,20 +105,20 @@ function [ workspace, d, p, run_data, visualizer_status_string ] = situate_sketc
                 if mod(iteration,p.show_visualization_on_iteration_mod)==0
                     [~,fname_no_path] = fileparts(im_fname); 
                     visualization_description = {fname_no_path; [num2str(iteration) '/' num2str(p.num_iterations)]};
-                    [h, visualizer_status_string] = situate_visualize( h, im, p, d, workspace, evaluated_agent_snapshot, population_count, run_data.scout_record, visualization_description );
+                    [h, situate_visualizer_run_status] = situate_visualize( h, im, p, d, workspace, evaluated_agent_snapshot, population_count, run_data.scout_record, visualization_description );
                     % see if an exit command came from the GUI
-                    if ~ishandle(h), visualizer_status_string = 'stop'; end
-                    if any( strcmp( visualizer_status_string, {'next_image','restart','stop'} ) )
+                    if ~ishandle(h), situate_visualizer_run_status = 'stop'; end
+                    if any( strcmp( situate_visualizer_run_status, {'next_image','restart','stop'} ) )
                         return; 
                     end 
                 end
             elseif p.show_visualization_on_workspace_change && workspace_object_was_added
                 [~,fname_no_path] = fileparts(im_fname); 
                 visualization_description = {fname_no_path; [num2str(iteration) '/' num2str(p.num_iterations)]};
-                [h, visualizer_status_string] = situate_visualize( h, im, p, d, workspace, evaluated_agent_snapshot, population_count, run_data.scout_record, visualization_description );
+                [h, situate_visualizer_run_status] = situate_visualize( h, im, p, d, workspace, evaluated_agent_snapshot, population_count, run_data.scout_record, visualization_description );
                 % see if an exit command came from the GUI
-                if ~ishandle(h), visualizer_status_string = 'stop'; end
-                if any( strcmp( visualizer_status_string, {'next_image','restart','stop'} ) )
+                if ~ishandle(h), situate_visualizer_run_status = 'stop'; end
+                if any( strcmp( situate_visualizer_run_status, {'next_image','restart','stop'} ) )
                     return; 
                 end 
             else
@@ -190,17 +188,17 @@ function [ workspace, d, p, run_data, visualizer_status_string ] = situate_sketc
         if ~exist('h','var'), h = []; end
         [~,fname_no_path] = fileparts(im_fname); 
         visualization_description = {fname_no_path; [num2str(iteration) '/' num2str(p.num_iterations)]};
-        [h, visualizer_status_string] = situate_visualize( h, im, p, d, workspace, [], population_count, run_data.scout_record, visualization_description );
+        [h, situate_visualizer_run_status] = situate_visualize( h, im, p, d, workspace, [], population_count, run_data.scout_record, visualization_description );
         % interpret closing the window as 'no thank you'
-        if ~ishandle(h), visualizer_status_string = 'stop'; end
-        if strcmp( visualizer_status_string, {'next_image','restart','stop'})
+        if ~ishandle(h), situate_visualizer_run_status = 'stop'; end
+        if strcmp( situate_visualizer_run_status, {'next_image','restart','stop'})
             return; 
         end
     else
         % we made it through the iteration loop, 
         % if the user doesn't specify some other behavior in the final display,
         % we'll assume that we should continue on to the next image
-        visualizer_status_string = 'next_image';
+        situate_visualizer_run_status = 'next_image';
     end
     
     

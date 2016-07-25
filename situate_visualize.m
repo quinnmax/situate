@@ -654,12 +654,15 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
                 if ishandle(h), 
                     if any(strcmp( situate_visualizer_run_status, {'restart','next_image'} ))
                         return_status_string = situate_visualizer_run_status;
+                    else
+                        return_status_string = situate_visualizer_run_status;
                     end
                 else
                     return_status_string = 'stop';
                 end
             case {'running'}
                 % do nothing, don't stop, just return
+                return_status_string = situate_visualizer_run_status;
             case {'restart'}
                 return_status_string = 'restart';
             case {'next_image'}

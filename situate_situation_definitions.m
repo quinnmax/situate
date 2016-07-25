@@ -24,7 +24,6 @@ function situations_struct = situate_situation_definitions()
         '/stash/mm-group/evan/crop_learn/data/PortlandSimpleDogWalking/', ...
         '/Users/Max/Documents/MATLAB/data/situate_images/PortlandSimpleDogWalking/', ...
         '/home/rsoiffer/Desktop/Matlab/DogWalkingData/PortlandSimpleDogWalking/'};
-    cur_situation.data_path = cur_situation.possible_paths{ find(cellfun(@(x) exist(x,'dir'), cur_situation.possible_paths ), 1 )};
     situations_struct.(desc) = cur_situation;
     
     desc = 'dogwalking_no_leash';
@@ -37,7 +36,6 @@ function situations_struct = situate_situation_definitions()
         '/stash/mm-group/evan/crop_learn/data/PortlandSimpleDogWalking/', ...
         '/Users/Max/Documents/MATLAB/data/situate_images/PortlandSimpleDogWalking/', ...
         '/home/rsoiffer/Desktop/Matlab/DogWalkingData/PortlandSimpleDogWalking/'};
-    cur_situation.data_path = cur_situation.possible_paths{ find(cellfun(@(x) exist(x,'dir'), cur_situation.possible_paths ), 1 )};
     situations_struct.(desc) = cur_situation;
         
     desc = 'handshaking';
@@ -50,7 +48,6 @@ function situations_struct = situate_situation_definitions()
         '/Users/Max/Documents/MATLAB/data/situate_images/HandshakeLabeled/', ...
         'C:\Users\LiFamily\Desktop\2016 ASE\HandshakeLabeled',...
         '/fakepath/justchecking'};
-    cur_situation.data_path = cur_situation.possible_paths{ find(cellfun(@(x) exist(x,'dir'), cur_situation.possible_paths ), 1 )};
     situations_struct.(desc) = cur_situation;
     
     desc = 'pingpong';
@@ -63,7 +60,6 @@ function situations_struct = situate_situation_definitions()
     cur_situation.possible_paths = { ...
         '/Users/Max/Documents/MATLAB/data/situate_images/PingPongLabeled/Labels/', ...
         'C:\Users\LiFamily\Desktop\2016 ASE\PingPongLabeled'};
-    cur_situation.data_path = cur_situation.possible_paths{ find(cellfun(@(x) exist(x,'dir'), cur_situation.possible_paths ), 1 )};
     situations_struct.(desc) = cur_situation;
     
     

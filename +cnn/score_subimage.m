@@ -1,5 +1,7 @@
 function score = score_subimage( image, subimage_xywh, model_ind, d, p )
 
+p.use_nn_model = false;
+
 %     persistent im image_features;
 %     if ~isequal(image, im)
 %         im = image;
