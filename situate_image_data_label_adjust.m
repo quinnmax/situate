@@ -2,10 +2,18 @@ function image_data_out = situate_image_data_label_adjust( image_data_in, p )
 
 
 
-%  label_out = situate_image_data_label_adjust( image_data_in, p );
+% label_out = situate_image_data_label_adjust( image_data_in, p );
 %
 %   add labels_adjusted to the situate_image_data_struct
-%   using the mapping from p.situation_objects_possible_labels to p.situation_objects 
+%   using the mapping from p.situation_objects_possible_labels to
+%   p.situation_objects.
+%
+% If there are multiple final labels to which a raw label can be assigned,
+% then there's a global iteration that changes which it is assigned to.
+% This means if there are two final labels {player1, player2}, and they
+% both accept the same set of raw labels {player front, player back, etc},
+% then the first raw_label will go to player1, and the next to player2,
+% then back to player1.
 
 global assignment_counter
 if isempty(assignment_counter), assignment_counter = 0; end
