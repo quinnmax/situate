@@ -55,8 +55,8 @@ function [] = situate_gui_or_experiment()
     p.rcnn_boxes = false;
     
     % classifier
-        p.classification_method  = 'IOU-oracle';
-        % p.classification_method  = 'CNN-SVM'; % uses Rory's cnn code
+        % p.classification_method  = 'IOU-oracle';
+        p.classification_method  = 'CNN-SVM'; % uses Rory's cnn code
         % p.classification_method  = 'HOG-SVM';
         
     % pipeline
