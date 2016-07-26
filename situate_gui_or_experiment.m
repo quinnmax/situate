@@ -9,9 +9,9 @@ function [] = situate_gui_or_experiment()
     % experimental condition and one fold (as specified in the experimental
     % setup, you can still modify settings in the settings GUI)
 
-    situation = 'dogwalking';
+    % situation = 'dogwalking';
     % situation = 'dogwalking_no_leash';
-    % situation = 'handshaking';
+    situation = 'handshaking';
     % situation = 'pingpong';
     % see situate_situation_definitions to add more
    
@@ -106,7 +106,6 @@ function [] = situate_gui_or_experiment()
     if ~isempty(existing_path_ind) 
         situate_data_path = situations_struct.(situation).possible_paths{existing_path_ind};
     else
-        situate_data_path = [];
         while ~exist('situate_data_path','var') || isempty(situate_data_path) || ~isdir(situate_data_path)
             h = msgbox( ['Select directory containing images of ' situation] );
             uiwait(h);
@@ -269,6 +268,7 @@ function [] = situate_gui_or_experiment()
             % get the label files
             dir_data = dir(fullfile(situate_data_path, '*.labl'));
             fnames_lb = {dir_data.name};
+            assert(~isempty(fnames_lb));
             % get the associated image files
             is_missing_image_file = false(1,length(fnames_lb));
             for fi = 1:length(fnames_lb)
@@ -554,7 +554,7 @@ function [] = situate_gui_or_experiment()
                 'workspace_entry_event_logs', ...
                 'fnames_im_train', 'fnames_im_test',...
                 'fnames_lb_train', 'fnames_lb_test');
-            display(['saved to ' pwd '/' save_fname]);
+            display(['saved to ' save_fname]);
         end
         
     end
