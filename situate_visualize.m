@@ -154,7 +154,9 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
             end
             
         end
-         
+       
+        
+        
     %% draw the box distributions 
    
     if initial_figure_generation || workspace_has_updated || strcmp(situate_visualizer_run_status,'end')
@@ -454,6 +456,12 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
             for wi = 1:size(workspace.boxes_r0rfc0cf,1)
                 label_text = workspace.labels{wi};
                 label_text = [label_text  ': ' sprintf( '%0.2f',workspace.internal_support(wi))];
+                if ~isequal(p.classification_method,'IOU_oracle')
+                    label_text_original = label_text;
+                    label_text = cell(2,1);
+                    label_text{1} = label_text_original;
+                    label_text{2} = ['<gt iou: ' num2str(workspace.GT_IOU(wi)) '>'];
+                end
                 t1 = text( workspace.boxes_r0rfc0cf(wi,3), workspace.boxes_r0rfc0cf(wi,1), label_text);
                 set(t1,'color',[0 0 0]);
                 set(t1,'FontSize',14);

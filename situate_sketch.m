@@ -68,6 +68,8 @@ function [ workspace, d, p, run_data, situate_visualizer_run_status ] = situate_
         end
     end
     
+    
+    
     %% the iteration loop
     
     for iteration = 1:p.num_iterations
@@ -216,6 +218,7 @@ function workspace = workspace_initialize()
     workspace.labels_raw       = {};
     workspace.internal_support = [];
     workspace.total_support    = [];
+    workspace.GT_IOU           = [];
     
 end
 
@@ -246,6 +249,7 @@ function agent = agent_initialize(d,p)
     end
         
 end
+
 
 
 %% eval agent (general, just routing)
@@ -481,7 +485,10 @@ function [workspace,d] = agent_evaluate_builder( agent_pool, agent_index, worksp
             workspace.internal_support(end+1)   = cur_agent.support.internal;
             workspace.total_support(end+1)      = cur_agent.support.total;
             workspace.labels{end+1}             = cur_agent.interest;
+            
             workspace.labels_raw{end+1}         = cur_agent.GT_label_raw;
+            workspace.GT_IOU(end+1)             = cur_agent.support.GROUND_TRUTH;
+            
             object_was_added = true;
             
         otherwise
@@ -489,17 +496,19 @@ function [workspace,d] = agent_evaluate_builder( agent_pool, agent_index, worksp
             if cur_agent.support.total > workspace.total_support(matching_workspace_object_index)
                 
                 % remove the old entry, add the current agent
-                workspace.boxes_r0rfc0cf(matching_workspace_object_index,:)          = [];
+                workspace.boxes_r0rfc0cf(matching_workspace_object_index,:) = [];
                 workspace.internal_support(matching_workspace_object_index) = [];
                 workspace.total_support(matching_workspace_object_index)    = [];
                 workspace.labels(matching_workspace_object_index)           = [];
                 workspace.labels_raw(matching_workspace_object_index)       = [];
+                workspace.GT_IOU(matching_workspace_object_index)           = [];
                 
                 workspace.boxes_r0rfc0cf(end+1,:) = cur_agent.box.r0rfc0cf;
                 workspace.internal_support(end+1) = cur_agent.support.internal;
                 workspace.total_support(end+1)    = cur_agent.support.total;
                 workspace.labels{end+1}           = cur_agent.interest;
                 workspace.labels_raw{end+1}       = cur_agent.GT_label_raw;
+                workspace.GT_IOU(end+1)           = cur_agent.support.GROUND_TRUTH;
                 
                 object_was_added = true;
                 
