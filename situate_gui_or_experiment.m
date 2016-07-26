@@ -1,47 +1,50 @@
 
     
-function [] = situate_gui_or_experiment()
+function [] = situate_gui_or_experiment(experiment_settings)
+% should have an experiment_caller that calls this with arguments for
+% experiment settings
+%   include force_use_of_prebuilt_models
+% p_conditions
+% directory of split files (or a seed value to replicate a split)
+%
+% that way this is just the experiment/gui wrapper, rather than the file that needs to be modified all the time 
 
-% basic setup
 
-    use_gui = false; 
-    % use_gui limits the testing data and the limits the run to one
-    % experimental condition and one fold (as specified in the experimental
-    % setup, you can still modify settings in the settings GUI)
+    if ~exist('experiment_settings','var') || isempty(experiment_settings);
 
-    % situation = 'dogwalking';
-    % situation = 'dogwalking_no_leash';
-    situation = 'handshaking';
-    % situation = 'pingpong';
-    % see situate_situation_definitions to add more
-   
-    experiment_title = 'experiment_name';
+        experiment_settings = [];
+        experiment_settings.use_gui = true;
+        % define known situations, look in experiment_settings.situations_struct
+        % for the options for
+        experiment_settings.situations_struct = situate_situation_definitions();
+        experiment_settings.situation = 'dogwalking'; 
+        experiment_settings.title = 'experiment_name';
+        % if you want to use pre-existing fold files, 
+        % specify a results directory that already exists and has the fold files already present
+        experiment_settings.use_existing_training_testing_split_files  = false;
+
+        experiment_settings.results_directory = fullfile('/Users/',char(java.lang.System.getProperty('user.name')),'/Desktop/', [experiment_settings.title '_' datestr(now,'yyyy.mm.dd.HH.MM.SS')]);
+        if ~exist(experiment_settings.results_directory,'dir'), mkdir(experiment_settings.results_directory); display(['made directory ' experiment_settings.results_directory]); end
+
+        experiment_settings.num_folds = 1;
+        experiment_settings.testing_data_max  = 2;      % empty will use as much as possible given the folds.
+        experiment_settings.training_data_max = 24;     % empty will use as much as possible given the folds. 
+                                        % if you use less than 50, the multivariate normals will probably bust.
+        experiment_settings.run_analysis_after_completion = false;
+
+    end
     
-    % if you want to use pre-existing fold files, 
-    % specify a results directory that already exists and has the fold files already present
-    use_existing_training_testing_split_files = false;
-    
-    % results_directory = 'whatever you want';
-    results_directory = fullfile('/Users/',char(java.lang.System.getProperty('user.name')),'/Desktop/', [experiment_title '_' datestr(now,'yyyy.mm.dd.HH.MM.SS')]);
-    if ~exist(results_directory,'dir'), mkdir(results_directory); display(['made directory ' results_directory]); end
-
-    num_folds = 1;
-    testing_data_max  = 2;      % empty will use as much as possible given the folds.
-    training_data_max = 15;     % empty will use as much as possible given the folds. 
-                                % if you use less than 50, the multivariate normals will probably bust.
-                             
-    run_analysis_after_completion = false;
-
     rng(1);
     %rng('shuffle');
-    
-% make sure the path is set up properly
-    situate_gui_or_experiment_path = fileparts(which('situate_gui_or_experiment'));
-    addpath(fullfile(situate_gui_or_experiment_path));
-    addpath(genpath(fullfile(situate_gui_or_experiment_path, 'tools')));
-    
-    
-    
+
+    % check a little that sub directories are included
+        situate_gui_or_experiment_path = fileparts(which('situate_gui_or_experiment'));
+        cd( situate_gui_or_experiment_path );
+        addpath(fullfile(situate_gui_or_experiment_path));
+        addpath(genpath(fullfile(situate_gui_or_experiment_path, 'tools')));
+
+        
+
 %% shared situate parameteres 
 %   these are the base parameters that can be modified for different
 %   experimental settings. generally the things that will be the same for
@@ -77,7 +80,7 @@ function [] = situate_gui_or_experiment()
         % p.total_support_threshold_2  = .5;  % sufficient detection threshold (ie, good enough to end search for that oject)
 
     % set up visualization parameters
-    if use_gui
+    if experiment_settings.use_gui
         p.show_visualization_on_iteration           = true;
         p.show_visualization_on_iteration_mod       = 1;
         p.show_visualization_on_workspace_change    = false;
@@ -94,20 +97,18 @@ function [] = situate_gui_or_experiment()
     
     
     
-%% situation definitions 
+%% add experiment_settings.situation information to the p structure
 
-    situations_struct = situate_situation_definitions();
-
-    p.situation_objects                 = situations_struct.(situation).situation_objects;
-    p.situation_objects_possible_labels = situations_struct.(situation).situation_objects_possible_labels;
+    p.situation_objects                 = experiment_settings.situations_struct.(experiment_settings.situation).situation_objects;
+    p.situation_objects_possible_labels = experiment_settings.situations_struct.(experiment_settings.situation).situation_objects_possible_labels;
 
     situate_data_path = [];
-    existing_path_ind = find(cellfun( @(x) exist(x,'dir'), situations_struct.(situation).possible_paths ));
+    existing_path_ind = find(cellfun( @(x) exist(x,'dir'), experiment_settings.situations_struct.(experiment_settings.situation).possible_paths ));
     if ~isempty(existing_path_ind) 
-        situate_data_path = situations_struct.(situation).possible_paths{existing_path_ind};
+        situate_data_path = experiment_settings.situations_struct.(experiment_settings.situation).possible_paths{existing_path_ind};
     else
         while ~exist('situate_data_path','var') || isempty(situate_data_path) || ~isdir(situate_data_path)
-            h = msgbox( ['Select directory containing images of ' situation] );
+            h = msgbox( ['Select directory containing images of ' experiment_settings.situation] );
             uiwait(h);
             situate_data_path = uigetdir(pwd); 
         end
@@ -117,7 +118,7 @@ function [] = situate_gui_or_experiment()
 
 %% experimental situate parameters 
 %
-% these are modifications to the shared situation parameters defined above.
+% these are modifications to the shared experiment_settings.situation parameters defined above.
 % anything not specified will use those settings.
 %
 % if using the gui, 
@@ -237,17 +238,17 @@ function [] = situate_gui_or_experiment()
     % training and testing images that are used for learning the
     % conditional model stuff
     
-    if use_existing_training_testing_split_files
+    if experiment_settings.use_existing_training_testing_split_files 
         
         % Load the splits rather than generating new ones
         % edit: currently looks for the existing experiment name in the
         % title of the split file. not sure that that should be necessary.
         % something to think about and adjust in the future
         
-        fnames_splits_train = dir(fullfile(results_directory ,[experiment_title '_fnames_split_*_train.txt']));
-        fnames_splits_test  = dir(fullfile(results_directory, [experiment_title '_fnames_split_*_test.txt' ]));
-        fnames_splits_train = cellfun( @(x) fullfile(results_directory, x), {fnames_splits_train.name}, 'UniformOutput', false );
-        fnames_splits_test  = cellfun( @(x) fullfile(results_directory, x), {fnames_splits_test.name},  'UniformOutput', false );
+        fnames_splits_train = dir(fullfile(experiment_settings.results_directory ,[experiment_settings.title '_fnames_split_*_train.txt']));
+        fnames_splits_test  = dir(fullfile(experiment_settings.results_directory, [experiment_settings.title '_fnames_split_*_test.txt' ]));
+        fnames_splits_train = cellfun( @(x) fullfile(experiment_settings.results_directory, x), {fnames_splits_train.name}, 'UniformOutput', false );
+        fnames_splits_test  = cellfun( @(x) fullfile(experiment_settings.results_directory, x), {fnames_splits_test.name},  'UniformOutput', false );
         assert( length(fnames_splits_train) > 0 );
         assert( length(fnames_splits_train) == length(fnames_splits_test) );
         temp = [];
@@ -261,7 +262,7 @@ function [] = situate_gui_or_experiment()
             data_folds(i).fnames_im_test  = cellfun( @(x) [x(1:end-4) 'jpg'], temp.fnames_lb_test{1},  'UniformOutput', false );
         end
            
-    else % generate splits based on situate_data_path, training_data_max, testing_data_max
+    else % generate splits based on situate_data_path, experiment_settings.training_data_max, experiment_settings.testing_data_max
         
         % generate new splits, and save the files to the split-file directory.
         
@@ -289,11 +290,11 @@ function [] = situate_gui_or_experiment()
         % generate training/testing splits for cross validation
 
             n = length(fnames_lb);
-            step = floor( n / num_folds );
+            step = floor( n / experiment_settings.num_folds );
             fold_inds_start = (0:step:n-step)+1;
             fold_inds_end   = fold_inds_start + step - 1;
-            if ~isempty(testing_data_max) && step > testing_data_max
-                fold_inds_end = fold_inds_start + testing_data_max - 1;
+            if ~isempty(experiment_settings.testing_data_max) && step > experiment_settings.testing_data_max
+                fold_inds_end = fold_inds_start + experiment_settings.testing_data_max - 1;
                 warning('situate_experiment:using subset of available data');
             end
 
@@ -302,30 +303,30 @@ function [] = situate_gui_or_experiment()
             data_folds.fnames_im_test  = [];
             data_folds.fnames_lb_train = [];
             data_folds.fnames_lb_test  = [];
-            data_folds = repmat(data_folds,1,num_folds);
-            for i = 1:num_folds
+            data_folds = repmat(data_folds,1,experiment_settings.num_folds);
+            for i = 1:experiment_settings.num_folds
                 data_folds(i).fnames_lb_test  = fnames_lb( fold_inds_start(i):fold_inds_end(i) );
                 data_folds(i).fnames_lb_train = setdiff( fnames_lb, data_folds(i).fnames_lb_test );
                 data_folds(i).fnames_im_test  = cellfun( @(x) [x(1:end-5) '.jpg'], data_folds(i).fnames_lb_test,  'UniformOutput', false );
                 data_folds(i).fnames_im_train = cellfun( @(x) [x(1:end-5) '.jpg'], data_folds(i).fnames_lb_train, 'UniformOutput', false );
 
-                if exist('training_data_max','var') && ~isempty(training_data_max) && training_data_max > 0
+                if isfield(experiment_settings,'training_data_max') && ~isempty(experiment_settings.training_data_max) && experiment_settings.training_data_max > 0
                     warning('situate is using limited training data');
-                    data_folds(i).fnames_lb_train = data_folds(i).fnames_lb_train(1:training_data_max);
-                    data_folds(i).fnames_im_train = data_folds(i).fnames_im_train(1:training_data_max);
+                    data_folds(i).fnames_lb_train = data_folds(i).fnames_lb_train(1:experiment_settings.training_data_max);
+                    data_folds(i).fnames_im_train = data_folds(i).fnames_im_train(1:experiment_settings.training_data_max);
                 end
 
             end
 
         % save splits to files
-            if ~isdir(results_directory), mkdir(results_directory); end
+            if ~isdir(experiment_settings.results_directory), mkdir(experiment_settings.results_directory); end
             for i = 1:length(data_folds)
-                fname_train_out = fullfile(results_directory, [experiment_title '_fnames_split_' num2str(i,'%02d') '_train.txt']);
+                fname_train_out = fullfile(experiment_settings.results_directory, [experiment_settings.title '_fnames_split_' num2str(i,'%02d') '_train.txt']);
                 fid_train = fopen(fname_train_out,'w+');
                 fprintf(fid_train,'%s\n',data_folds(i).fnames_lb_train{:});
                 fclose(fid_train);
                 
-                fname_test_out  = fullfile(results_directory, [experiment_title '_fnames_split_' num2str(i,'%02d') '_test.txt' ]);
+                fname_test_out  = fullfile(experiment_settings.results_directory, [experiment_settings.title '_fnames_split_' num2str(i,'%02d') '_test.txt' ]);
                 fid_test  = fopen(fname_test_out, 'w+');
                 fprintf(fid_test, '%s\n',data_folds(i).fnames_lb_test{:} );
                 fclose(fid_test);
@@ -338,7 +339,7 @@ function [] = situate_gui_or_experiment()
 %% run the main loop 
 
 
-    for fold_ind = 1:num_folds
+    for fold_ind = 1:experiment_settings.num_folds
         
         learned_stuff = []; % contains everything we gather from training data, so is reset at the start of each fold
         
@@ -366,7 +367,7 @@ function [] = situate_gui_or_experiment()
                 keep_going = true;
                 while keep_going
                     
-                    if use_gui
+                    if experiment_settings.use_gui
                         h = situate_parameters_adjust_gui(cur_experiment_parameters);
                         uiwait(h);
                         if exist('temp_situate_parameters_struct.mat','file')
@@ -432,7 +433,7 @@ function [] = situate_gui_or_experiment()
                                 learned_stuff.cnn_svm_models = load(situate_check_for_existing_model( model_directories_struct.cnn_svm, fnames_lb_train ));
                                 display('loaded saved cnn_svm_model');
                             else
-                                cnn_svm_models.models          = cnn.create_cnn_svm_models(fnames_lb_train, p);
+                                cnn_svm_models.models          = cnn.create_cnn_svm_models_iterative(fnames_lb_train, p);
                                 cnn_svm_models.fnames_lb_train = fnames_lb_train;
                                 saved_model_fname = fullfile(model_directories_struct.cnn_svm, ['cnn_svm_models_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
                                 save( saved_model_fname, '-struct', 'cnn_svm_models' );
@@ -461,7 +462,7 @@ function [] = situate_gui_or_experiment()
                             if exist('faster_rcnn_data_for_fold','var')
                                 % do nothing, it's already been dtrained with this data set
                             else
-                                assert( isequal(situation,'dogwalking') );
+                                assert( isequal(experiment_settings.situation,'dogwalking') );
                                 faster_rcnn_data_raw = load('/Users/Max/Dropbox/situate_snapshot_current/saved_models_rcnn_scores/faster_rcnn_boxes.mat');
                                 last = @(x) x(end);
                                 fnames_im_test_no_path = cellfun( @(x) x( last(strfind(x,filesep()))+1 : end ), fnames_im_test, 'UniformOutput', false );
@@ -501,7 +502,7 @@ function [] = situate_gui_or_experiment()
                     progress(cur_image_ind,length(fnames_im_test),progress_string);
                    
                     % deal with GUI response
-                    if use_gui
+                    if experiment_settings.use_gui
 
                         switch visualizer_status_string
                             case 'restart'
@@ -518,7 +519,7 @@ function [] = situate_gui_or_experiment()
                                 % because we probably killed it with a window close
                         end
 
-                        if cur_image_ind > testing_data_max
+                        if cur_image_ind > experiment_settings.testing_data_max
                             keep_going = false;
                             msgbox('out of testing images');
                         end
@@ -535,18 +536,18 @@ function [] = situate_gui_or_experiment()
                 end
 
                 
-                if use_gui
+                if experiment_settings.use_gui
                     % bail after the first experimental setup if we're using the GUI
                     break;
                 end
 
             end
 
-        if use_gui
+        if experiment_settings.use_gui
             % bail after the first fold if we're using the GUI
             break; 
         else
-            save_fname = fullfile(results_directory, [experiment_title '_split_' num2str(fold_ind,'%02d') '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
+            save_fname = fullfile(experiment_settings.results_directory, [experiment_settings.title '_split_' num2str(fold_ind,'%02d') '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
             save(save_fname, ...
                 'p_conditions', ...
                 'p_conditions_descriptions', ...
@@ -561,8 +562,8 @@ function [] = situate_gui_or_experiment()
     
     
     
-    if run_analysis_after_completion
-        situate_experiment_analysis( results_directory );
+    if experiment_settings.run_analysis_after_completion
+        situate_experiment_analysis( experiment_settings.results_directory );
     end
 
 end

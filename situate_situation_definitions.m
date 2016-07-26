@@ -9,7 +9,6 @@ function situations_struct = situate_situation_definitions()
 % data that should be mapped to that object type. possible paths specifies
 % the directory with images of that situation that will be used in the run
 
-
     cur_situation = [];
     situations_struct = [];
 
@@ -61,7 +60,6 @@ function situations_struct = situate_situation_definitions()
         '/Users/Max/Documents/MATLAB/data/situate_images/PingPongLabeled/Labels/', ...
         'C:\Users\LiFamily\Desktop\2016 ASE\PingPongLabeled'};
     situations_struct.(desc) = cur_situation;
-    
     
 end
     
