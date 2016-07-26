@@ -24,7 +24,7 @@ function [] = situate_gui_or_experiment(experiment_settings)
         experiment_settings.use_existing_training_testing_split_files  = false;
 
         experiment_settings.results_directory = fullfile('/Users/',char(java.lang.System.getProperty('user.name')),'/Desktop/', [experiment_settings.title '_' datestr(now,'yyyy.mm.dd.HH.MM.SS')]);
-        if ~exist(experiment_settings.results_directory,'dir'), mkdir(experiment_settings.results_directory); display(['made directory ' experiment_settings.results_directory]); end
+        if ~exist(experiment_settings.results_directory,'dir') && ~experiment_settings.use_gui, mkdir(experiment_settings.results_directory); display(['made directory ' experiment_settings.results_directory]); end
 
         experiment_settings.num_folds = 1;
         experiment_settings.testing_data_max  = 2;      % empty will use as much as possible given the folds.
