@@ -24,7 +24,7 @@ function [completion_iteration, final_workspace_snippet] = situate_workspace_ent
     workspace_entry_event_log( ~last_detection_inds, : ) = [];
     
     % see if the detection was completed, report time
-    over_threshold_inds = [workspace_entry_event_log{:,4}] >= p.total_support_threshold_2;
+    over_threshold_inds = [workspace_entry_event_log{:,4}] >= p.thresholds.total_support_final;
     found_objects = workspace_entry_event_log( over_threshold_inds, 2 );
     if isequal( length(p.situation_objects) , length(intersect( found_objects, p.situation_objects )) )
         completion_iteration = max( [workspace_entry_event_log{:,1}] );

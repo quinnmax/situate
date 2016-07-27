@@ -1,5 +1,5 @@
 
-function is_complete = situate_situation_found( workspace, parameters_struct )
+function is_complete = situate_situation_found( workspace, p )
     
     % [is_complete, progress] = situate_situation_found( workspace, parameters_struct );
     %   workspace;
@@ -13,10 +13,10 @@ function is_complete = situate_situation_found( workspace, parameters_struct )
 
     is_complete = false;
 
-    committed_objects = workspace.labels( workspace.total_support >= parameters_struct.total_support_threshold_2 );
+    committed_objects = workspace.labels( workspace.total_support >= p.thresholds.total_support_final );
 
     [workspace_counts, workspace_labels] = counts( committed_objects );
-    [situation_counts, situation_labels] = counts( parameters_struct.situation_objects );
+    [situation_counts, situation_labels] = counts( p.situation_objects );
 
     % counts will respond with things in sorted order, so the counts will
     % have to match in order as well. isequal requires order to be correct

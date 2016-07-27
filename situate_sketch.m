@@ -151,7 +151,7 @@ function [ workspace, d, p, run_data, situate_visualizer_run_status ] = situate_
         % to their original priority and continue on.
             if sum( [d.interest_priority] ) == 0
                 for wi = 1:size(workspace.boxes,1)
-                    if workspace.total_support(wi) < p.total_support_threshold_2
+                    if workspace.total_support(wi) < p.thresholds.total_support_final
                         dist_to_adjust = strcmp( workspace.labels{wi}, {d.interest} );
                         d( dist_to_adjust ).interest_priority = p.object_type_priority_before_example_is_found;
                     end
@@ -382,7 +382,7 @@ function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, im, im_
     % see if we can improve the initial box with some tweaking
         
         if p.use_box_adjust ...
-        && cur_agent.support.internal > p.internal_support_threshold
+        && cur_agent.support.internal > p.thresholds.internal_support
     
             cur_box_adjust_model        = d(di).learned_stuff.box_adjust_models;
             num_adjustment_iterations   = 9;
@@ -419,7 +419,7 @@ function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, im, im_
         agent_pool(agent_index) = cur_agent;
         
         % consider adding a reviewer to the pool
-        if cur_agent.support.internal > p.internal_support_threshold
+        if cur_agent.support.internal > p.thresholds.internal_support
             agent_pool(end+1) = cur_agent;
             agent_pool(end).type = 'reviewer';
             agent_pool(end).urgency = p.agent_urgency_defaults.reviewer;
@@ -446,7 +446,7 @@ function [agent_pool] = agent_evaluate_reviewer( agent_pool, agent_index, p, wor
     cur_agent.support.total = cur_agent.support.internal + cur_agent.support.external;
     agent_pool(agent_index) = cur_agent;
 
-    if cur_agent.support.total > p.total_support_threshold_1
+    if cur_agent.support.total > p.thresholds.total_support_provisional
         agent_pool(end+1) = cur_agent;
         agent_pool(end).type = 'builder';
         agent_pool(end).urgency = p.agent_urgency_defaults.builder;

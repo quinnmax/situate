@@ -7,21 +7,16 @@ function p = situate_parameters_initialize()
 
     p = [];
     
-    
     p.use_direct_scout_to_workspace_pipe = true;
     p.refresh_agent_pool_after_workspace_change = true;
-    
     
     p.use_box_adjust = false; % based on Evan's classifiers
     
     p.salience_model = hmaxq_model_initialize();
     p.image_redim_px = 250000;
     
-    
     p.use_direct_scout_to_workspace_pipe = false;
     p.refresh_agent_pool_after_workspace_change = false;
-
-    
     
     % distribution settings
 
@@ -94,6 +89,7 @@ function p = situate_parameters_initialize()
         'conditional_mvn_log_aa' };
     
     % default values
+    
         p.classification_method = 'IOU-oracle';
     
         p.box_method_before_conditioning = 'independent_normals_log_aa';
@@ -135,10 +131,11 @@ function p = situate_parameters_initialize()
         % already been found, and increases the relative likelihood of picking
         % reviewers and builders in the pool.
 
-        p.internal_support_threshold = .25;
-        p.total_support_threshold_1  = .25; % reviewers do nothing, so just passing through.
-        p.total_support_threshold_2  = .5; % reviewers do nothing, so just passing through.
-
+        p.thresholds = [];
+        p.thresholds.internal_support = .25;
+        p.thresholds.total_support_provisional = .25; % (conditioning happens, but search continues)
+        p.thresholds.total_support_final       = .5;  % (search ends)
+        
     % visualization options
 
         p.show_visualization_on_iteration = false;

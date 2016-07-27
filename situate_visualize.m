@@ -435,9 +435,9 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
     
         if ~isempty(workspace)
             
-            point_format_found = 'or';
+            point_format_final = 'or';
             point_format_provisional = 'xr';
-            bounding_box_format_found = 'r';
+            bounding_box_format_final = 'r';
             bounding_box_format_provisional = 'r--';
 
             subplot2(3,sp_cols,1,1,2,3); 
@@ -445,8 +445,8 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
             % draw workspace boxes onto main image
             hold on;
             for wi = 1:size(workspace.boxes_r0rfc0cf,1)
-                if workspace.internal_support(wi) >= p.total_support_threshold_2
-                    UserData.handles(end+1) = draw_box(workspace.boxes_r0rfc0cf(wi,:), 'r0rfc0cf', bounding_box_format_found);
+                if workspace.internal_support(wi) >= p.thresholds.total_support_final
+                    UserData.handles(end+1) = draw_box(workspace.boxes_r0rfc0cf(wi,:), 'r0rfc0cf', bounding_box_format_final);
                 else
                     UserData.handles(end+1) = draw_box(workspace.boxes_r0rfc0cf(wi,:), 'r0rfc0cf', bounding_box_format_provisional);
                 end
@@ -479,9 +479,9 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
             % draw workspace stats onto distributions that generated them
             for wi = 1:size(workspace.boxes_r0rfc0cf,1)
                 
-                if workspace.total_support(wi) >= p.total_support_threshold_2;
-                    point_format = point_format_found;
-                    bounding_box_format = bounding_box_format_found;
+                if workspace.total_support(wi) >= p.thresholds.total_support_final
+                    point_format = point_format_final;
+                    bounding_box_format = bounding_box_format_final;
                 else
                     point_format = point_format_provisional;
                     bounding_box_format = bounding_box_format_provisional;

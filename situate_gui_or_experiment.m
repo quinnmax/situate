@@ -75,9 +75,9 @@ function [] = situate_gui_or_experiment(experiment_settings)
     
     % check-in and tweaking
         p.use_box_adjust = false; % based on Evan's classifiers
-        % p.internal_support_threshold = .25; % scout -> reviewer threshold
-        % p.total_support_threshold_1  = .25; % workspace provisional check-in threshold (search continues)
-        % p.total_support_threshold_2  = .5;  % sufficient detection threshold (ie, good enough to end search for that oject)
+        % p.thresholds.internal_support = .25; % scout -> reviewer threshold
+        % p.thresholds.total_support_provisional = .25; (search continues)
+        % p.thresholds.total_support_final       = .5;  (search ends)
 
     % set up visualization parameters
     if experiment_settings.use_gui
@@ -128,18 +128,6 @@ function [] = situate_gui_or_experiment(experiment_settings)
     p_conditions = [];
     p_conditions_descriptions = {};
     
-%     description = 'rcnn boxes, uniform location, learned boxes, learned conditional models';
-%     temp = p;
-%     temp.rcnn_boxes = true;
-%     temp.location_method_before_conditioning            = 'uniform';
-%     temp.location_method_after_conditioning             = 'mvn_conditional';
-%     temp.box_method_before_conditioning                 = 'independent_normals_log_aa';
-%     temp.box_method_after_conditioning                  = 'conditional_mvn_log_aa';
-%     temp.location_sampling_method_before_conditioning   = 'sampling';
-%     temp.location_sampling_method_after_conditioning    = 'sampling';
-%     p_conditions_descriptions{end+1} = description;
-%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
-
     description = 'salience, normals, learned mvn';
     temp = p;
     temp.location_method_before_conditioning            = 'salience_blurry';
@@ -151,65 +139,6 @@ function [] = situate_gui_or_experiment(experiment_settings)
     p_conditions_descriptions{end+1} = description;
     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
 
-%     description = 'salience, normals, learned mvn (no provisional)';
-%     temp = p;
-%     temp.location_method_before_conditioning            = 'salience_blurry';
-%     temp.location_method_after_conditioning             = 'mvn_conditional_and_salience';
-%     temp.box_method_before_conditioning                 = 'independent_normals_log_aa';
-%     temp.box_method_after_conditioning                  = 'conditional_mvn_log_aa';
-%     temp.location_sampling_method_before_conditioning   = 'sampling';
-%     temp.location_sampling_method_after_conditioning    = 'sampling';
-%     temp.internal_support_threshold = temp.total_support_threshold_2;
-%     temp.total_support_threshold_1  = temp.total_support_threshold_2;
-%     p_conditions_descriptions{end+1} = description;
-%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
-%     
-%     description = 'salience, normals, no mvn';
-%     temp = p;
-%     temp.location_method_before_conditioning            = 'salience_blurry';
-%     temp.location_method_after_conditioning             = 'salience_blurry';
-%     temp.box_method_before_conditioning                 = 'independent_normals_log_aa';
-%     temp.box_method_after_conditioning                  = 'independent_normals_log_aa';
-%     temp.location_sampling_method_before_conditioning   = 'sampling';
-%     temp.location_sampling_method_after_conditioning    = 'sampling';
-%     temp.internal_support_threshold = temp.total_support_threshold_2;
-%     temp.total_support_threshold_1  = temp.total_support_threshold_2;
-%     p_conditions_descriptions{end+1} = description;
-%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
-%
-%     description = 'uniform, normals, learned mvn';
-%     temp = p;
-%     temp.location_method_before_conditioning            = 'uniform';
-%     temp.location_method_after_conditioning             = 'mvn_conditional';
-%     temp.box_method_before_conditioning                 = 'independent_normals_log_aa';
-%     temp.box_method_after_conditioning                  = 'conditional_mvn_log_aa';
-%     temp.location_sampling_method_before_conditioning   = 'sampling';
-%     temp.location_sampling_method_after_conditioning    = 'sampling';
-%     p_conditions_descriptions{end+1} = description;
-%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
-%
-%     description = 'salience, uniform, no mvn';
-%     temp = p;
-%     temp.location_method_before_conditioning            = 'salience_blurry';
-%     temp.location_method_after_conditioning             = 'salience_blurry';
-%     temp.box_method_before_conditioning                 = 'independent_uniform_log_aa';
-%     temp.box_method_after_conditioning                  = 'independent_uniform_log_aa';
-%     temp.location_sampling_method_before_conditioning   = 'sampling';
-%     temp.location_sampling_method_after_conditioning    = 'sampling';
-%     p_conditions_descriptions{end+1} = description;
-%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
-%    
-%     description = 'uniform, normals, no mvn';
-%     temp = p;
-%     temp.location_method_before_conditioning            = 'uniform';
-%     temp.location_method_after_conditioning             = 'uniform';
-%     temp.box_method_before_conditioning                 = 'independent_normals_log_aa';
-%     temp.box_method_after_conditioning                  = 'independent_normals_log_aa';
-%     temp.location_sampling_method_before_conditioning   = 'sampling';
-%     temp.location_sampling_method_after_conditioning    = 'sampling';
-%     p_conditions_descriptions{end+1} = description;
-%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
- 
     description = 'uniform, uniform, no mvn';
     temp = p;
     temp.location_method_before_conditioning            = 'uniform';
@@ -318,18 +247,20 @@ function [] = situate_gui_or_experiment(experiment_settings)
 
             end
 
-        % save splits to files
-            if ~isdir(experiment_settings.results_directory), mkdir(experiment_settings.results_directory); end
-            for i = 1:length(data_folds)
-                fname_train_out = fullfile(experiment_settings.results_directory, [experiment_settings.title '_fnames_split_' num2str(i,'%02d') '_train.txt']);
-                fid_train = fopen(fname_train_out,'w+');
-                fprintf(fid_train,'%s\n',data_folds(i).fnames_lb_train{:});
-                fclose(fid_train);
-                
-                fname_test_out  = fullfile(experiment_settings.results_directory, [experiment_settings.title '_fnames_split_' num2str(i,'%02d') '_test.txt' ]);
-                fid_test  = fopen(fname_test_out, 'w+');
-                fprintf(fid_test, '%s\n',data_folds(i).fnames_lb_test{:} );
-                fclose(fid_test);
+        % save splits to files (if not use gui)
+            if ~experiment_settings.use_gui
+                if ~isdir(experiment_settings.results_directory), mkdir(experiment_settings.results_directory); end
+                for i = 1:length(data_folds)
+                    fname_train_out = fullfile(experiment_settings.results_directory, [experiment_settings.title '_fnames_split_' num2str(i,'%02d') '_train.txt']);
+                    fid_train = fopen(fname_train_out,'w+');
+                    fprintf(fid_train,'%s\n',data_folds(i).fnames_lb_train{:});
+                    fclose(fid_train);
+
+                    fname_test_out  = fullfile(experiment_settings.results_directory, [experiment_settings.title '_fnames_split_' num2str(i,'%02d') '_test.txt' ]);
+                    fid_test  = fopen(fname_test_out, 'w+');
+                    fprintf(fid_test, '%s\n',data_folds(i).fnames_lb_test{:} );
+                    fclose(fid_test);
+                end
             end
            
     end    

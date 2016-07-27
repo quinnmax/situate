@@ -368,8 +368,8 @@ end
         provisional_only_counts = [];
         for oi = 1:length(p.situation_objects)
             zero_iou_counts.(p.situation_objects{oi})           = sum( eq(ending_support{mi}(:,oi), 0 ) );
-            provisional_only_counts.(p.situation_objects{oi})   = sum( lt(ending_support{mi}(:,oi), p.total_support_threshold_2 ) .* gt(ending_support{mi}(:,oi), 0 ) );
-            failures_count.(p.situation_objects{oi})            = sum( lt(ending_support{mi}(:,oi), p.total_support_threshold_2 ) );
+            provisional_only_counts.(p.situation_objects{oi})   = sum( lt(ending_support{mi}(:,oi), p.thresholds.total_support_final) .* gt(ending_support{mi}(:,oi), 0 ) );
+            failures_count.(p.situation_objects{oi})            = sum( lt(ending_support{mi}(:,oi), p.thresholds.total_support_final) );
         end
         
         examples_num_rows = 3;
@@ -387,7 +387,7 @@ end
                 t{2} = sprintf('number images not completed:  %*d', 3, failed_completions );
 
                 for oi = 1:length(p.situation_objects)
-                    t{2+oi} = sprintf('missed %s: %*d', p.situation_objects{oi}, 3, sum(lt(ending_support{mi}(:,oi),p.total_support_threshold_2)) );
+                    t{2+oi} = sprintf('missed %s: %*d', p.situation_objects{oi}, 3, sum(lt(ending_support{mi}(:,oi),p.thresholds.total_support_final)) );
                 end
 
                 h_temp = text(.1,.5,t);
