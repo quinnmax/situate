@@ -17,11 +17,12 @@
 
     % (won't matter if gui is on)
     experiment_settings.num_folds           = 1;
-    experiment_settings.testing_data_max    = 2;  % empty will use as much as possible given the number of folds.
+    experiment_settings.testing_data_max    = 3;  % empty will use as much as possible given the number of folds.
     experiment_settings.training_data_max   = 30; % empty will use as much as possible given the number of folds. (less than 30 migth cause problems)
     
     % (won't matter if gui is on)
     experiment_settings.run_analysis_after_completion = false;
+    
 
 
     
@@ -34,6 +35,7 @@
 % You can also just skip all of this and specify your own directory
 % contiaining images and label files.
 
+    % situate_data_path = '/Users/me/Desktop/something_something/';
     try
         situate_data_path = experiment_settings.situations_struct.(experiment_settings.situation).possible_paths{ find(cellfun( @(x) exist(x,'dir'), experiment_settings.situations_struct.(experiment_settings.situation).possible_paths ),1,'first')};
     catch
@@ -43,14 +45,16 @@
             situate_data_path = uigetdir(pwd); 
         end
     end
-    % situate_data_path = '/Users/me/Desktop/something_something/';
+    
 
 
 
 %% define your training testing splits
-    % split_arg = []; % will use a random seed and make it's own training-testing folds
-    % split_arg = uigetdir(pwd); % specify a directory containing training_testing split files that it will load and use
-    split_arg = 1; % use a specific seed value
+
+    % split_arg = [];                   % will use a random seed and make it's own training-testing folds
+    % split_arg = uigetdir(pwd);        % specify a directory containing training_testing split files that it will load and use
+    % split_arg = 1;                    % use a specific seed value
+    split_arg = '/Users/Max/Dropbox/Projects/situate/split_files_for_existing_models/';
     
 
     
