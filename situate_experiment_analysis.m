@@ -7,7 +7,7 @@ function situate_experiment_analysis( results_directory )
 if ~exist( 'results_directory', 'var' ) || ~isdir(results_directory)
 
     % from a directory
-    results_directory = '/Users/Max/Desktop/experiment_name_22-Jul-2016/';
+    results_directory = '/Users/Max/Desktop/scout_spawning_test_2016.07.27.16.33.15/';
     
 end
 
@@ -83,7 +83,7 @@ proposals_display_limit = 1000;
         required_objects = p_conditions_temp{1}.situation_objects;
     end
     
-    checkin_threshold     = p_conditions_temp{1}.total_support_threshold_2;
+    checkin_threshold     = p_conditions_temp{1}.thresholds.total_support_final;
     detection_times       = inf(   num_methods, num_folds, num_images_per_fold, length(required_objects) );
     detection_sequence    = cell(  num_methods, num_folds, num_images_per_fold, length(required_objects) );
     final_IOUs            = zeros( num_methods, num_folds, num_images_per_fold, length(required_objects) );

@@ -134,18 +134,53 @@ function [ workspace, run_data, situate_visualizer_run_status ] = situate_sketch
             if workspace_object_was_added && situate_situation_found( workspace, p )
                 break; 
             end
-            
-        % see if we should refresh the whole agent pool
-            if p.refresh_agent_pool_after_workspace_change && workspace_object_was_added
-                agent_pool = repmat( agent_initialize(), 0, 1 );
+        
+        % consider spawning nearby scouts on provisional check-in
+            if p.spawn_nearby_scouts_on_provisional_checkin ...
+            && workspace_object_was_added ...
+            && evaluated_agent_snapshot.support.total < p.thresholds.total_support_final
+                agent_pool = spawn_local_scouts( evaluated_agent_snapshot, agent_pool, d );
             end
+            
+        % clean up the agent pool
+            if p.refresh_agent_pool_after_workspace_change && workspace_object_was_added
+                % clear out agents that are looking for objects that have reached final checkin
+                for i = 1:length(workspace.labels)
+                    if workspace.total_support > p.thresholds.total_support_final
+                        interest_to_clear = workspace.labels{i};
+                        inds_to_clear = false(length(agent_pool),1);
+                        for j = 1:length(agent_pool)
+                            if isequal(agent_pool(j).interest,interest_to_clear)
+                                inds_to_clear(j) = true;
+                            end
+                        end
+                        agent_pool(inds_to_clear) = [];
+                    end
+                end
+                % if workspace object was added, we want to make sure that we
+                % keep agents looking for the same interest so our local scouts
+                % don't get killed off. However, if we found something that is
+                % of a different type, we might want to refresh everything else
+                % so it's being sampled from a fresh distribution, and we don't
+                % use too many stale agents
+                inds_to_clear = false(length(agent_pool),1);
+                for j = 1:length(agent_pool)
+                    if ~isequal(evaluated_agent_snapshot.interest, agent_pool(j).interest )
+                        inds_to_clear(j) = true;
+                    end
+                end
+                agent_pool(inds_to_clear) = [];
+            end
+            
+            
+            
             
         % edit: hack adjust to interest priority values.
         %
         % this should only happen if things are tentatively checked into
         % the workspace (for conditioning), aren't being looked for (which
-        % is an option), but are still under the .5 IOU needed to consider
-        % the detection positive
+        % is an option), but are still under the final IOU needed to consider
+        % the detection finished
         %
         % the solution is to just return the tentatively checked-in objects
         % to their original priority and continue on.
@@ -158,7 +193,7 @@ function [ workspace, run_data, situate_visualizer_run_status ] = situate_sketch
                 end
             end
             
-        % if the pool is under size, top off with scouts of default priority
+        % if the pool is under size, top off with default scouts
             while isempty(agent_pool) || sum( strcmp( 'scout', {agent_pool.type} ) ) < p.num_scouts
                 agent_pool(end+1) = agent_initialize(d,p);
             end
@@ -258,8 +293,7 @@ end
 function [agent_pool, d, workspace] = agent_evaluate( agent_pool, agent_index, im, label, d, p, workspace )
 
     agent_pool_initial_length = length(agent_pool);
-    object_was_added = false;
-
+    
     switch( agent_pool(agent_index).type )
         
         case 'scout'
@@ -272,7 +306,7 @@ function [agent_pool, d, workspace] = agent_evaluate( agent_pool, agent_index, i
             % builders modify d by changing the prior on scout interests,
             % and by focusing attention on box sizes and shapes similar to
             % those that have been found to be reasonable so far.
-            [workspace,d] = agent_evaluate_builder( agent_pool, agent_index, workspace, d, p  );
+            [workspace,d,agent_pool] = agent_evaluate_builder( agent_pool, agent_index, workspace, d, p  );
         otherwise
             error('situate_sketch:agent_evaluate:agentTypeUnknown','agent does not have a known type field');
             
@@ -294,12 +328,6 @@ function [agent_pool, d, workspace] = agent_evaluate( agent_pool, agent_index, i
             [workspace, d] = agent_evaluate_builder(  agent_pool, length(agent_pool), workspace, d, p );
             agent_pool([end-1 end]) = [];
         end
-    end
-    
-    if p.refresh_agent_pool_after_workspace_change && object_was_added
-        agent_pool = [];
-        display('agent_pool was flushed');
-        % it'll be refilled with new scouts at the end of the main loop
     end
     
 end
@@ -447,6 +475,7 @@ function [agent_pool] = agent_evaluate_reviewer( agent_pool, agent_index, p, wor
     cur_agent.support.total = cur_agent.support.internal + cur_agent.support.external;
     agent_pool(agent_index) = cur_agent;
 
+    % consider adding a builder to the pool
     if cur_agent.support.total > p.thresholds.total_support_provisional
         agent_pool(end+1) = cur_agent;
         agent_pool(end).type = 'builder';
@@ -459,7 +488,7 @@ end
 
 %% eval builder
 
-function [workspace,d] = agent_evaluate_builder( agent_pool, agent_index, workspace, d, p )
+function [workspace,d,agent_pool] = agent_evaluate_builder( agent_pool, agent_index, workspace, d, p )
  
     % the builder checks to see if a proposed object, which has passed both
     % scout and reviewer processes, is actually an improvement over what
@@ -528,8 +557,137 @@ function [workspace,d] = agent_evaluate_builder( agent_pool, agent_index, worksp
         for di = 1:length(d)
             d(di) = situate_distribution_struct_update( d(di), p, workspace );
         end
-       
+        
     end
+    
+end
+
+
+%% expand on a specific agent
+function agent_pool = spawn_local_scouts( agent_to_expand, agent_pool, d )
+
+    new_agent_template = agent_to_expand;
+    new_agent_template.type = 'scout';
+    new_agent_template.urgency = 5;
+    new_agent_template.support = [];
+    new_agent_template.GT_label_raw = [];
+    
+    box_w  = new_agent_template.box.xywh(3);
+    box_h  = new_agent_template.box.xywh(4);
+    step_w = .15 * box_w;
+    step_h = .15 * box_h;
+    
+    % agent up
+        new_agent = new_agent_template;
+        r0 = new_agent.box.r0rfc0cf(1) - step_h;
+        rf = new_agent.box.r0rfc0cf(2) - step_h;
+        c0 = new_agent.box.r0rfc0cf(3);
+        cf = new_agent.box.r0rfc0cf(4);
+        x  = c0; y  = r0; w  = cf-c0+1; h  = rf-r0+1; xc = x+w/2; yc = y+w/2;
+        new_agent.box.r0rfc0cf = [r0 rf c0 cf];
+        new_agent.box.xywh     = [ x  y  w  h];
+        new_agent.box.xcycwh   = [xc yc  w  h];
+        new_agent.box.aspect_ratio = w/h;
+        new_agent.box.area_ratio   = (w*h) / d(1).image_size_px;
+        agent_pool(end+1) = new_agent;
+        
+    % agent down
+        new_agent = new_agent_template;
+        r0 = new_agent.box.r0rfc0cf(1) + step_h;
+        rf = new_agent.box.r0rfc0cf(2) + step_h;
+        c0 = new_agent.box.r0rfc0cf(3);
+        cf = new_agent.box.r0rfc0cf(4);
+        x  = c0; y  = r0; w  = cf-c0+1; h  = rf-r0+1; xc = x+w/2; yc = y+w/2;
+        new_agent.box.r0rfc0cf = [r0 rf c0 cf];
+        new_agent.box.xywh     = [ x  y  w  h];
+        new_agent.box.xcycwh   = [xc yc  w  h];
+        new_agent.box.aspect_ratio = w/h;
+        new_agent.box.area_ratio   = (w*h) / d(1).image_size_px;
+        agent_pool(end+1) = new_agent;
+        
+    % agent left
+        new_agent = new_agent_template;
+        r0 = new_agent.box.r0rfc0cf(1);
+        rf = new_agent.box.r0rfc0cf(2);
+        c0 = new_agent.box.r0rfc0cf(3) - step_w;
+        cf = new_agent.box.r0rfc0cf(4) - step_h;
+        x  = c0; y  = r0; w  = cf-c0+1; h  = rf-r0+1; xc = x+w/2; yc = y+w/2;
+        new_agent.box.r0rfc0cf = [r0 rf c0 cf];
+        new_agent.box.xywh     = [ x  y  w  h];
+        new_agent.box.xcycwh   = [xc yc  w  h];
+        new_agent.box.aspect_ratio = w/h;
+        new_agent.box.area_ratio   = (w*h) / d(1).image_size_px;
+        agent_pool(end+1) = new_agent;
+        
+    % agent right
+        new_agent = new_agent_template;
+        r0 = new_agent.box.r0rfc0cf(1);
+        rf = new_agent.box.r0rfc0cf(2);
+        c0 = new_agent.box.r0rfc0cf(3) + step_w;
+        cf = new_agent.box.r0rfc0cf(4) + step_h;
+        x  = c0; y  = r0; w  = cf-c0+1; h  = rf-r0+1; xc = x+w/2; yc = y+w/2;
+        new_agent.box.r0rfc0cf = [r0 rf c0 cf];
+        new_agent.box.xywh     = [ x  y  w  h];
+        new_agent.box.xcycwh   = [xc yc  w  h];
+        new_agent.box.aspect_ratio = w/h;
+        new_agent.box.area_ratio   = (w*h) / d(1).image_size_px;
+        agent_pool(end+1) = new_agent;
+        
+    % agent bigger
+        new_agent = new_agent_template;
+        r0 = new_agent.box.r0rfc0cf(1) - step_h/2;
+        rf = new_agent.box.r0rfc0cf(2) + step_h/2;
+        c0 = new_agent.box.r0rfc0cf(3) - step_w/2;
+        cf = new_agent.box.r0rfc0cf(4) + step_w/2;
+        x  = c0; y  = r0; w  = cf-c0+1; h  = rf-r0+1; xc = x+w/2; yc = y+w/2;
+        new_agent.box.r0rfc0cf = [r0 rf c0 cf];
+        new_agent.box.xywh     = [ x  y  w  h];
+        new_agent.box.xcycwh   = [xc yc  w  h];
+        new_agent.box.aspect_ratio = w/h;
+        new_agent.box.area_ratio   = (w*h) / d(1).image_size_px;
+        agent_pool(end+1) = new_agent;
+        
+    % agent smaller
+        new_agent = new_agent_template;
+        r0 = new_agent.box.r0rfc0cf(1) + step_h/2;
+        rf = new_agent.box.r0rfc0cf(2) - step_h/2;
+        c0 = new_agent.box.r0rfc0cf(3) + step_w/2;
+        cf = new_agent.box.r0rfc0cf(4) - step_w/2;
+        x  = c0; y  = r0; w  = cf-c0+1; h  = rf-r0+1; xc = x+w/2; yc = y+w/2;
+        new_agent.box.r0rfc0cf = [r0 rf c0 cf];
+        new_agent.box.xywh     = [ x  y  w  h];
+        new_agent.box.xcycwh   = [xc yc  w  h];
+        new_agent.box.aspect_ratio = w/h;
+        new_agent.box.area_ratio   = (w*h) / d(1).image_size_px;
+        agent_pool(end+1) = new_agent;
+        
+    % agent taller and narrower
+        new_agent = new_agent_template;
+        r0 = new_agent.box.r0rfc0cf(1) - step_h/2;
+        rf = new_agent.box.r0rfc0cf(2) + step_h/2;
+        c0 = new_agent.box.r0rfc0cf(3) + step_w/2;
+        cf = new_agent.box.r0rfc0cf(4) - step_w/2;
+        x  = c0; y  = r0; w  = cf-c0+1; h  = rf-r0+1; xc = x+w/2; yc = y+w/2;
+        new_agent.box.r0rfc0cf = [r0 rf c0 cf];
+        new_agent.box.xywh     = [ x  y  w  h];
+        new_agent.box.xcycwh   = [xc yc  w  h];
+        new_agent.box.aspect_ratio = w/h;
+        new_agent.box.area_ratio   = (w*h) / d(1).image_size_px;
+        agent_pool(end+1) = new_agent;
+        
+    % agent shorter and wider
+        new_agent = new_agent_template;
+        r0 = new_agent.box.r0rfc0cf(1) + step_h/2;
+        rf = new_agent.box.r0rfc0cf(2) - step_h/2;
+        c0 = new_agent.box.r0rfc0cf(3) - step_w/2;
+        cf = new_agent.box.r0rfc0cf(4) + step_w/2;
+        x  = c0; y  = r0; w  = cf-c0+1; h  = rf-r0+1; xc = x+w/2; yc = y+w/2;
+        new_agent.box.r0rfc0cf = [r0 rf c0 cf];
+        new_agent.box.xywh     = [ x  y  w  h];
+        new_agent.box.xcycwh   = [xc yc  w  h];
+        new_agent.box.aspect_ratio = w/h;
+        new_agent.box.area_ratio   = (w*h) / d(1).image_size_px;
+        agent_pool(end+1) = new_agent;
     
 end
 

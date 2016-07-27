@@ -146,13 +146,13 @@ function [] = situate_experiment_helper(experiment_settings, p_conditions, situa
         
         % get current training and testing file names
         
-            %fnames_lb_test  = cellfun( @(x) fullfile(situate_data_path, x), data_folds(fold_ind).fnames_lb_test,  'UniformOutput', false );
+            fnames_lb_test  = cellfun( @(x) fullfile(situate_data_path, x), data_folds(fold_ind).fnames_lb_test,  'UniformOutput', false );
             fnames_im_test  = cellfun( @(x) fullfile(situate_data_path, x), data_folds(fold_ind).fnames_im_test,  'UniformOutput', false );
             fnames_lb_train = cellfun( @(x) fullfile(situate_data_path, x), data_folds(fold_ind).fnames_lb_train, 'UniformOutput', false );
-            %fnames_im_train = cellfun( @(x) fullfile(situate_data_path, x), data_folds(fold_ind).fnames_im_train, 'UniformOutput', false );
+            fnames_im_train = cellfun( @(x) fullfile(situate_data_path, x), data_folds(fold_ind).fnames_im_train, 'UniformOutput', false );
             [~, ~, ~, failed_inds] = situate_validate_training_data( fnames_lb_train, p_conditions(1) );
             fnames_lb_train(failed_inds) = [];
-            %fnames_im_train(failed_inds) = [];
+            fnames_im_train(failed_inds) = [];
             
         % run through experimental settings
         
@@ -163,7 +163,7 @@ function [] = situate_experiment_helper(experiment_settings, p_conditions, situa
 
                 cur_experiment_parameters = p_conditions(experiment_ind);
             
-                learned_stuff = load_or_build_models( cur_experiment_parameters, fnames_lb_train );
+                learned_stuff = load_or_build_models( cur_experiment_parameters, fnames_lb_train, learned_stuff );
                 
                 cur_image_ind  = 1;
                 keep_going = true;
@@ -259,6 +259,7 @@ function [] = situate_experiment_helper(experiment_settings, p_conditions, situa
             % bail after the first fold if we're using the GUI
             break; 
         else
+            p_conditions_descriptions = {p_conditions.description};
             save_fname = fullfile(experiment_settings.results_directory, [experiment_settings.title '_split_' num2str(fold_ind,'%02d') '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
             save(save_fname, ...
                 'p_conditions', ...
@@ -282,9 +283,8 @@ end
 
 
 
-function learned_stuff = load_or_build_models( cur_experiment_parameters, fnames_lb_train )
+function learned_stuff = load_or_build_models( cur_experiment_parameters, fnames_lb_train, learned_stuff )
 
-    
     % if either cnn or box_adjust are being used, check to see that 
     % matconvnet is working properly
         if any(strcmp([ cur_experiment_parameters.classification_method ],'CNN-SVM')) || any([ cur_experiment_parameters.use_box_adjust ])
@@ -321,11 +321,6 @@ function learned_stuff = load_or_build_models( cur_experiment_parameters, fnames
             none_index_for_three_objects = 4;
             learned_stuff.conditional_models_structure.models = learned_stuff.conditional_models_structure.models(:,:,:,none_index_for_three_objects);
         end
-    end
-        
-    % hog svm stuff
-    if strcmp(cur_experiment_parameters.classification_method,'HOG-SVM')
-       
     end
     
     % hog svm models
