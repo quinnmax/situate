@@ -162,7 +162,7 @@
    
    %% run the experiment
    
-   situate_experiment_wrapper(experiment_settings, p_conditions, situate_data_path, split_arg);
+   situate_experiment_helper(experiment_settings, p_conditions, situate_data_path, split_arg);
    
    
    
