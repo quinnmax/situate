@@ -7,6 +7,8 @@ function p = situate_parameters_initialize()
 
     p = [];
     
+    p.description = '';
+    
     p.use_direct_scout_to_workspace_pipe = true;
     p.refresh_agent_pool_after_workspace_change = true;
     

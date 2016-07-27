@@ -1,9 +1,9 @@
 
 
 
-function [ workspace, d, p, run_data, situate_visualizer_run_status ] = situate_sketch( im_fname, p, learned_stuff )
+function [ workspace, run_data, situate_visualizer_run_status ] = situate_sketch( im_fname, p, learned_stuff )
 
-% [ workspace, d, p, run_data, visualizer_status_string ] = situate_sketch( im_fname, p, learned_stuff );
+% [ workspace, run_data, visualizer_status_string ] = situate_sketch( im_fname, p, learned_stuff );
 
 
     
@@ -185,6 +185,7 @@ function [ workspace, d, p, run_data, situate_visualizer_run_status ] = situate_
     run_data.population_count = population_count;
     run_data.agent_pool = agent_pool;
     run_data.workspace_entry_events = workspace_entry_events;
+    run_data.workspace_final = workspace;
       
     if p.show_visualization_on_end
         if ~exist('h','var'), h = []; end
