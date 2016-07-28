@@ -15,6 +15,9 @@ temp = dir(fullfile(results_directory, '*.mat'));
 fn = cellfun( @(x) fullfile(results_directory,x), {temp.name}, 'UniformOutput', false );
 
 
+old_path = 'stash/mm-group/evan/crop_learn/data/PortlandSimpleDogWalking';
+new_path = '/home/rsoiffer/Desktop/Matlab/DogWalkingData/PortlandSimpleDogWalking';
+
 
 % explicit filenames
 % fn  =[];  
@@ -105,6 +108,29 @@ proposals_display_limit = 1000;
         
         [unique_detection_labels,~,label_assignments] = unique( workspace_entry_event_logs{mi,fi,ii}(:,2) );
         was_over_threshold = ge( [workspace_entry_event_logs{mi,fi,ii}{:,4}], checkin_threshold );
+        
+        
+        %Check if it's a valid detection
+        label_file = strrep(fnames_test_images{mi,fi,ii}, '.jpg', '.labl');
+        label_file = strrep(label_file, old_path, new_path);
+        label = situate_image_data_label_adjust(situate_image_data(label_file), p_conditions{mi,fi,ii});
+        workspaces_final{mi,fi,ii}.iou = [];
+
+        for obj = 1:numel(workspaces_final{mi,fi,ii}.labels)
+            obj_type = workspaces_final{mi,fi,ii}.labels(obj);
+            ground_truth_id = find(strcmp(label.labels_adjusted, obj_type), 1);
+            ground_truth_box_xywh = label.boxes_xywh(ground_truth_id, :) * sqrt(p_conditions{mi,fi,ii}.image_redim_px / (0.0 + label.im_w * label.im_h));
+            detection_box_r0rfc0cf = workspaces_final{mi,fi,ii}.boxes_r0rfc0cf(obj, :);
+            detection_box_c0r0cfrf = detection_box_r0rfc0cf([3, 1, 4, 2]);
+            detection_box_xywh = [detection_box_c0r0cfrf(1), detection_box_c0r0cfrf(2), detection_box_c0r0cfrf(3) - detection_box_c0r0cfrf(1), detection_box_c0r0cfrf(4) - detection_box_c0r0cfrf(2)];
+            iou = intersection_over_union_xywh(ground_truth_box_xywh, detection_box_xywh);
+            relevant_detections = strcmp(workspace_entry_event_logs{mi,fi,ii}(:,2), obj_type);
+            was_over_threshold(relevant_detections) = and(was_over_threshold(relevant_detections), iou > .5);
+
+            workspaces_final{mi,fi,ii}.iou(obj) = iou;
+        end
+        
+        
         % if a box is improved, just keep the time for the first acceptable detection
         % so we're just looking for the first detections of each object
         % type (that's over the detection threshold)

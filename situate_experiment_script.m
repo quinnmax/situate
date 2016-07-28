@@ -1,7 +1,13 @@
+%% try to get path in order
+% check a little that sub directories are included
 
+    situate_gui_or_experiment_path = fileparts(which('situate_experiment_script'));
+    cd( situate_gui_or_experiment_path );
+    addpath(fullfile(situate_gui_or_experiment_path));
+    addpath(genpath(fullfile(situate_gui_or_experiment_path, 'tools')));
 
-
-
+   
+   
 %% define experiment settings
 
     experiment_settings = [];
@@ -52,10 +58,10 @@
 %% define your training testing splits
 
     % split_arg = [];                   % will use a random seed and make it's own training-testing folds
+    split_arg = 1;                      % use a specific seed value
     % split_arg = uigetdir(pwd);        % specify a directory containing training_testing split files that it will load and use
-    split_arg = 1;                    % use a specific seed value
     % split_arg = '/Users/Max/Dropbox/Projects/situate/split_files_for_existing_models/';
-    
+    % split_arg = '/home/rsoiffer/Desktop/splits/';
 
     
 %% define situate parameters: shared
@@ -65,8 +71,8 @@
     p.rcnn_boxes = false;
     
     % classifier
-        p.classification_method  = 'IOU-oracle';
-        %p.classification_method  = 'CNN-SVM'; % uses Rory's cnn code
+        %p.classification_method  = 'IOU-oracle';
+        p.classification_method  = 'CNN-SVM'; % uses Rory's cnn code
         %p.classification_method  = 'HOG-SVM';
         
     % pipeline
@@ -147,16 +153,6 @@
     %    set to something present in the method_options arrays. just to
     %    catch typos and stuff here.
     assert( all( arrayfun( @situate_parameters_validate, p_conditions ) ) );
-
-   
-   
-%% try to get path in order
-% check a little that sub directories are included
-
-    situate_gui_or_experiment_path = fileparts(which('situate_experiment_script'));
-    cd( situate_gui_or_experiment_path );
-    addpath(fullfile(situate_gui_or_experiment_path));
-    addpath(genpath(fullfile(situate_gui_or_experiment_path, 'tools')));
 
    
    

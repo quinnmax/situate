@@ -38,6 +38,10 @@
 ehthumbs.db
 Thumbs.db
 
+# Binaries #
+#####################
+*.mat
+
 saved_models_box_adjust
 saved_models_cnn_svm
 saved_models_hog_svm

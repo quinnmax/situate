@@ -47,5 +47,5 @@ saved_models_cnn_svm
 saved_models_hog_svm
 saved_models_rcnn_scores
 fnames_splits
-matconvnet
 
+!+cnn/imagenet-vgg-f.mat
