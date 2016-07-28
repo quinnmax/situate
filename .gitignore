@@ -48,4 +48,8 @@ saved_models_hog_svm
 saved_models_rcnn_scores
 fnames_splits
 matconvnet
+
+# Local experiment scripts #
+############################
 situate_experiment_script.m
+*.pdf
