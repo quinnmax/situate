@@ -53,5 +53,5 @@ fnames_splits
 
 # Local experiment scripts #
 ############################
-situate_experiment_script_mm.m
+situate_experiment_script_*.m
 *.pdf
