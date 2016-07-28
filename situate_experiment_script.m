@@ -53,8 +53,8 @@
 
     % split_arg = [];                   % will use a random seed and make it's own training-testing folds
     % split_arg = uigetdir(pwd);        % specify a directory containing training_testing split files that it will load and use
-    % split_arg = 1;                    % use a specific seed value
-    split_arg = '/Users/Max/Dropbox/Projects/situate/split_files_for_existing_models/';
+    split_arg = 1;                    % use a specific seed value
+    % split_arg = '/Users/Max/Dropbox/Projects/situate/split_files_for_existing_models/';
     
 
     
