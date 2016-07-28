@@ -284,6 +284,7 @@ end
 
 function learned_stuff = load_or_build_models( cur_experiment_parameters, fnames_lb_train )
 
+    learned_stuff = struct();
     
     % if either cnn or box_adjust are being used, check to see that 
     % matconvnet is working properly
@@ -362,12 +363,13 @@ function learned_stuff = load_or_build_models( cur_experiment_parameters, fnames
             possible_paths = {...
                 '/Users/Max/Documents/MATLAB/data/situate_saved_models/cnn_svm/', ...
                 'saved_models_cnn_svm/', ...
+                'default_models_cnn_svm/', ...
                 '+cnn/'};
             existing_model_path_ind = find(cellfun(@(x) exist(x,'dir'),possible_paths), 1, 'first' );
             existing_model_path     = possible_paths{ existing_model_path_ind };
             existing_model_fname    = situate_check_for_existing_model( existing_model_path, fnames_lb_train );
             if ~isempty(existing_model_fname)
-                learned_stuff.hog_svm_models = load(existing_model_fname);
+                learned_stuff.cnn_svm_models = load(existing_model_fname);
                 display('loaded cnn-svm models');
             else
                 display('building cnn-svm models');
