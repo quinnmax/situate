@@ -11,9 +11,9 @@
 %% define experiment settings
 
     experiment_settings = [];
-    experiment_settings.use_gui = true;
+    experiment_settings.use_gui = false;
     
-    experiment_settings.title = 'experiment_name';
+    experiment_settings.title = 'scout_spawning_test';
     experiment_settings.situations_struct = situate_situation_definitions();
     experiment_settings.situation = 'dogwalking'; 
     
@@ -23,18 +23,20 @@
 
     % (won't matter if gui is on)
     experiment_settings.num_folds           = 1;
-    experiment_settings.testing_data_max    = 3;  % empty will use as much as possible given the number of folds.
-    experiment_settings.training_data_max   = 30; % empty will use as much as possible given the number of folds. (less than 30 migth cause problems)
+    experiment_settings.testing_data_max    = 100; % empty will use as much as possible given the number of folds.
+    experiment_settings.training_data_max   = 400; % empty will use as much as possible given the number of folds. (less than 30 migth cause problems)
     
     % (won't matter if gui is on)
-    experiment_settings.run_analysis_after_completion = false;
+    experiment_settings.run_analysis_after_completion = true;
     
 
 
     
 %% set the data directory
-% This is where the images and label files for your experiment should be
-% found. As it is, it'll grab the first existing path from the list of 
+% situate_data_path should point to a directory containing the images and 
+% label files for your experiment. 
+% 
+% As it is, it'll grab the first existing path from the list of 
 % possible paths specified in the situation-definition. You can add 
 % directories to that list in situate_situation_definitions.
 %
@@ -54,8 +56,23 @@
     
 
 
-
 %% define your training testing splits
+% split_arg controls how training-testing splits are generated
+%
+% If split_arg = [], it will pick a random seed and generate random
+% training-testing splits based on the number of training-testing images
+% and folds defined above.
+%
+% If split_arg is a number, that number will be used as a seed value for
+% the randomly generated splits. This makes it easy to reproduce runs if
+% you don't want to re-train models or something.
+%
+% If split_arg is a directory, it will look for training-testing split files
+% in that directory and load them up. The filenames included in the lists
+% should for label files and should be stripped of path information,
+% should have one file name per line, and should have titles like:
+%    *_split_01_test.txt, *_split_01_train.txt
+%    *_split_02_test.txt, *_split_02_train.txt ...
 
     % split_arg = [];                   % will use a random seed and make it's own training-testing folds
     split_arg = 1;                      % use a specific seed value
@@ -63,6 +80,7 @@
     % split_arg = '/Users/Max/Dropbox/Projects/situate/split_files_for_existing_models/';
     % split_arg = '/home/rsoiffer/Desktop/splits/';
 
+    
     
 %% define situate parameters: shared
     
@@ -77,7 +95,7 @@
         
     % pipeline
         % p.num_scouts = 10; % sets how many agents the pool will be initialized with, and how many it will be filled back up to. should probalby be called min_agent_pool_size
-        p.use_direct_scout_to_workspace_pipe = true; % hides stochastic agent stuff a bit, more comparable to other methods     
+        p.use_direct_scout_to_workspace_pipe = false; % hides stochastic agent stuff a bit, more comparable to other methods     
         p.refresh_agent_pool_after_workspace_change = true; % prevents us from evaluating agents from a stale distribution
     
     % object priority
@@ -92,6 +110,9 @@
     
     % check-in and tweaking
         p.use_box_adjust = false; % based on Evan's classifiers
+        
+        p.spawn_nearby_scouts_on_provisional_checkin = false;
+        
         % p.thresholds.internal_support = .25; % scout -> reviewer threshold
         % p.thresholds.total_support_provisional = .25; (search continues)
         % p.thresholds.total_support_final       = .5;  (search ends)
@@ -126,7 +147,8 @@
     p_conditions = [];
     p_conditions_descriptions = {};
     
-    description = 'salience, normals, learned mvn';
+    description = 'salience, normals, learned mvn, spawn nearby scouts';
+    temp.spawn_nearby_scouts_on_provisional_checkin = true;
     temp = p;
     temp.location_method_before_conditioning            = 'salience_blurry';
     temp.location_method_after_conditioning             = 'mvn_conditional_and_salience';
@@ -137,12 +159,13 @@
     temp.description = description;
     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
 
-    description = 'uniform, uniform, no mvn';
+    description = 'salience, normals, learned mvn, no nearby scout spawning';
+    temp.spawn_nearby_scouts_on_provisional_checkin = false;
     temp = p;
-    temp.location_method_before_conditioning            = 'uniform';
-    temp.location_method_after_conditioning             = 'uniform';
-    temp.box_method_before_conditioning                 = 'independent_uniform_log_aa';
-    temp.box_method_after_conditioning                  = 'independent_uniform_log_aa';
+    temp.location_method_before_conditioning            = 'salience_blurry';
+    temp.location_method_after_conditioning             = 'mvn_conditional_and_salience';
+    temp.box_method_before_conditioning                 = 'independent_normals_log_aa';
+    temp.box_method_after_conditioning                  = 'conditional_mvn_log_aa';
     temp.location_sampling_method_before_conditioning   = 'sampling';
     temp.location_sampling_method_after_conditioning    = 'sampling';
     temp.description = description;

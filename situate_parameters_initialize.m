@@ -9,11 +9,16 @@ function p = situate_parameters_initialize()
     
     p.description = '';
     
-    p.use_direct_scout_to_workspace_pipe = true;
-    p.refresh_agent_pool_after_workspace_change = true;
+    % pipeline
+        p.use_direct_scout_to_workspace_pipe = false; % hides stochastic agent stuff a bit, more comparable to other methods     
+        p.agent_pool_cleanup = [];
+        p.agent_pool_cleanup.agents_interested_in_found_objects = true;
+        p.agent_pool_cleanup.agents_with_stale_history = true;
     
-    p.use_box_adjust = false; % based on Evan's classifiers
-    
+        p.use_box_adjust = false;                             % Evan's classifier based method for picking sequential moves
+        p.spawn_nearby_scouts_on_provisional_checkin = false; % Max's agent based method for local search on provisional checkin
+        
+        
     p.salience_model = hmaxq_model_initialize();
     p.image_redim_px = 250000;
     
