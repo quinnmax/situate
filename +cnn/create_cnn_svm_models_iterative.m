@@ -16,15 +16,19 @@ function models = create_cnn_svm_models_iterative( training_images, p )
         
             [positive, negative] = situate_crop_extractor(training_images{imi}, p.situation_objects(type), p, num_negs_per_image);
             
-            positive_features = cnn_features( positive );
-            data(cur_row:cur_row+length(positive)-1,:) = positive_features;
-            labels(cur_row:cur_row+length(positive)-1) = repmat({'pos'},length(positive),1);
-            cur_row = cur_row + length(positive);
+            if ~isempty(positive)
+                positive_features = cnn_features( positive );
+                data(cur_row:cur_row+length(positive)-1,:) = positive_features;
+                labels(cur_row:cur_row+length(positive)-1) = repmat({'pos'},length(positive),1);
+                cur_row = cur_row + length(positive);
+            end
             
-            negative_features = cnn_features( negative );
-            data(cur_row:cur_row+length(negative)-1,:) = negative_features;
-            labels(cur_row:cur_row+length(negative)-1) = repmat({'neg'},length(negative),1);
-            cur_row = cur_row + length(negative);
+            if ~isempty(negative)
+                negative_features = cnn_features( negative );
+                data(cur_row:cur_row+length(negative)-1,:) = negative_features;
+                labels(cur_row:cur_row+length(negative)-1) = repmat({'neg'},length(negative),1);
+                cur_row = cur_row + length(negative);
+            end
             
             progress(imi,length(training_images),'extracting CNN features from images');
             
