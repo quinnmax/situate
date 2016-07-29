@@ -79,7 +79,7 @@
     % split_arg = [];                   
     split_arg = 1;                      
     % split_arg = uigetdir(pwd);        
-    % split_arg = 'default_splits/';
+    % split_arg = 'default_split/';
     
 
     
