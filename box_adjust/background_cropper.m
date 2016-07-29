@@ -23,7 +23,7 @@ function [] = background_cropper(id,object,base_image,x,y,w,h,folder,boxes)
     crops = 1;
     idx = 1;
     tidx = 1;
-    while crops < 5
+    while crops < 7
         crop_box = [x_range(idx),y_range(idx),w_range(idx),h_range(idx)];
         overlap = 0;
         for ii = 1:numel(boxes)
@@ -53,12 +53,23 @@ function [] = background_cropper(id,object,base_image,x,y,w,h,folder,boxes)
             idx = 1;
         end
         if tidx == 1500;
-            width_max = 55;
+            width_max = 35;
             width_min = 25;
-            height_max = 55;
+            height_max = 35;
             height_min = 25;
-            x_range = (im_x-55).*rand(500,1);
-            y_range = (im_y-55).*rand(500,1);
+            x_range = (im_x-35).*rand(500,1);
+            y_range = (im_y-35).*rand(500,1);
+            w_range = (width_max-width_min).*rand(500,1)+width_min;
+            h_range = (height_max-height_min).*rand(500,1)+height_min;
+            idx = 1;
+        end
+        if tidx == 2000;
+            width_max = 25;
+            width_min = 15;
+            height_max = 25;
+            height_min = 15;
+            x_range = (im_x-25).*rand(500,1);
+            y_range = (im_y-25).*rand(500,1);
             w_range = (width_max-width_min).*rand(500,1)+width_min;
             h_range = (height_max-height_min).*rand(500,1)+height_min;
             tidx = 1;

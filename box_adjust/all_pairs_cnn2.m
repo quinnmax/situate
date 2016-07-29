@@ -1,25 +1,21 @@
 % function [] = all_pairs_cnn(fnames,fold)
-	fold = '_external_good';
+	fold = '_background';
 	% fnames = '/stash/mm-group/evan/crop_learn/data/PortlandSimpleDogWalking/fnames_train_full.txt';
 %% train cnn models
 % file_list = dataread('file',fnames,'%s','delimiter','\n');
-base_path = '/stash/mm-group/evan/crop_learn/data/external_crops/train/';
-save_path = '/stash/mm-group/evan/saved_models_box_adjust/';
-% base_path = '~/data/fullset/train/';
-% save_path = '~/saved_models_box_adjust/';
 path_var = {'dog','walker','leash'};
 model_var = {strcat('dog_model_',fold,'.mat'),strcat('walker_model_',fold,'.mat'),strcat('leash_model_',fold,'.mat')};
 for ii = 2
-    orig   = image_files(strcat( base_path, path_var{ii}, '/orig/'));
-    up     = image_files(strcat( base_path, path_var{ii},  '/up/'));
-    down   = image_files(strcat( base_path, path_var{ii},  '/down/'));
-    left   = image_files(strcat( base_path, path_var{ii},  '/left/'));
-    right  = image_files(strcat( base_path, path_var{ii},  '/right/'));
-    expand = image_files(strcat( base_path, path_var{ii},  '/expand/'));
-    shrink = image_files(strcat( base_path, path_var{ii},  '/shrink/'));
-    back   = image_files(strcat( base_path, path_var{ii},  '/background/'));
+    orig   = image_files(strcat( '/stash/mm-group/evan/crop_learn/data/fullset/train/', path_var{ii}, '/orig/'));
+    up     = image_files(strcat( '/stash/mm-group/evan/crop_learn/data/fullset/train/', path_var{ii},  '/up/'));
+    down   = image_files(strcat( '/stash/mm-group/evan/crop_learn/data/fullset/train/', path_var{ii},  '/down/'));
+    left   = image_files(strcat( '/stash/mm-group/evan/crop_learn/data/fullset/train/', path_var{ii},  '/left/'));
+    right  = image_files(strcat( '/stash/mm-group/evan/crop_learn/data/fullset/train/', path_var{ii},  '/right/'));
+    expand = image_files(strcat( '/stash/mm-group/evan/crop_learn/data/fullset/train/', path_var{ii},  '/expand/'));
+    shrink = image_files(strcat( '/stash/mm-group/evan/crop_learn/data/fullset/train/', path_var{ii},  '/shrink/'));
+    back   = image_files(strcat( '/stash/mm-group/evan/crop_learn/data/fullset/train/', path_var{ii},  '/background/'));
 	%%	
-	filenames = [orig,up,down,right,left,shrink,expand,back];
+	filenames = [down,up,left,right,shrink,expand,orig,back];
 	hogs = load_cnn_data(filenames);
 	y = size(hogs);
 	x = size(down);
@@ -51,5 +47,5 @@ for ii = 2
 
 	    clear first second predictions scores label_data hog_data;
 	end
-	save('-v7.3',strcat(save_path,model_var{ii}),'svm_model');
+	save('-v7.3',strcat('/stash/mm-group/evan/saved_models_box_adjust/',model_var(ii)),'svm_model');
 end

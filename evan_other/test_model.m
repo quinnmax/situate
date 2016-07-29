@@ -1,5 +1,6 @@
 %model_var = '/stash/mm-group/evan/saved_models_box_adjust/dog_model_external_2.mat'
-model_var = '/stash/mm-group/evan/crop_learn/models/svm_dog_background?.mat'
+% model_var = '/stash/mm-group/evan/crop_learn/models/svm_dog_background?.mat'
+model_var = '/stash/mm-group/evan/saved_models_box_adjust/walker_model_external_2.mat'
 load(model_var,'svm_model');
 path_var = 'dog';
 
@@ -15,7 +16,7 @@ back = image_files(strcat('/stash/mm-group/evan/crop_learn/data/fullset/test/',p
 
 examples = numel(down)*8;
 
-filenames = [down,up,left,right,shrink,expand,orig,back];
+filenames = [orig,up,down,right,left,shrink,expand,back];
 	hogs = load_cnn_data(filenames);
 	y = size(hogs);
 	x = size(down);
