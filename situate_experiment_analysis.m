@@ -7,7 +7,7 @@ function situate_experiment_analysis( results_directory )
 if ~exist( 'results_directory', 'var' ) || ~isdir(results_directory)
 
     % from a directory
-    results_directory = '/Users/Max/Desktop/experiment_title_2016.07.28.19.43.09/';
+    results_directory = '/Users/Max/Desktop/local_spawning_exp_2016.07.28.22.01.31/';
     
 end
 
@@ -218,9 +218,11 @@ proposals_display_limit = 1000;
     % legend(unique_descriptions(sort_order),'Location','Northeast');
     title_string = 'location prior, box prior, conditioning';
     h_temp = legend(unique_descriptions(display_order),'Location','eastoutside','FontName','FixedWidth');
-    h_temp.Title.String = title_string;
     h_temp.FontSize = 8;
-   
+    try % works in matlab2016a, not 2015 versions apparently
+        h_temp.Title.String = title_string;
+    end
+    
     h2.Position = [440 537 560 220];
     print(h2,fullfile(results_directory,'situate_experiment_figure'),'-r300', '-dpdf' );
      
