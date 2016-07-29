@@ -16,7 +16,7 @@ function progress(i,n,message)
         message = [];
     end
     
-    progress_string = sprintf(['\n\n' message ' %d / %d\n\n'],i,n);
+    progress_string = sprintf(['\n' message ' %d / %d\n'],i,n);
     progress_width = length(progress_string);
     fprintf([backspaces progress_string]);
     

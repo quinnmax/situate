@@ -35,7 +35,7 @@ function h = situate_draw_workspace( input, p, workspace )
     % draw workspace boxes onto image
     for wi = 1:size(workspace.boxes,1)
         % designate under .5 iou boxes with a dashed box
-        if workspace.internal_support(wi) >= p.total_support_threshold_2
+        if workspace.internal_support(wi) >= p.thresholds.total_support_final
             h(end+1) = draw_box(workspace.boxes(wi,:), 'r0rfc0cf', bounding_box_format_found);
         else
             h(end+1) = draw_box(workspace.boxes(wi,:), 'r0rfc0cf', bounding_box_format_provisional);

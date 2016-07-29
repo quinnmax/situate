@@ -127,7 +127,7 @@ function [fig_handle, exit_method] = situate_parameters_adjust_gui(p)
     
     cur_position_ind = 12;
     text_checkin_threshold_1_slider = 'workspace threshold - provisional: ';
-    starting_val = p.total_support_threshold_1;
+    starting_val = p.thresholds.total_support_provisional;
     min_val = 0;
     max_val = 1;
     handles.checkin_threshold_1_text   = uicontrol( 'Style', 'text',   'String',[text_checkin_threshold_1_slider num2str(starting_val)], 'HorizontalAlignment','Left', 'Position', positions(cur_position_ind,:) + [0 20 0 0] );
@@ -136,7 +136,7 @@ function [fig_handle, exit_method] = situate_parameters_adjust_gui(p)
     
     cur_position_ind = 13;
     text_checkin_threshold_2_slider = 'workspace threshold - commit: ';
-    starting_val = p.total_support_threshold_2;
+    starting_val = p.thresholds.total_support_final;
     min_val = 0;
     max_val = 1;
     handles.checkin_threshold_2_text   = uicontrol( 'Style', 'text',   'String',[text_checkin_threshold_2_slider num2str(starting_val)], 'HorizontalAlignment','Left', 'Position', positions(cur_position_ind,:) + [0 20 0 0] );
@@ -177,12 +177,12 @@ function apply_changes( hObject, callbackdata, p, handles  )
 
     p.num_iterations = round( get(handles.agent_iterations_slider,'Value') );
 
-    p.classification_method        = p.classification_options{ get(handles.classification_method,'Value')};
-    p.internal_support_threshold   = get(handles.checkin_threshold_1_slider,'Value');
-    p.total_support_threshold_1    = get(handles.checkin_threshold_1_slider,'Value');
-    p.total_support_threshold_2    = get(handles.checkin_threshold_2_slider,'Value');
+    p.classification_method                 = p.classification_options{ get(handles.classification_method,'Value')};
+    p.thresholds.internal_support           = get(handles.checkin_threshold_1_slider,'Value');
+    p.thresholds.total_support_provisional  = get(handles.checkin_threshold_1_slider,'Value');
+    p.thresholds.total_support_final        = get(handles.checkin_threshold_2_slider,'Value');
     
-    % dumb ol' hack because lordy matlab
+    % edit: dumb ol' hack because lordy matlab
     save('temp_situate_parameters_struct.mat','-struct','p');
     
     close(handles.figure);

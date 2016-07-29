@@ -154,7 +154,9 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
             end
             
         end
-         
+       
+        
+        
     %% draw the box distributions 
    
     if initial_figure_generation || workspace_has_updated || strcmp(situate_visualizer_run_status,'end')
@@ -316,8 +318,6 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
     if ~isempty(cur_agent) && isequal( cur_agent.type, 'scout' )
         
         di = find(strcmp(cur_agent.interest,p.situation_objects));
-        % edit: hack to update the visualization, but not actually coming
-        % from the associated distribution. 
         if length(di) > 1, di = di(randi(length(di))); end
         
         % draw onto main figure
@@ -435,9 +435,9 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
     
         if ~isempty(workspace)
             
-            point_format_found = 'or';
+            point_format_final = 'or';
             point_format_provisional = 'xr';
-            bounding_box_format_found = 'r';
+            bounding_box_format_final = 'r';
             bounding_box_format_provisional = 'r--';
 
             subplot2(3,sp_cols,1,1,2,3); 
@@ -445,8 +445,8 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
             % draw workspace boxes onto main image
             hold on;
             for wi = 1:size(workspace.boxes_r0rfc0cf,1)
-                if workspace.internal_support(wi) >= p.total_support_threshold_2
-                    UserData.handles(end+1) = draw_box(workspace.boxes_r0rfc0cf(wi,:), 'r0rfc0cf', bounding_box_format_found);
+                if workspace.internal_support(wi) >= p.thresholds.total_support_final
+                    UserData.handles(end+1) = draw_box(workspace.boxes_r0rfc0cf(wi,:), 'r0rfc0cf', bounding_box_format_final);
                 else
                     UserData.handles(end+1) = draw_box(workspace.boxes_r0rfc0cf(wi,:), 'r0rfc0cf', bounding_box_format_provisional);
                 end
@@ -456,6 +456,12 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
             for wi = 1:size(workspace.boxes_r0rfc0cf,1)
                 label_text = workspace.labels{wi};
                 label_text = [label_text  ': ' sprintf( '%0.2f',workspace.internal_support(wi))];
+                if ~isequal(p.classification_method,'IOU_oracle')
+                    label_text_original = label_text;
+                    label_text = cell(2,1);
+                    label_text{1} = label_text_original;
+                    label_text{2} = ['<gt iou: ' num2str(workspace.GT_IOU(wi)) '>'];
+                end
                 t1 = text( workspace.boxes_r0rfc0cf(wi,3), workspace.boxes_r0rfc0cf(wi,1), label_text);
                 set(t1,'color',[0 0 0]);
                 set(t1,'FontSize',14);
@@ -473,9 +479,9 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
             % draw workspace stats onto distributions that generated them
             for wi = 1:size(workspace.boxes_r0rfc0cf,1)
                 
-                if workspace.total_support(wi) >= p.total_support_threshold_2;
-                    point_format = point_format_found;
-                    bounding_box_format = bounding_box_format_found;
+                if workspace.total_support(wi) >= p.thresholds.total_support_final
+                    point_format = point_format_final;
+                    bounding_box_format = bounding_box_format_final;
                 else
                     point_format = point_format_provisional;
                     bounding_box_format = bounding_box_format_provisional;
@@ -489,8 +495,6 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
                 area_ratio   = (width * height) / d(1).image_size_px;
  
                 oi = find(strcmp(workspace.labels{wi},p.situation_objects));
-                % edit: hack, only one generated it, and i'm drawing it on a
-                % random one.
                 if length(oi) > 1, oi = oi(randi(length(oi))); end
                 
                 switch d(oi).box_display.method

@@ -7,14 +7,12 @@ function situate_experiment_analysis( results_directory )
 if ~exist( 'results_directory', 'var' ) || ~isdir(results_directory)
 
     % from a directory
-    results_directory = '/Users/Max/Desktop/experiment_name_22-Jul-2016/';
+    results_directory = '/Users/Max/Desktop/local_spawning_exp_2016.07.28.22.01.31/';
     
 end
 
 temp = dir(fullfile(results_directory, '*.mat'));
 fn = cellfun( @(x) fullfile(results_directory,x), {temp.name}, 'UniformOutput', false );
-
-
 
 % explicit filenames
 % fn  =[];  
@@ -36,20 +34,21 @@ proposals_display_limit = 1000;
 
 %% reshaping the data
     
-    
     % gather all p_conditions and p_conditions descriptions
     p_conditions_temp = [];
     p_conditions_descriptions_temp = {};
-    workspace_entry_event_logs_temp = {};
+    scouting_records_temp = {};
     workspaces_final_temp = {};  
     fnames_test_images_temp = {};
+    run_data_temp = {};
     
     for fi = 1:length(fn);
         temp_d = load(fn{fi});
         for j = 1:length(temp_d.p_conditions)
+            run_data_temp{end+1} = temp_d.run_data(j,:);
             p_conditions_temp{end+1} = temp_d.p_conditions(j);
             p_conditions_descriptions_temp{end+1} = temp_d.p_conditions_descriptions{j};
-            workspace_entry_event_logs_temp{end+1} = temp_d.workspace_entry_event_logs(j,:);
+            scouting_records_temp{end+1} = temp_d.scouting_records(j,:);
             workspaces_final_temp{end+1} = {temp_d.workspaces_final{j,:}};
             fnames_test_images_temp{end+1} = temp_d.fnames_im_test;
         end
@@ -68,150 +67,126 @@ proposals_display_limit = 1000;
     
     
     
-    % reshape everything
+    % go from files for folds to indexing
+    % basically just get everything stored into method,fold,image indexing
     
     fnames_test_images         = cell(num_methods, num_folds, num_images_per_fold );
     workspaces_final           = cell(num_methods, num_folds, num_images_per_fold );
-    workspace_entry_event_logs = cell(num_methods, num_folds, num_images_per_fold );
+    scouting_records           = cell(num_methods, num_folds, num_images_per_fold );
     p_conditions_descriptions  = cell(num_methods, num_folds, num_images_per_fold );
     p_conditions               = cell(num_methods, num_folds, num_images_per_fold );
-    
-    if ~isfield( p_conditions_temp{1}, 'situation_objects')
-        required_objects = {'dog','person','leash'};
-        warning('situation_objects not set, using {dog,person,leash}');
-    else
-        required_objects = p_conditions_temp{1}.situation_objects;
-    end
-    
-    checkin_threshold     = p_conditions_temp{1}.total_support_threshold_2;
-    detection_times       = inf(   num_methods, num_folds, num_images_per_fold, length(required_objects) );
-    detection_sequence    = cell(  num_methods, num_folds, num_images_per_fold, length(required_objects) );
-    final_IOUs            = zeros( num_methods, num_folds, num_images_per_fold, length(required_objects) );
-    successful_completion = false( num_methods, num_folds, num_images_per_fold );
     
     for mi = 1:num_methods
         cur_method_linear_inds_list = find(strcmp( p_conditions_descriptions_temp, unique_descriptions{mi} ));
         cur_num_folds = length(cur_method_linear_inds_list);
     for fi = 1:cur_num_folds
         cur_fold_ind = cur_method_linear_inds_list(fi);
-        cur_num_images_in_fold = length(workspace_entry_event_logs_temp{cur_fold_ind});
+        cur_num_images_in_fold = length(scouting_records_temp{cur_fold_ind});
     for ii = 1:cur_num_images_in_fold
         
         fnames_test_images{mi,fi,ii}         = fnames_test_images_temp{           cur_fold_ind }{ii};
         workspaces_final{mi,fi,ii}           = workspaces_final_temp{             cur_fold_ind }{ii};
-        workspace_entry_event_logs{mi,fi,ii} = workspace_entry_event_logs_temp{   cur_fold_ind }{ii};
+        scouting_records{mi,fi,ii}           = scouting_records_temp{             cur_fold_ind }{ii};
         p_conditions_descriptions{mi,fi,ii}  = p_conditions_descriptions_temp{    cur_fold_ind };
-        p_conditions{mi,fi,ii}               = p_conditions_temp{    cur_fold_ind };
+        p_conditions{mi,fi,ii}               = p_conditions_temp{                 cur_fold_ind };
         
-        [unique_detection_labels,~,label_assignments] = unique( workspace_entry_event_logs{mi,fi,ii}(:,2) );
-        was_over_threshold = ge( [workspace_entry_event_logs{mi,fi,ii}{:,4}], checkin_threshold );
-        % if a box is improved, just keep the time for the first acceptable detection
-        % so we're just looking for the first detections of each object
-        % type (that's over the detection threshold)
-        first_detections = inf(1,length(unique_detection_labels));
-        first_detections_labels = cell(1,length(unique_detection_labels));
-        for label_type_ind = 1:length(unique_detection_labels)
-            
-            first_detection_row = find(and( eq(label_assignments,label_type_ind), was_over_threshold' ), 1,'first');
-            if ~isempty(first_detection_row)
-                first_detections(label_type_ind) = workspace_entry_event_logs{mi,fi,ii}{first_detection_row,1};
-                first_detections_labels{label_type_ind} = unique_detection_labels{label_type_ind};
-            else
-                first_detections(label_type_ind) = inf;
-            end
-              
-            final_detection_row = find(eq(label_assignments,label_type_ind),1,'last');
-            final_IOUs(mi,fi,ii,label_type_ind) = workspace_entry_event_logs{mi,fi,ii}{final_detection_row,4};
-            
-        end
-        
-        [first_detections, sort_inds] = sort(first_detections,'ascend');
-        first_detections(end+1:3)     = inf;
-        detection_times(mi,fi,ii,:)   = first_detections;
-        detection_sequence(mi,fi,ii,1:length(sort_inds))  = first_detections_labels(sort_inds);
-        
-        if ~any(cellfun(@isempty, first_detections_labels)) ...
-           && length( intersect( first_detections_labels, required_objects) ) == length(required_objects)
+    end
+    end
+    end
+    
+%% gather some interesting facts
+    
+    % check for successful detections against Ground Truth IOU
+    
+    iou_threshold = .5;
+    successful_completion = false( num_methods, num_folds, num_images_per_fold );
+    for mi = 1:size(workspaces_final,1)
+    for fi = 1:size(workspaces_final,2)
+    for ii = 1:size(workspaces_final,3)
+        if isequal( sort(workspaces_final{mi,fi,ii}.labels), sort(p_conditions{mi,fi,ii}.situation_objects) )...
+        && all(workspaces_final{mi,fi,ii}.GT_IOU >= iou_threshold)
             successful_completion(mi,fi,ii) = true;
-        else
-            successful_completion(mi,fi,ii) = false;
-        end        
+        end
+    end
+    end
+    end
+    
+    % gather data on detection order of objects
+    
+    detection_order_times  = inf(  num_methods, num_folds, num_images_per_fold, length(p_conditions{1,1,1}.situation_objects) );
+    detection_order_labels = cell( num_methods, num_folds, num_images_per_fold, length(p_conditions{1,1,1}.situation_objects) );
+    for mi = 1:size(scouting_records,1)
+    for fi = 1:size(scouting_records,2)
+    for ii = 1:size(scouting_records,3)
+        temp_detection_times = inf(1,length(p_conditions{1,1,1}.situation_objects));
+        situation_objects = p_conditions{mi,fi,ii}.situation_objects;
+        for oi = 1:length(situation_objects)
+            object_label = p_conditions{1,1,1}.situation_objects{oi};
+            workspace_entry_event_inds_object_type    = strcmp(object_label,  scouting_records{mi,fi,ii}(:,2) );
+            workspace_entry_event_inds_over_threshold = ge( round(100*[scouting_records{mi,fi,ii}{:,5}])/100, iou_threshold );
+            a = reshape(workspace_entry_event_inds_object_type,1,[]);
+            b = reshape(workspace_entry_event_inds_over_threshold,1,[]);
+            c = and(a,b);
+            cur_obj_first_detection_ind = find(c,1,'first');
+            if ~isempty(cur_obj_first_detection_ind)
+                temp_detection_times(oi) = scouting_records{mi,fi,ii}{cur_obj_first_detection_ind,1};
+            end
+        end
+        [~,sort_order] = sort(temp_detection_times,'ascend');
+        detection_order_times(mi,fi,ii,:) = temp_detection_times(sort_order);
+        detection_order_labels(mi,fi,ii,:) = situation_objects(sort_order);
+    end
+    end
+    end
         
-    end
-    end
-    end
+    % reshape for detections as a function of number of proposals
     
-    
-    inds_found_object_type = [];
-    for oi = 1:length(required_objects)
-        inds_found_object_type.(required_objects{oi}) = strcmp( detection_sequence, required_objects{oi} );
-    end
-    
-    
-    
-% use min for time to first detections, median for time to second detection, 
-% and max for time to third detection
-    first_detections  = min(     detection_times, [], 4);
-    second_detections = median(  detection_times,     4);
-    third_detections  = max(     detection_times, [], 4);
-    
-  
-        
-    
-% reshape for detections as a function of number of proposals
     max_proposals = max(cellfun( @(x) x.num_iterations, p_conditions_temp));
-    detections_at_num_proposals = zeros( num_methods, num_folds, max_proposals );
-        
+    detections_at_num_proposals = zeros( num_methods, num_folds, max_proposals );    
     for mi = 1:num_methods
     for fi = 1:num_folds
     for ii = 1:num_images_per_fold
-        
-        cur_detection = third_detections(mi,fi,ii);
-        if ~isinf(cur_detection)
+        cur_detection = detection_order_times(mi,fi,ii,end);
+        if ~isinf(cur_detection) && successful_completion(mi,fi,ii)
             detections_at_num_proposals(mi,fi,cur_detection:end) = detections_at_num_proposals(mi,fi,cur_detection:end) + 1;
         end
-        
     end
     end
     end
     
-% get detections as function of proposals, grouped over folds
+    % get detections as function of proposals, grouped over folds
+    
     max_proposals = max(cellfun( @(x) x.num_iterations, p_conditions_temp));
     detections_at_num_proposals_mu    = zeros( num_methods, max_proposals );
     detections_at_num_proposals_sigma = zeros( num_methods, max_proposals );
     for mi = 1:num_methods
-       
         detections_at_num_proposals_mu(mi,:)    = mean( detections_at_num_proposals(mi,:,:) );
         detections_at_num_proposals_sigma(mi,:) = std(  detections_at_num_proposals(mi,:,:) );
-    
     end
     
-    detections_at_num_proposals_sum = sum(detections_at_num_proposals_mu,2);
-    
-    
+    detections_at_num_proposals_total = squeeze( sum(detections_at_num_proposals,2) );
 
-%% define methods to include, set their order, and define the line specifications
+%% define methods to include, set their order, and define the line and color specifications
 
-%include_methods = find([1 1 0, 0 0 1, 0 0 0, 1 1 1, 1]);
-include_methods = find(true(1,length(unique_descriptions)));
+    %include_methods = find([1 1 0, 0 0 1, 0 0 0, 1 1 1, 1]);
+    include_methods = find(true(1,length(unique_descriptions)));
 
-% assign colors to methods
-colors = cool(length(include_methods));
-%colors = color_fade([1 0 1; 0 0 0; 0 .75 0], length(include_methods ) );
-%colors = sqrt(colors);
+    % define color space
+    %colors = cool(length(include_methods));
+    colors = color_fade([1 0 1; 0 0 0; 0 .75 0], length(include_methods ) );
+    colors = sqrt(colors);
 
-linespec = {'-','--','-.'};
-linespec = repmat(linespec,1,ceil(length(include_methods)/length(linespec)));
+    linespec = {'-','--','-.'};
+    linespec = repmat(linespec,1,ceil(length(include_methods)/length(linespec)));
 
-detections_at_num_proposals_squeezed = squeeze(sum(detections_at_num_proposals,  2));
-[~,sort_order] = sort(sum(detections_at_num_proposals_squeezed(:,1:proposals_display_limit),2), 'descend');
+    [~,sort_order] = sort(sum(detections_at_num_proposals_total(:,1:min(proposals_display_limit,size(detections_at_num_proposals_total,2))),2), 'descend');
 
-display_order = [];
-for mi = 1:length(sort_order)
-    if ismember( sort_order(mi), include_methods)
-        display_order = [display_order sort_order(mi)];
+    display_order = [];
+    for mi = 1:length(sort_order)
+        if ismember( sort_order(mi), include_methods)
+            display_order = [display_order sort_order(mi)];
+        end
     end
-end
 
 
 
@@ -220,12 +195,10 @@ end
     h2 = figure();
     h2.Color = [1 1 1];
     hold on;
-    ci = 1; % color index
     
     for i = 1:length(display_order);
-    % for mi = 1:num_methods
         mi = display_order(i);
-        plot( detections_at_num_proposals_squeezed(mi,:), 'Color', colors(i,:), 'LineWidth', 1.25, 'LineStyle', linespec{i} );
+        plot( detections_at_num_proposals_total(mi,:), 'Color', colors(i,:), 'LineWidth', 1.25, 'LineStyle', linespec{i} );
     end
     hold off;
     
@@ -245,23 +218,23 @@ end
     % legend(unique_descriptions(sort_order),'Location','Northeast');
     title_string = 'location prior, box prior, conditioning';
     h_temp = legend(unique_descriptions(display_order),'Location','eastoutside','FontName','FixedWidth');
-    h_temp.Title.String = title_string;
     h_temp.FontSize = 8;
-   
+    try % works in matlab2016a, not 2015 versions apparently
+        h_temp.Title.String = title_string;
+    end
+    
     h2.Position = [440 537 560 220];
-    print(h2,'situate_experiment_figure_2','-r300', '-dpdf' )   
+    print(h2,fullfile(results_directory,'situate_experiment_figure'),'-r300', '-dpdf' );
      
     
     
 %% medians over methods
 
-    detections_at_num_proposals_squeezed = squeeze(sum(detections_at_num_proposals,  2));
-    
     clear temp_a temp_b temp_c
     fprintf('Median time to first detection\n')
     fprintf('  location: box shape; conditioning \n');
     for mi = display_order
-        temp_a = reshape(first_detections(mi,:,:),1,[]);
+        temp_a = reshape(detection_order_times(mi,:,:,1),1,[]);
         temp_b = prctile(temp_a,50);
         fprintf( '  %-50s  ', unique_descriptions{mi} );
         fprintf( '%*.1f\n',10, temp_b );
@@ -272,7 +245,7 @@ end
     fprintf('Median time to second detection \n')
     fprintf('  location: box shape; conditioning \n');
     for mi = display_order
-        temp_a = reshape(second_detections(mi,:,:),1,[]);
+        temp_a = reshape(detection_order_times(mi,:,:,2),1,[]);
         temp_b = prctile( temp_a, 50 );
         fprintf( '  %-50s  ', unique_descriptions{mi} );
         fprintf( '%*.1f\n',10, temp_b );
@@ -283,7 +256,7 @@ end
     fprintf('Median time to third detection \n')
     fprintf('  location: box shape; conditioning \n');
     for mi = display_order
-        temp_a = reshape(third_detections(mi,:,:),1,[]);
+        temp_a = reshape(detection_order_times(mi,:,:,3),1,[]);
         temp_b = prctile( temp_a, 50 );
         fprintf( '  %-50s  ', unique_descriptions{mi} );
         fprintf( '%*.1f\n',10, temp_b );
@@ -294,11 +267,11 @@ end
     fprintf('Median time from first to second detection \n')
     fprintf('  location: box shape; conditioning \n');
     for mi = display_order
-        temp_a = reshape(first_detections(mi,:,:),1,[]);
-        temp_b = reshape(second_detections(mi,:,:),1,[]);
-        miss_list_c = prctile( temp_b - temp_a, 50 );
+        temp_a = reshape(detection_order_times(mi,:,:,1),1,[]);
+        temp_b = reshape(detection_order_times(mi,:,:,2),1,[]);
+        temp_c = prctile( temp_b - temp_a, 50 );
         fprintf( '  %-50s  ', unique_descriptions{mi} );
-        fprintf( '%*.1f\n',10, miss_list_c );
+        fprintf( '%*.1f\n',10, temp_c );
     end
     fprintf('\n\n');
     
@@ -306,11 +279,11 @@ end
     fprintf('Median time from second to third detection \n')
     fprintf('  location: box shape; conditioning \n');
     for mi = display_order
-        temp_a = reshape(second_detections(mi,:,:),1,[]);
-        temp_b = reshape(third_detections(mi,:,:),1,[]);
-        miss_list_c = prctile( temp_b - temp_a, 50 );
+        temp_a = reshape(detection_order_times(mi,:,:,2),1,[]);
+        temp_b = reshape(detection_order_times(mi,:,:,3),1,[]);
+        temp_c = prctile( temp_b - temp_a, 50 );
         fprintf( '  %-50s  ', unique_descriptions{mi} );
-        fprintf( '%*.1f\n',10, miss_list_c );
+        fprintf( '%*.1f\n',10, temp_c );
     end
     fprintf('\n\n');
     
@@ -318,101 +291,144 @@ end
     fprintf('Number of failed detections \n')
     fprintf('  location: box shape; conditioning \n');
     for mi = display_order
-        temp_a = reshape(third_detections(mi,:,:),1,[]);
-        temp_b = sum( gt(temp_a,proposals_display_limit) );
+        temp_a = sum( reshape(successful_completion(mi,:,:),1,[]) );
+        temp_b = numel( successful_completion(mi,:,:) );
+        temp_c = temp_b - temp_a;
         fprintf( '  %-50s  ', unique_descriptions{mi} );
-        fprintf( '%*d\n',10, temp_b );
+        fprintf( '%*d\n',10, temp_c );
     end
     fprintf('\n\n');
  
     
     
 %% report on failed detections
-        
-p = p_conditions{1,1,1};
 
-if ~isfield(p, 'situation_objects')
-    p.situation_objects = required_objects;
-    warning('situation_objects not set, using {dog,person,leash}');
-end
+%     p = p_conditions{1,1,1};
+% 
+%     completion_iteration    = inf( size(scouting_records));
+%     final_workspace_snippet = cell(size(scouting_records));
+%     ending_support = cell(1,size(scouting_records,1));
+%     for mi = 1:size(scouting_records,1) % method
+%     for fi = 1:size(scouting_records,2) % fold
+%     for ii = 1:size(scouting_records,3) % image
+%         [completion_iteration(mi,fi,ii), ...
+%          final_workspace_snippet{mi,fi,ii}] = ...
+%             situate_workspace_entry_event_log_to_completion_time( ...
+%                 scouting_records{mi,fi,ii}, ...
+%                 p, 1000 );
+%     end
+%     end
+%         ending_support{mi} = cell2mat(final_workspace_snippet(mi,:)');
+%     end
 
-completion_iteration    = inf( size(workspace_entry_event_logs));
-final_workspace_snippet = cell(size(workspace_entry_event_logs));
-ending_support = cell(1,size(workspace_entry_event_logs,1));
-for mi = 1:size(workspace_entry_event_logs,1) % method
-for fi = 1:size(workspace_entry_event_logs,2) % fold
-for ii = 1:size(workspace_entry_event_logs,3) % image
-    [completion_iteration(mi,fi,ii), ...
-     final_workspace_snippet{mi,fi,ii}] = ...
-        situate_workspace_entry_event_log_to_completion_time( ...
-            workspace_entry_event_logs{mi,fi,ii}, ...
-            p, 1000 );
-end
-end
-    ending_support{mi} = cell2mat(final_workspace_snippet(mi,:)');
-end
-  
 
 
 %% draw the figures
+% 
+%     % for mi = 1:num_methods
+%     for mi = find(strcmp(unique_descriptions,'salience, learned, yes'));
+% 
+%         failed_completions_logical_index = squeeze(   gt( completion_iteration(mi,:,:),  proposals_display_limit   ) );
+%         failed_completions      = sum( failed_completions_logical_index(:));
+%         [failed_i, failed_j] = find(failed_completions_logical_index);
+% 
+%         failures_count = [];
+%         zero_iou_counts = [];
+%         provisional_only_counts = [];
+%         for oi = 1:length(p.situation_objects)
+%             zero_iou_counts.(p.situation_objects{oi})           = sum( eq(ending_support{mi}(:,oi), 0 ) );
+%             provisional_only_counts.(p.situation_objects{oi})   = sum( lt(ending_support{mi}(:,oi), p.thresholds.total_support_final) .* gt(ending_support{mi}(:,oi), 0 ) );
+%             failures_count.(p.situation_objects{oi})            = sum( lt(ending_support{mi}(:,oi), p.thresholds.total_support_final) );
+%         end
+%         
+%         examples_num_rows = 3;
+%         examples_num_cols = 5;
+%         [miss_list_fi,miss_list_ii] = find(failed_completions_logical_index);
+%         num_examples_per_fig = examples_num_rows * examples_num_cols;
+%         for i = 1:length(miss_list_fi)
+% 
+%             if mod(i,num_examples_per_fig) == 1
+%                 figure;
+%                 subplot2(examples_num_rows + 1,examples_num_cols, 1,1,1,examples_num_cols);
+%                 h = draw_box([0 0 1 1],'xywh');
+%                 t = {};
+%                 t{1} = unique_descriptions{mi};
+%                 t{2} = sprintf('number images not completed:  %*d', 3, failed_completions );
+% 
+%                 for oi = 1:length(p.situation_objects)
+%                     t{2+oi} = sprintf('missed %s: %*d', p.situation_objects{oi}, 3, sum(lt(ending_support{mi}(:,oi),p.thresholds.total_support_final)) );
+%                 end
+% 
+%                 h_temp = text(.1,.5,t);
+%                 h_temp.FontName = 'MonoSpaced';
+%                 h.Parent.Visible = 'off';
+%             end
+% 
+% 
+%             row = floor((mod(i-1,num_examples_per_fig))./examples_num_cols) + 1;
+%             col = mod(i-1,examples_num_cols)+1;
+%             subplot2(examples_num_rows+1,examples_num_cols,row+1,col);
+% 
+%             fi = miss_list_fi(i);
+%             ii = miss_list_ii(i);
+%             cur_im_fname = fnames_test_images{ mi, fi, ii };
+%             cur_workspace = workspaces_final{  mi, fi, ii };
+%             cur_p_struct = p_conditions{ mi,fi, ii };
+%             situate_draw_workspace( cur_im_fname, cur_p_struct, cur_workspace );
+% 
+%         end
+% 
+%         display( unique_descriptions{mi} );
+%         display( {fnames_test_images{failed_completions_logical_index}}' )
+% 
+%     end
 
-    % for mi = 1:num_methods
-    for mi = find(strcmp(unique_descriptions,'salience, learned, yes'));
 
-        failed_completions_logical_index = squeeze(   gt( completion_iteration(mi,:,:),  proposals_display_limit   ) );
-        failed_completions      = sum( failed_completions_logical_index(:));
-        [failed_i, failed_j] = find(failed_completions_logical_index);
-
-        failures_count = [];
-        zero_iou_counts = [];
-        provisional_only_counts = [];
-        for oi = 1:length(p.situation_objects)
-            zero_iou_counts.(p.situation_objects{oi})           = sum( eq(ending_support{mi}(:,oi), 0 ) );
-            provisional_only_counts.(p.situation_objects{oi})   = sum( lt(ending_support{mi}(:,oi), p.total_support_threshold_2 ) .* gt(ending_support{mi}(:,oi), 0 ) );
-            failures_count.(p.situation_objects{oi})            = sum( lt(ending_support{mi}(:,oi), p.total_support_threshold_2 ) );
-        end
-        
-        examples_num_rows = 3;
-        examples_num_cols = 5;
-        [miss_list_fi,miss_list_ii] = find(failed_completions_logical_index);
-        num_examples_per_fig = examples_num_rows * examples_num_cols;
-        for i = 1:length(miss_list_fi)
-
-            if mod(i,num_examples_per_fig) == 1
-                figure;
-                subplot2(examples_num_rows + 1,examples_num_cols, 1,1,1,examples_num_cols);
-                h = draw_box([0 0 1 1],'xywh');
-                t = {};
-                t{1} = unique_descriptions{mi};
-                t{2} = sprintf('number images not completed:  %*d', 3, failed_completions );
-
-                for oi = 1:length(p.situation_objects)
-                    t{2+oi} = sprintf('missed %s: %*d', p.situation_objects{oi}, 3, sum(lt(ending_support{mi}(:,oi),p.total_support_threshold_2)) );
-                end
-
-                h_temp = text(.1,.5,t);
-                h_temp.FontName = 'MonoSpaced';
-                h.Parent.Visible = 'off';
-            end
+end
 
 
-            row = floor((mod(i-1,num_examples_per_fig))./examples_num_cols) + 1;
-            col = mod(i-1,examples_num_cols)+1;
-            subplot2(examples_num_rows+1,examples_num_cols,row+1,col);
 
-            fi = miss_list_fi(i);
-            ii = miss_list_ii(i);
-            cur_im_fname = fnames_test_images{ mi, fi, ii };
-            cur_workspace = workspaces_final{  mi, fi, ii };
-            cur_p_struct = p_conditions{ mi,fi, ii };
-            situate_draw_workspace( cur_im_fname, cur_p_struct, cur_workspace );
 
-        end
 
-        display( unique_descriptions{mi} );
-        display( {fnames_test_images{failed_completions_logical_index}}' )
 
+
+
+
+
+function output = color_fade(colors, n )
+
+    % output = color_fade( n );
+    % output = color_fade(colors, n );
+    %
+    % with one arg, colors will be magenta to green
+
+    
+    if nargin < 2
+        n = colors;
+        colors = [];
+        colors(1,:) = [1 0 1];
+        colors(3,:) = [0 0 0];
+        colors(4,:) = [0 1 0];
     end
+    
+    
+    ns = round(linspace(1,n,size(colors,1)));
+    
+    
+    
+    output = [];
+    for ci = 1:(size(colors,1)-1)
+        
+        cur_steps = ns(ci+1)-ns(ci) + 1;
+        color_temp = [ ...
+            linspace(colors(ci,1),colors(ci+1,1),cur_steps)', ...
+            linspace(colors(ci,2),colors(ci+1,2),cur_steps)', ...
+            linspace(colors(ci,3),colors(ci+1,3),cur_steps)'  ];
+        output = [output; color_temp(1:end-1,:)];
+        
+    end 
+    output = [output; colors(end,:)];
+end
 
 
 
