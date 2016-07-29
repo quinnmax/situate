@@ -183,5 +183,10 @@
    
    
    
-       
-    
+   %% run the analysis
+
+    if experiment_settings.run_analysis_after_completion && ~experiment_settings.use_gui
+        situate_experiment_analysis( experiment_settings.results_directory );
+    end
+
+
