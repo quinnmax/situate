@@ -79,8 +79,8 @@
     % split_arg = [];                   
     split_arg = 1;                      
     % split_arg = uigetdir(pwd);        
-    % split_arg = '/Users/Max/Dropbox/Projects/situate/split_files_for_existing_models/';
-    % split_arg = '/home/rsoiffer/Desktop/splits/';
+    % split_arg = 'default_splits/';
+    
 
     
     
