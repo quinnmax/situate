@@ -29,6 +29,7 @@ function [] = situate_experiment_helper(experiment_settings, p_conditions, situa
     end
     
     
+    
 %% set training and testing sets
   
     fname_blacklist = {}; 
@@ -45,6 +46,8 @@ function [] = situate_experiment_helper(experiment_settings, p_conditions, situa
         % title of the split file. not sure that that should be necessary.
         % something to think about and adjust in the future
         
+        warn_about_data_limits = false;
+        
         fnames_splits_train = dir(fullfile(split_file_directory, '*_fnames_split_*_train.txt'));
         fnames_splits_test  = dir(fullfile(split_file_directory, '*_fnames_split_*_test.txt' ));
         fnames_splits_train = cellfun( @(x) fullfile(split_file_directory, x), {fnames_splits_train.name}, 'UniformOutput', false );
@@ -60,10 +63,22 @@ function [] = situate_experiment_helper(experiment_settings, p_conditions, situa
         temp.fnames_lb_test  = cellfun( @(x) importdata(x, '\n'), fnames_splits_test,  'UniformOutput', false );
         data_folds = [];
         for i = 1:length(temp.fnames_lb_train)
+            
             data_folds(i).fnames_lb_train = temp.fnames_lb_train{i};
             data_folds(i).fnames_lb_test  = temp.fnames_lb_test{i};
             data_folds(i).fnames_im_train = cellfun( @(x) [x(1:end-4) 'jpg'], temp.fnames_lb_train{1}, 'UniformOutput', false );
             data_folds(i).fnames_im_test  = cellfun( @(x) [x(1:end-4) 'jpg'], temp.fnames_lb_test{1},  'UniformOutput', false );
+        
+            if ~isempty(experiment_settings.testing_data_max) && experiment_settings.testing_data_max < length(data_folds(i).fnames_lb_test)
+                data_folds(i).fnames_lb_test = data_folds(i).fnames_lb_test(1:experiment_settings.testing_data_max);
+                data_folds(i).fnames_im_test = data_folds(i).fnames_im_test(1:experiment_settings.testing_data_max);
+                warn_about_data_limits = true;
+            end
+            
+        end
+        
+        if warn_about_data_limits
+            warning(['using specified training data, but limiting testing data to experiment_settings.testing_data_max of: ' num2str(experiment_settings.testing_data_max)]);
         end
            
     else % generate splits based on situate_data_path, experiment_settings.training_data_max, experiment_settings.testing_data_max
