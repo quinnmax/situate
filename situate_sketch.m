@@ -222,11 +222,10 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
             visualization_description = {fname_no_path; [num2str(iteration) '/' num2str(p.num_iterations)]};
             [h, situate_visualizer_run_status] = situate_visualize( h, im, p, d, workspace, [], records.population_count, records.scout_record, visualization_description );
             % interpret closing the window as 'no thank you'
-            if ~ishandle(h), situate_visualizer_run_status = 'stop'; end
-            if strcmp( situate_visualizer_run_status, {'next_image','restart','stop'})
-                situate_visualizer_return_status = situate_visualizer_run_status;
-                return; 
+            if ~ishandle(h), 
+                situate_visualizer_run_status = 'stop'; 
             end
+            situate_visualizer_return_status = situate_visualizer_run_status;
         else
             % we made it through the iteration loop, 
             % if the user doesn't specify some other behavior in the final display,
