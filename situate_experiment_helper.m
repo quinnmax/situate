@@ -173,6 +173,7 @@ function [] = situate_experiment_helper(experiment_settings, p_conditions, situa
             if any(failed_inds)
                 display('the following training images failed validation');
                 display(fnames_lb_train(failed_inds));
+                error('training label files failed validation');
             end
             fnames_lb_train(failed_inds) = [];
             fnames_im_train(failed_inds) = [];
