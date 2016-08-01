@@ -169,7 +169,7 @@ function [] = situate_experiment_helper(experiment_settings, p_conditions, situa
             fnames_im_test  = cellfun( @(x) fullfile(situate_data_path, x), data_folds(fold_ind).fnames_im_test,  'UniformOutput', false );
             fnames_lb_train = cellfun( @(x) fullfile(situate_data_path, x), data_folds(fold_ind).fnames_lb_train, 'UniformOutput', false );
             fnames_im_train = cellfun( @(x) fullfile(situate_data_path, x), data_folds(fold_ind).fnames_im_train, 'UniformOutput', false );
-            [~, ~, ~, failed_inds] = situate_validate_training_data( fnames_lb_train, p_conditions(1) );
+            [fnames_lb_train_pass, fnames_lb_train_fail, exceptions, failed_inds] = situate_validate_training_data( fnames_lb_train, p_conditions(1) );
             if any(failed_inds)
                 display('the following training images failed validation');
                 display(fnames_lb_train(failed_inds));

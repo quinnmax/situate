@@ -19,7 +19,7 @@ function [fnames_lb_train_pass, fnames_lb_train_fail, exceptions, failed_inds] =
             assert( all( image_data(fi).boxes_r0rfc0cf(:,4) <= image_data(fi).im_w ), 'column_final too high' );
             %assert( false, 'test bonk' );
         catch blerg
-            exceptions{fi} = blerg;
+            exceptions{fi}   = blerg;
             failed_inds(fi)  = true;
         end
 
