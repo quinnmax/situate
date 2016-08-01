@@ -292,10 +292,10 @@ function [agent_pool, d, workspace] = agent_evaluate( agent_pool, agent_index, i
         
         case 'scout'
             % scouts modify d by inhibition on return
-            [agent_pool, d] = agent_evaluate_scout( agent_pool, agent_index, im, label, d, p, workspace );
+            [agent_pool, d] = agent_evaluate_scout( agent_pool, agent_index, p, workspace, d, im, label );
         case 'reviewer'
             % reviewers do not modify the distributions
-            [agent_pool] = agent_evaluate_reviewer( agent_pool, agent_index, p, workspace );
+            [agent_pool] = agent_evaluate_reviewer( agent_pool, agent_index, p, workspace, d );
         case 'builder'
             % builders modify d by changing the prior on scout interests,
             % and by focusing attention on box sizes and shapes similar to
@@ -331,7 +331,7 @@ end
 
 %% eval scout
 
-function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, im, im_label, d, p, workspace )     
+function [agent_pool,d] = agent_evaluate_scout(  agent_pool, agent_index, p, workspace, d, im, label )     
 
     cur_agent = agent_pool(agent_index);
     
@@ -456,7 +456,7 @@ end
 %% eval reviewer
 
 
-function [agent_pool] = agent_evaluate_reviewer( agent_pool, agent_index, p, workspace )
+function [agent_pool] = agent_evaluate_reviewer( agent_pool, agent_index, p, workspace, d )
     
     % the reviewer checks to see how compatible a proposed object is with
     % our understanding of the relationships between objects. if the
