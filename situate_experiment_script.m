@@ -86,9 +86,6 @@
         seed_test = now;  % uses current time as the seed, stores it into p_structures
         % seed_test = 1; % will pick something random and store it into the p_structures that are saved off
     
-    
-    
-    
 
     
 %% define situate parameters: shared

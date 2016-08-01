@@ -193,6 +193,8 @@ function [] = situate_experiment_helper(experiment_settings, p_conditions, situa
             
                 learned_stuff = load_or_build_models( cur_experiment_parameters, fnames_lb_train, learned_stuff );
                 
+                progress( 0, length(fnames_im_test),cur_experiment_parameters.description); 
+                
                 cur_image_ind  = 1;
                 keep_going = true;
                 while keep_going
@@ -240,7 +242,7 @@ function [] = situate_experiment_helper(experiment_settings, p_conditions, situa
                     end
                     
                     num_iterations_run = sum(cellfun(@(x) ~isempty(x),{run_data_cur.scout_record.interest}));
-                    progress_string = [p_conditions(experiment_ind).description ', ' num2str(num_iterations_run), ' steps, ' num2str(toc) 's'];
+                    progress_string = [cur_experiment_parameters.description ', ' num2str(num_iterations_run), ' steps, ' num2str(toc) 's'];
                     progress(cur_image_ind,length(fnames_im_test),progress_string);
                    
                     % deal with GUI responses
