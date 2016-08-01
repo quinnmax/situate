@@ -76,13 +76,20 @@
 %    *_split_01_test.txt, *_split_01_train.txt
 %    *_split_02_test.txt, *_split_02_train.txt ...
 
-    % split_arg = [];                   
-    split_arg = 1;                      
-    % split_arg = uigetdir(pwd);        
-    % split_arg = 'default_split/';
+    % seed train
+        % split_arg = now;                   
+        % split_arg = 1;                      
+        % split_arg = uigetdir(pwd);        
+        split_arg = 'default_split/';
+    
+    % seed test
+        seed_test = now;  % uses current time as the seed, stores it into p_structures
+        % seed_test = 1; % will pick something random and store it into the p_structures that are saved off
+    
+    
+    
     
 
-    
     
 %% define situate parameters: shared
     
@@ -132,6 +139,14 @@
         p.show_visualization_on_end                 = false;
         p.start_paused                              = false;
     end
+    
+    % add the seed values to p
+        if ischar(split_arg)
+            p.seed_train = [];
+        elseif isnumeric(split_arg)
+            p.seed_train = split_arg;
+        end
+        p.seed_test  = seed_test;
     
     
     

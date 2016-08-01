@@ -16,7 +16,8 @@ function [] = situate_experiment_helper(experiment_settings, p_conditions, situa
             error('don''t know what to do with that split_arg');
         end
     else
-        rng('shuffle');
+        warning('split_arg_was empty, using current time as rng seed');
+        rng(now);
     end
 
     
@@ -187,6 +188,8 @@ function [] = situate_experiment_helper(experiment_settings, p_conditions, situa
             for experiment_ind = 1:length(p_conditions)
 
                 cur_experiment_parameters = p_conditions(experiment_ind);
+                
+                rng( cur_experiment_parameters.seed_test );
             
                 learned_stuff = load_or_build_models( cur_experiment_parameters, fnames_lb_train, learned_stuff );
                 

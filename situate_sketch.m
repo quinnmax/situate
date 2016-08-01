@@ -375,10 +375,10 @@ function [agent_pool,d] = agent_evaluate_scout(  agent_pool, agent_index, p, wor
     % it for tracking, or if we're using IOU-oracle as our eval method
     
         try
-            relevant_label_ind = find(strcmp(cur_agent.interest,im_label.labels_adjusted),1,'first');
-            ground_truth_box_xywh = im_label.boxes_xywh(relevant_label_ind,:);
+            relevant_label_ind = find(strcmp(cur_agent.interest,label.labels_adjusted),1,'first');
+            ground_truth_box_xywh = label.boxes_xywh(relevant_label_ind,:);
             cur_agent.support.GROUND_TRUTH = intersection_over_union_xywh( cur_agent.box.xywh, ground_truth_box_xywh );
-            cur_agent.GT_label_raw = im_label.labels_raw{relevant_label_ind};
+            cur_agent.GT_label_raw = label.labels_raw{relevant_label_ind};
         catch
            warning('couldn''t find the relevent objects in the label file, so GROUND_TRUTH_IOU won''t work');
         end
@@ -390,9 +390,9 @@ function [agent_pool,d] = agent_evaluate_scout(  agent_pool, agent_index, p, wor
                 model = d(model_ind).learned_stuff.hog_svm_models.models{ model_ind };
                 internal_support_score_function_raw = @(b_xywh) hog_svm.hog_svm_apply( model, im, b_xywh );
             case 'IOU-oracle'
-                relevant_label_ind = find(strcmp(cur_agent.interest,im_label.labels_adjusted),1,'first');
+                relevant_label_ind = find(strcmp(cur_agent.interest,label.labels_adjusted),1,'first');
                 if isempty(relevant_label_ind), error('couldn''t find the relevent object in the label file, so IOU oracle won''t work'); end
-                ground_truth_box_xywh = im_label.boxes_xywh(relevant_label_ind,:);
+                ground_truth_box_xywh = label.boxes_xywh(relevant_label_ind,:);
                 internal_support_score_function_raw = @(b_xywh) intersection_over_union_xywh( b_xywh, ground_truth_box_xywh );
             case 'CNN-SVM'
                 model_ind = find(strcmp(cur_agent.interest, p.situation_objects), 1 );
