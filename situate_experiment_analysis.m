@@ -4,11 +4,11 @@ function situate_experiment_analysis( results_directory )
 
 
 
-if ~exist( 'results_directory', 'var' ) || ~isdir(results_directory)
+while ~exist( 'results_directory', 'var' ) || isempty(results_directory) || ~isdir(results_directory)
 
-    % from a directory
-    results_directory = '/Users/Max/Desktop/local_spawning_exp_2016.07.28.22.01.31/';
-    
+    h = msgbox('Select directory containing the results to analyze');
+    uiwait(h);
+    results_directory = uigetdir(pwd);     
 end
 
 temp = dir(fullfile(results_directory, '*.mat'));

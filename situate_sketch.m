@@ -315,7 +315,7 @@ function [agent_pool, d, workspace] = agent_evaluate( agent_pool, agent_index, i
         % delete both of them, keeping the iteration counter from ticking
         % up any further. The scout will be killed in the iteration loop
         % per usual.
-        [agent_pool] = agent_evaluate_reviewer( agent_pool, length(agent_pool), p, workspace );
+        [agent_pool] = agent_evaluate_reviewer( agent_pool, length(agent_pool), p, workspace, d );
         if isequal(agent_pool(end).type,'reviewer')
             agent_pool(end) = [];
         else
@@ -466,8 +466,19 @@ function [agent_pool] = agent_evaluate_reviewer( agent_pool, agent_index, p, wor
     % made for sure.
     
     cur_agent = agent_pool(agent_index);
-    cur_agent.support.external = 0;
-    cur_agent.support.total = cur_agent.support.internal + cur_agent.support.external;
+    
+    if isfield(p, 'external_support_weight') && p.external_support_weight > 0
+        obj = find(strcmp(p.situation_objects, cur_agent.interest), 1);
+        x = d(obj).location_data(cur_agent.box.xcycwh(2), cur_agent.box.xcycwh(1));
+        m = mean(mean(d(obj).location_data));
+        cur_agent.support.external = .5 ^ (m / x);
+    else
+        cur_agent.support.external = 0;
+        p.external_support_weight = 0;
+    end
+    
+    cur_agent.support.total = cur_agent.support.internal * (1-p.external_support_weight) ...
+                              + cur_agent.support.external * p.external_support_weight;
     agent_pool(agent_index) = cur_agent;
 
     % consider adding a builder to the pool

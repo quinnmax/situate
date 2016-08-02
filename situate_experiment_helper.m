@@ -224,7 +224,8 @@ function [] = situate_experiment_helper(experiment_settings, p_conditions, situa
                     cur_fname_im = fnames_im_test{cur_image_ind};
   
                     if cur_experiment_parameters.rcnn_boxes
-                        assert( isequal(experiment_settings.situation,'dogwalking') );
+                        assert( isequal(experiment_settings.situation,'dogwalking')...
+                            || isequal(experiment_settings.situation,'dogwalking_no_leash'));
                         % grab the rcnn boxes for this particular image
                         faster_rcnn_data          = load_faster_rcnn_data(cur_fname_im);
                         [~,linear_scaling_factor] = imresize_px( imread(cur_fname_im), cur_experiment_parameters.image_redim_px );
@@ -436,11 +437,11 @@ function faster_rcnn_data_for_image = load_faster_rcnn_data(cur_fname_im)
 
     possible_files = { ...
         '/Users/Max/Dropbox/situate_snapshot_current/saved_models_rcnn_scores/faster_rcnn_boxes.mat', ...
-        '/Users/someoneelse/Desktop/whatevs/mat'...
+        '/home/rsoiffer/Desktop/Dropbox/situate_snapshot_current/saved_models_rcnn_scores/faster_rcnn_boxes.mat'...
     };
     
     faster_rcnn_data_raw_ind = find( cellfun( @(x) exist(x,'file'), possible_files ), 1, 'first');
-    faster_rcnn_data_filename = possible_files(faster_rcnn_data_raw_ind);
+    faster_rcnn_data_filename = possible_files{faster_rcnn_data_raw_ind};
     
     [~,file,ext] = fileparts(cur_fname_im);
     cur_fname_im_no_path = [file ext];
@@ -449,8 +450,8 @@ function faster_rcnn_data_for_image = load_faster_rcnn_data(cur_fname_im)
     faster_rcnn_fnames_im  = cellfun( @(x) x( last(strfind(x,filesep()))+1 : end ), faster_rcnn_data_raw.im_names, 'UniformOutput', false );
     ind_keep = find(strcmp( faster_rcnn_fnames_im, cur_fname_im_no_path ));
     faster_rcnn_data_for_image = [];
-    faster_rcnn_data_for_image.boxes_xywh = cellfun( @(x) x(:,1:4), faster_rcnn_data_raw.output(2,ind_keep)', 'UniformOutput', false);
-    faster_rcnn_data_for_image.box_scores = cellfun( @(x) x(:,5),   faster_rcnn_data_raw.output(2,ind_keep)', 'UniformOutput', false);
+    faster_rcnn_data_for_image.boxes_xywh = cell2mat(cellfun( @(x) x(:,1:4), faster_rcnn_data_raw.output(2,ind_keep)', 'UniformOutput', false));
+    faster_rcnn_data_for_image.box_scores = cell2mat(cellfun( @(x) x(:,5),   faster_rcnn_data_raw.output(2,ind_keep)', 'UniformOutput', false));
     faster_rcnn_data_for_image.fnames_im  = faster_rcnn_fnames_im(ind_keep);
 end
 

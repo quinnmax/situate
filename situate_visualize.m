@@ -445,7 +445,7 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
             % draw workspace boxes onto main image
             hold on;
             for wi = 1:size(workspace.boxes_r0rfc0cf,1)
-                if workspace.internal_support(wi) >= p.thresholds.total_support_final
+                if workspace.total_support(wi) >= p.thresholds.total_support_final
                     UserData.handles(end+1) = draw_box(workspace.boxes_r0rfc0cf(wi,:), 'r0rfc0cf', bounding_box_format_final);
                 else
                     UserData.handles(end+1) = draw_box(workspace.boxes_r0rfc0cf(wi,:), 'r0rfc0cf', bounding_box_format_provisional);
@@ -455,7 +455,7 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
             % then draw the text ( so boxes don't cover text )
             for wi = 1:size(workspace.boxes_r0rfc0cf,1)
                 label_text = workspace.labels{wi};
-                label_text = [label_text  ': ' sprintf( '%0.2f',workspace.internal_support(wi))];
+                label_text = [label_text  ': ' sprintf( '%0.2f',workspace.internal_support(wi)) ', ' sprintf( '%0.2f',workspace.total_support(wi))];
                 if ~isequal(p.classification_method,'IOU_oracle')
                     label_text_original = label_text;
                     label_text = cell(2,1);
