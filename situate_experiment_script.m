@@ -12,6 +12,10 @@
    
    
 %% define experiment settings
+%
+% These are some basic settings for the experimental run, relating to
+% whether or not you want to use the GUI, where to save the experiment
+% results, and how many images for training and testing.
 
     experiment_settings = [];
     experiment_settings.use_gui = false;
@@ -20,13 +24,18 @@
     experiment_settings.situations_struct   = situate_situation_definitions();
     experiment_settings.situation           = 'dogwalking'; 
     
-    % (won't matter if gui is on)
+    % results directory
+    %   results won't be saved if gui is on
     experiment_settings.results_directory = fullfile('/Users/',char(java.lang.System.getProperty('user.name')),'/Desktop/', [experiment_settings.title '_' datestr(now,'yyyy.mm.dd.HH.MM.SS')]);
     if ~exist(experiment_settings.results_directory,'dir') && ~experiment_settings.use_gui, mkdir(experiment_settings.results_directory); display(['made results directory ' experiment_settings.results_directory]); end
 
-    % (won't matter if gui is on)
-    experiment_settings.num_folds           = 1;
-    experiment_settings.testing_data_max    = 5; % empty will use as much as possible given the number of folds.
+    % num_folds and training/testing images to use per fold
+    %   num_folds wont' matter if gui is on.
+    %   If testing_data_max or testing_data_min are set to [], then as much
+    %   as possible will be used, given the available data and the number
+    %   of folds.
+    experiment_settings.num_folds           = 1;  % 
+    experiment_settings.testing_data_max    = 5;  % 
     experiment_settings.training_data_max   = 30; % empty will use as much as possible given the number of folds. (less than 30 migth cause problems)
     
     % (won't matter if gui is on)
@@ -35,17 +44,18 @@
 
     
 %% set the data directory
-% situate_data_path should point to a directory containing the images and 
-% label files for your experiment. 
-% 
-% As it is, it'll grab the first existing path from the list of 
-% possible paths specified in the situation-definition. You can add 
-% directories to that list in situate_situation_definitions.
 %
-% You can also just skip all of this and specify your own directory
-% contiaining images and label files.
+% situate_data_path points to a directory containing the images and label 
+% files for your experiment. 
+% 
+% situate_situation_definitions contains a list of possible data paths for
+% each situation. As it is, the first of these paths that exists will be
+% used. If none of them exist, there will be a directory selection popup.
+%
+% Alternatively, you can skip all of this and just specify your own directory
+% contiaining images and label files with:
+% situate_data_path = '/Users/me/Desktop/something_something/';
 
-    % situate_data_path = '/Users/me/Desktop/something_something/';
     try
         situate_data_path = experiment_settings.situations_struct.(experiment_settings.situation).possible_paths{ find(cellfun( @(x) exist(x,'dir'), experiment_settings.situations_struct.(experiment_settings.situation).possible_paths ),1,'first')};
     catch
@@ -59,36 +69,46 @@
 
 
 %% define your training testing splits
-% split_arg controls how training-testing splits are generated
 %
-% If split_arg = [], it will pick a random seed and generate random
-% training-testing splits based on the number of training-testing images
-% and folds defined above.
+% These define how we get our training/testing splits, and lets us control
+% the seed value used at the beginning of each run. The benefit of
+% controlled training/testing splits is that we can re-use the same
+% classifiers. The benefit of controlling the testing seed is that we can
+% reproduce specific runs if they seem to do something interesting.
 %
-% If split_arg is a number, that number will be used as a seed value for
-% the randomly generated splits. This makes it easy to reproduce runs if
-% you don't want to re-train models or something.
+% split_arg is either an integer or a directory 
 %
-% If split_arg is a directory, it will look for training-testing split files
-% in that directory and load them up. The filenames included in the lists
-% should for label files and should be stripped of path information,
-% should have one file name per line, and should have titles like:
-%    *_split_01_test.txt, *_split_01_train.txt
-%    *_split_02_test.txt, *_split_02_train.txt ...
+%   If split_arg is an integer, it will be used as a seed value for the 
+%   randomly generated splits. The value will be stored in
+%   p_conditions.seed_train
+%
+%   If split_arg is a directory, it will look for training-testing split files
+%   in that directory and load them up. Split files in the directory should
+%   have names like:
+%       *_split_01_test.txt, *_split_01_train.txt
+%       *_split_02_test.txt, *_split_02_train.txt ...
+%   and should contain a line separated list of label file names (with no 
+%   path) to use in each split. p_conditions.seed_train will be empty if
+%   you use a directory.
 
     % seed train
-        % split_arg = now;                   
-        % split_arg = 1;                      
-        % split_arg = uigetdir(pwd);        
+        % split_arg = now;
+        % split_arg = 1;
+        % split_arg = uigetdir(pwd);
         split_arg = 'default_split/';
     
     % seed test
         seed_test = now;  % uses current time as the seed, stores it into p_structures
-        % seed_test = 1; % will pick something random and store it into the p_structures that are saved off
+        % seed_test = 1;
     
 
     
 %% define situate parameters: shared
+%
+% These are the shared settings across the different experimental
+% condtions. They can be modified in the next section to compare different
+% running conditions, but in general, these are the things that we haven't
+% been changing very much.
     
     p = situate_parameters_initialize();
     
@@ -149,8 +169,8 @@
     
 %% define siutate parameters: experimental conditions
 %
-% these are modifications to the shared experiment_settings.situation parameters defined above.
-% anything not specified will use those settings.
+% these are modifications to the shared situate parameters defined above.
+% anything not modified will use those settings.
 %
 % if using the gui, 
 % the first setting will be used to populate the gui settings popup, 
@@ -189,13 +209,13 @@
 
    
    
-   %% run the experiment
+%% run the experiment
    
    situate_experiment_helper(experiment_settings, p_conditions, situate_data_path, split_arg);
    
    
    
-   %% run the analysis
+%% run the analysis
 
     if experiment_settings.run_analysis_after_completion && ~experiment_settings.use_gui
         situate_experiment_analysis( experiment_settings.results_directory );

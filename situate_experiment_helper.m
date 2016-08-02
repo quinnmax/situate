@@ -434,9 +434,17 @@ end
 
 function faster_rcnn_data_for_image = load_faster_rcnn_data(cur_fname_im)
 
+    possible_files = { ...
+        '/Users/Max/Dropbox/situate_snapshot_current/saved_models_rcnn_scores/faster_rcnn_boxes.mat', ...
+        '/Users/someoneelse/Desktop/whatevs/mat'...
+    };
+    
+    faster_rcnn_data_raw_ind = find( cellfun( @(x) exist(x,'file'), possible_files ), 1, 'first');
+    faster_rcnn_data_filename = possible_files(faster_rcnn_data_raw_ind);
+    
     [~,file,ext] = fileparts(cur_fname_im);
     cur_fname_im_no_path = [file ext];
-    faster_rcnn_data_raw = load('/Users/Max/Dropbox/situate_snapshot_current/saved_models_rcnn_scores/faster_rcnn_boxes.mat');
+    faster_rcnn_data_raw = load(faster_rcnn_data_filename);
     last = @(x) x(end);
     faster_rcnn_fnames_im  = cellfun( @(x) x( last(strfind(x,filesep()))+1 : end ), faster_rcnn_data_raw.im_names, 'UniformOutput', false );
     ind_keep = find(strcmp( faster_rcnn_fnames_im, cur_fname_im_no_path ));
