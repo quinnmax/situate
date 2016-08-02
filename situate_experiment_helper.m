@@ -190,9 +190,7 @@ function [] = situate_experiment_helper(experiment_settings, p_conditions, situa
                 cur_experiment_parameters = p_conditions(experiment_ind);
                 
                 rng( cur_experiment_parameters.seed_test );
-            
-                learned_stuff = load_or_build_models( cur_experiment_parameters, fnames_lb_train, learned_stuff );
-                
+                            
                 progress( 0, length(fnames_im_test),cur_experiment_parameters.description); 
                 
                 cur_image_ind  = 1;
@@ -219,6 +217,8 @@ function [] = situate_experiment_helper(experiment_settings, p_conditions, situa
                             break;
                         end
                     end
+                    
+                    learned_stuff = load_or_build_models( cur_experiment_parameters, fnames_lb_train, learned_stuff );
                    
                     % run on the current image
                     cur_fname_im = fnames_im_test{cur_image_ind};
