@@ -3,6 +3,8 @@
 function situate_experiment_analysis( results_directory )
 
 
+show_failures = true;
+
 
 while ~exist( 'results_directory', 'var' ) || isempty(results_directory) || ~isdir(results_directory)
 
@@ -252,16 +254,16 @@ proposals_display_limit = 1000;
     end
     fprintf('\n\n');
     
-    clear temp_a temp_b temp_c
-    fprintf('Median time to third detection \n')
-    fprintf('  location: box shape; conditioning \n');
-    for mi = display_order
-        temp_a = reshape(detection_order_times(mi,:,:,3),1,[]);
-        temp_b = prctile( temp_a, 50 );
-        fprintf( '  %-50s  ', unique_descriptions{mi} );
-        fprintf( '%*.1f\n',10, temp_b );
-    end
-    fprintf('\n\n');
+%     clear temp_a temp_b temp_c
+%     fprintf('Median time to third detection \n')
+%     fprintf('  location: box shape; conditioning \n');
+%     for mi = display_order
+%         temp_a = reshape(detection_order_times(mi,:,:,3),1,[]);
+%         temp_b = prctile( temp_a, 50 );
+%         fprintf( '  %-50s  ', unique_descriptions{mi} );
+%         fprintf( '%*.1f\n',10, temp_b );
+%     end
+%     fprintf('\n\n');
     
     clear temp_a temp_b temp_c
     fprintf('Median time from first to second detection \n')
@@ -275,17 +277,17 @@ proposals_display_limit = 1000;
     end
     fprintf('\n\n');
     
-    clear temp_a temp_b temp_c
-    fprintf('Median time from second to third detection \n')
-    fprintf('  location: box shape; conditioning \n');
-    for mi = display_order
-        temp_a = reshape(detection_order_times(mi,:,:,2),1,[]);
-        temp_b = reshape(detection_order_times(mi,:,:,3),1,[]);
-        temp_c = prctile( temp_b - temp_a, 50 );
-        fprintf( '  %-50s  ', unique_descriptions{mi} );
-        fprintf( '%*.1f\n',10, temp_c );
-    end
-    fprintf('\n\n');
+%     clear temp_a temp_b temp_c
+%     fprintf('Median time from second to third detection \n')
+%     fprintf('  location: box shape; conditioning \n');
+%     for mi = display_order
+%         temp_a = reshape(detection_order_times(mi,:,:,2),1,[]);
+%         temp_b = reshape(detection_order_times(mi,:,:,3),1,[]);
+%         temp_c = prctile( temp_b - temp_a, 50 );
+%         fprintf( '  %-50s  ', unique_descriptions{mi} );
+%         fprintf( '%*.1f\n',10, temp_c );
+%     end
+%     fprintf('\n\n');
     
     clear temp_a temp_b temp_c
     fprintf('Number of failed detections \n')
@@ -303,86 +305,89 @@ proposals_display_limit = 1000;
     
 %% report on failed detections
 
-%     p = p_conditions{1,1,1};
-% 
-%     completion_iteration    = inf( size(scouting_records));
-%     final_workspace_snippet = cell(size(scouting_records));
-%     ending_support = cell(1,size(scouting_records,1));
-%     for mi = 1:size(scouting_records,1) % method
-%     for fi = 1:size(scouting_records,2) % fold
-%     for ii = 1:size(scouting_records,3) % image
-%         [completion_iteration(mi,fi,ii), ...
-%          final_workspace_snippet{mi,fi,ii}] = ...
-%             situate_workspace_entry_event_log_to_completion_time( ...
-%                 scouting_records{mi,fi,ii}, ...
-%                 p, 1000 );
-%     end
-%     end
-%         ending_support{mi} = cell2mat(final_workspace_snippet(mi,:)');
-%     end
+    p = p_conditions{1,1,1};
+
+    completion_iteration    = inf( size(scouting_records));
+    final_workspace_snippet = cell(size(scouting_records));
+    ending_support = cell(1,size(scouting_records,1));
+    for mi = 1:size(scouting_records,1) % method
+    for fi = 1:size(scouting_records,2) % fold
+    for ii = 1:size(scouting_records,3) % image
+        [completion_iteration(mi,fi,ii), ...
+         final_workspace_snippet{mi,fi,ii}] = ...
+            situate_workspace_entry_event_log_to_completion_time( ...
+                scouting_records{mi,fi,ii}, ...
+                p, 1000 );
+    end
+    end
+        ending_support{mi} = cell2mat(final_workspace_snippet(mi,:)');
+    end
 
 
 
 %% draw the figures
 % 
-%     % for mi = 1:num_methods
-%     for mi = find(strcmp(unique_descriptions,'salience, learned, yes'));
-% 
-%         failed_completions_logical_index = squeeze(   gt( completion_iteration(mi,:,:),  proposals_display_limit   ) );
-%         failed_completions      = sum( failed_completions_logical_index(:));
-%         [failed_i, failed_j] = find(failed_completions_logical_index);
-% 
-%         failures_count = [];
-%         zero_iou_counts = [];
-%         provisional_only_counts = [];
-%         for oi = 1:length(p.situation_objects)
-%             zero_iou_counts.(p.situation_objects{oi})           = sum( eq(ending_support{mi}(:,oi), 0 ) );
-%             provisional_only_counts.(p.situation_objects{oi})   = sum( lt(ending_support{mi}(:,oi), p.thresholds.total_support_final) .* gt(ending_support{mi}(:,oi), 0 ) );
-%             failures_count.(p.situation_objects{oi})            = sum( lt(ending_support{mi}(:,oi), p.thresholds.total_support_final) );
-%         end
-%         
-%         examples_num_rows = 3;
-%         examples_num_cols = 5;
-%         [miss_list_fi,miss_list_ii] = find(failed_completions_logical_index);
-%         num_examples_per_fig = examples_num_rows * examples_num_cols;
-%         for i = 1:length(miss_list_fi)
-% 
-%             if mod(i,num_examples_per_fig) == 1
+if show_failures
+    for mi = 1:num_methods
+    % for mi = find(strcmp(unique_descriptions,'salience, learned, yes'));
+
+        failed_completions_logical_index = squeeze(   gt( completion_iteration(mi,:,:),  proposals_display_limit   ) );
+        failed_completions      = sum( failed_completions_logical_index(:));
+        [failed_i, failed_j] = find(failed_completions_logical_index);
+
+        failures_count = [];
+        zero_iou_counts = [];
+        provisional_only_counts = [];
+        for oi = 1:length(p.situation_objects)
+            zero_iou_counts.(p.situation_objects{oi})           = sum( eq(ending_support{mi}(:,oi), 0 ) );
+            provisional_only_counts.(p.situation_objects{oi})   = sum( lt(ending_support{mi}(:,oi), p.thresholds.total_support_final) .* gt(ending_support{mi}(:,oi), 0 ) );
+            failures_count.(p.situation_objects{oi})            = sum( lt(ending_support{mi}(:,oi), p.thresholds.total_support_final) );
+        end
+        
+        examples_num_rows = 3;
+        examples_num_cols = 5;
+        [miss_list_ii,miss_list_fi] = find(failed_completions_logical_index);
+        num_examples_per_fig = examples_num_rows * examples_num_cols;
+        for i = 1:length(miss_list_fi)
+
+            if mod(i,num_examples_per_fig) == 1
 %                 figure;
 %                 subplot2(examples_num_rows + 1,examples_num_cols, 1,1,1,examples_num_cols);
-%                 h = draw_box([0 0 1 1],'xywh');
-%                 t = {};
-%                 t{1} = unique_descriptions{mi};
-%                 t{2} = sprintf('number images not completed:  %*d', 3, failed_completions );
-% 
-%                 for oi = 1:length(p.situation_objects)
-%                     t{2+oi} = sprintf('missed %s: %*d', p.situation_objects{oi}, 3, sum(lt(ending_support{mi}(:,oi),p.thresholds.total_support_final)) );
-%                 end
-% 
-%                 h_temp = text(.1,.5,t);
-%                 h_temp.FontName = 'MonoSpaced';
-%                 h.Parent.Visible = 'off';
-%             end
-% 
-% 
+                h = draw_box([0 0 1 1],'xywh');
+                t = {};
+                t{1} = unique_descriptions{mi};
+                t{2} = sprintf('number images not completed:  %*d', 3, failed_completions );
+
+                for oi = 1:length(p.situation_objects)
+                    t{2+oi} = sprintf('missed %s: %*d', p.situation_objects{oi}, 3, sum(lt(ending_support{mi}(:,oi),p.thresholds.total_support_final)) );
+                end
+
+                h_temp = text(.1,.5,t);
+                h_temp.FontName = 'MonoSpaced';
+                h.Parent.Visible = 'off';
+            end
+
+
 %             row = floor((mod(i-1,num_examples_per_fig))./examples_num_cols) + 1;
 %             col = mod(i-1,examples_num_cols)+1;
 %             subplot2(examples_num_rows+1,examples_num_cols,row+1,col);
-% 
-%             fi = miss_list_fi(i);
-%             ii = miss_list_ii(i);
-%             cur_im_fname = fnames_test_images{ mi, fi, ii };
-%             cur_workspace = workspaces_final{  mi, fi, ii };
-%             cur_p_struct = p_conditions{ mi,fi, ii };
-%             situate_draw_workspace( cur_im_fname, cur_p_struct, cur_workspace );
-% 
-%         end
-% 
-%         display( unique_descriptions{mi} );
-%         display( {fnames_test_images{failed_completions_logical_index}}' )
-% 
-%     end
 
+            fi = miss_list_fi(i);
+            ii = miss_list_ii(i);
+            cur_im_fname = fnames_test_images{ mi, fi, ii };
+            cur_workspace = workspaces_final{  mi, fi, ii };
+            cur_p_struct = p_conditions{ mi,fi, ii };
+            situate_draw_workspace( cur_im_fname, cur_p_struct, cur_workspace );
+
+            
+            waitforbuttonpress();
+        end
+
+        display( unique_descriptions{mi} );
+        display( {fnames_test_images{failed_completions_logical_index}}' )
+
+    end
+end
 
 end
 

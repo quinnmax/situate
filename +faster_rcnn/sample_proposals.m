@@ -1,4 +1,4 @@
-function box, boxes = sample_proposal( boxes, is_sample, is_replacement )
+function [box, boxes] = sample_proposals( boxes, is_sample, is_replacement )
 %SAMPLE_PROPOSALS Picks a single box from the proposal list
 
     if nargsin < 2
