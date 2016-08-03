@@ -34,9 +34,9 @@
     %   If testing_data_max or testing_data_min are set to [], then as much
     %   as possible will be used, given the available data and the number
     %   of folds.
-    experiment_settings.num_folds           = 1;  % 
-    experiment_settings.testing_data_max    = 5;  % 
-    experiment_settings.training_data_max   = 30; % empty will use as much as possible given the number of folds. (less than 30 migth cause problems)
+    experiment_settings.num_folds           = 1;  
+    experiment_settings.testing_data_max    = 5;  
+    experiment_settings.training_data_max   = 30; 
     
     % (won't matter if gui is on)
     experiment_settings.run_analysis_after_completion = true;
@@ -169,12 +169,11 @@
     
 %% define siutate parameters: experimental conditions
 %
-% these are modifications to the shared situate parameters defined above.
-% anything not modified will use those settings.
+% These are modifications to the shared situate parameters defined above.
+% Anything not modified here will use those settings.
 %
-% if using the gui, 
-% the first setting will be used to populate the gui settings popup, 
-% the rest will be ignored
+% If using the gui, the first setting will be used to populate the gui 
+% settings popup, the rest will be ignored.
 
     p_conditions = [];
     p_conditions_descriptions = {};
