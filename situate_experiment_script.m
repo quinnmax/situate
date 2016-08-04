@@ -35,11 +35,23 @@
     %   as possible will be used, given the available data and the number
     %   of folds.
     experiment_settings.num_folds           = 1;  
-    experiment_settings.testing_data_max    = 5;  
+    experiment_settings.testing_data_max    = 3;  
     experiment_settings.training_data_max   = 30; 
     
     % (won't matter if gui is on)
     experiment_settings.run_analysis_after_completion = true;
+    
+    % save the full records
+    %   each scout:
+    %       box coords, internal support, gt iou
+    %   each dist_struct:
+    %       for each image and object type
+    experiment_settings.save_tons_of_data   = false;
+    
+    % tune the model by running situate on the training data with an oracle 
+    % classifier. we'll build a regression model to help us scale outputs
+    % from the scouts
+    experiment_settings.intensive_training  = false;
     
 
     

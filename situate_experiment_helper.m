@@ -27,6 +27,7 @@ function [] = situate_experiment_helper(experiment_settings, p_conditions, situa
     for i = 1:length(p_conditions)
         p_conditions(i).situation_objects                 = experiment_settings.situations_struct.(experiment_settings.situation).situation_objects;
         p_conditions(i).situation_objects_possible_labels = experiment_settings.situations_struct.(experiment_settings.situation).situation_objects_possible_labels;
+        p_conditions(i).situation_objects_prior_urgency   = experiment_settings.situations_struct.(experiment_settings.situation).prior_object_urgency;
     end
     
     
@@ -181,9 +182,9 @@ function [] = situate_experiment_helper(experiment_settings, p_conditions, situa
             
         % run through experimental settings
         
-            workspaces_final           = cell(length(p_conditions),length(fnames_im_test));
-            scouting_records = cell(length(p_conditions),length(fnames_im_test));
-            run_data                   = cell(length(p_conditions),length(fnames_im_test));
+            workspaces_final    = cell(length(p_conditions),length(fnames_im_test));
+            agent_records       = cell(length(p_conditions),length(fnames_im_test));
+            run_data            = cell(length(p_conditions),length(fnames_im_test));
             
             for experiment_ind = 1:length(p_conditions)
 
@@ -239,10 +240,10 @@ function [] = situate_experiment_helper(experiment_settings, p_conditions, situa
                     if ~experiment_settings.use_gui
                         run_data{experiment_ind,cur_image_ind}         = run_data_cur;
                         workspaces_final{experiment_ind,cur_image_ind} = run_data_cur.workspace_final;
-                        scouting_records{experiment_ind,cur_image_ind} = run_data_cur.scouting_record;
+                        agent_records{experiment_ind,cur_image_ind}    = run_data_cur.agent_record;
                     end
                     
-                    num_iterations_run = sum(cellfun(@(x) ~isempty(x),{run_data_cur.scout_record.interest}));
+                    num_iterations_run = sum(cellfun(@(x) ~isempty(x),{run_data_cur.agent_record.interest}));
                     progress_string = [cur_experiment_parameters.description ', ' num2str(num_iterations_run), ' steps, ' num2str(toc) 's'];
                     progress(cur_image_ind,length(fnames_im_test),progress_string);
                    
@@ -295,12 +296,16 @@ function [] = situate_experiment_helper(experiment_settings, p_conditions, situa
             save_fname = fullfile(experiment_settings.results_directory, [experiment_settings.title '_split_' num2str(fold_ind,'%02d') '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
             save(save_fname, ...
                 'p_conditions', ...
-                'p_conditions_descriptions', ...
                 'workspaces_final', ...
-                'scouting_records', ...
-                'fnames_im_train', 'fnames_im_test',...
-                'fnames_lb_train', 'fnames_lb_test',...
+                'agent_records', ...
+                'fnames_im_train', ...
+                'fnames_im_test',...
+                'fnames_lb_train', ...
+                'fnames_lb_test',...
                 'run_data');
+            
+                %'p_conditions_descriptions', ...
+                
             display(['saved to ' save_fname]);
         end
         

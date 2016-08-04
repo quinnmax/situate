@@ -39,8 +39,9 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
         
     % initialize record keeping 
         records = []; % store information about the run. includes workspace entry event history, scout record, and whatever else you'd like to pass back out
-        records.scout_record = repmat( agent_initialize(), p.num_iterations, 1 );
-        records.scouting_record = cell(p.num_iterations,6); % iteration, interest, internal_support, total_support, ground truth iou, box
+        records.agent_record = repmat( agent_initialize(), p.num_iterations, 1 );
+        records.agent_record_flat = cell(p.num_iterations,7); % iteration, agent_type, interest, internal_support, total_support, ground truth iou, box_r0rfc0cf
+        %records.dist_struct               = [];
         records.population_count          = [];
         records.population_count.scout    = 0;
         records.population_count.reviewer = 0;
@@ -55,7 +56,7 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
     situate_visualizer_run_status = 'unstarted'; % this does need to be here. it is looked at from within the visualizer
     if p.show_visualization_on_iteration || p.show_visualization_on_workspace_change || p.show_visualization_on_end
         [~,visualization_description] = fileparts(im_fname);
-        [h, situate_visualizer_run_status] = situate_visualize( [], im, p, d, workspace, [], records.population_count, records.scout_record, visualization_description );
+        [h, situate_visualizer_run_status] = situate_visualize( [], im, p, d, workspace, [], records.population_count, records.agent_record, visualization_description );
         % see if an exit command came from the GUI
         if ~ishandle(h), situate_visualizer_run_status = 'stop'; end
         if any( strcmp( situate_visualizer_run_status, {'next_image','restart','stop'} ) )
@@ -71,49 +72,52 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
     for iteration = 1:p.num_iterations
             
         % select and evaluate an agent
-            workspace_total_support_pre  = sum(workspace.total_support);
+        %   take snapshot of the agent
+        %   see if workspace changed
+            workspace_snapshot  = workspace;
             agent_index                  = sample_1d( [agent_pool.urgency], 1 );
             [agent_pool,d,workspace]     = agent_evaluate( agent_pool, agent_index, im, label, d, p, workspace );
-            workspace_total_support_post = sum(workspace.total_support);
-            
-        % get a snapshot of the current agent so we can still poke at it
-        % after removing it from the pool
             current_agent_snapshot = agent_pool(agent_index);
             
         % take note of changes to the workspace
-            workspace_object_was_added = false;
-            if workspace_total_support_post > workspace_total_support_pre
-                workspace_object_was_added = true;
+            workspace_changed = false;
+            if ~isequal(workspace,workspace_snapshot)
+                workspace_changed = true;
             end
             
         % update records
             % update record of scouting behavior
-            records.scout_record(iteration) = current_agent_snapshot;
-            records.scouting_record(iteration,:) = { ...
+            records.workspace_record(iteration) = workspace_snapshot;
+            records.agent_record(iteration)     = current_agent_snapshot;
+            records.agent_record_flat(iteration,:) = { ...
                 iteration, ...
+                current_agent_snapshot.type, ...
                 current_agent_snapshot.interest, ...
                 current_agent_snapshot.support.internal, ...
                 current_agent_snapshot.support.total, ...
                 current_agent_snapshot.support.GROUND_TRUTH, ...
                 current_agent_snapshot.box.r0rfc0cf };
+            %records.dist_struct(end+1).iteration = iteration;
+            %records.dist_struct(end+1).snapshot  = d;
             for agent_type = {'scout','reviewer','builder'}
                 records.population_count(iteration).(agent_type{:}) = sum( strcmp( agent_type{:}, {agent_pool.type} ) );
             end
             % dumb hack
-            if isequal(current_agent_snapshot.type,'scout') && workspace_object_was_added
-                % then we must have added an object using the direct path,
-                % which means the current agent doesn't actually have the
-                % total support. So, we'll pull it from the end of the
-                % workspace instead. 
-                records.scouting_record{iteration,4} = workspace.total_support(end);
+            if isequal(current_agent_snapshot.type,'scout') && workspace_changed
+                % then we must have added an object using the direct 
+                % scout->workspace option, which means the current agent 
+                % doesn't actually have the total support. So, we'll pull 
+                % it from the end of the workspace instead. 
+                records.agent_record_flat{iteration,4} = workspace.total_support(end);
+                records.agent_record(iteration).support.total = workspace.total_support(end);
             end
             
         % update visualization
             if (p.show_visualization_on_iteration           && mod(iteration,p.show_visualization_on_iteration_mod)==0) ...
-            || (p.show_visualization_on_workspace_change    && workspace_object_was_added)
+            || (p.show_visualization_on_workspace_change    && workspace_changed)
                 [~,fname_no_path] = fileparts(im_fname); 
                 visualization_description = {fname_no_path; [num2str(iteration) '/' num2str(p.num_iterations)]};
-                [h, situate_visualizer_run_status] = situate_visualize( h, im, p, d, workspace, current_agent_snapshot, records.population_count, records.scout_record, visualization_description );
+                [h, situate_visualizer_run_status] = situate_visualize( h, im, p, d, workspace, current_agent_snapshot, records.population_count, records.agent_record, visualization_description );
                 % see if an exit command came from the GUI
                 if ~ishandle(h), situate_visualizer_run_status = 'stop'; end
                 if any( strcmp( situate_visualizer_run_status, {'next_image','restart','stop'} ) )
@@ -123,13 +127,13 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
             end
             
         % see if we're done with iterations due to a sufficient detection
-            if workspace_object_was_added && situate_situation_found( workspace, p )
+            if workspace_changed && situate_situation_found( workspace, p )
                 break; 
             end
             
         % consider spawning nearby scouts on provisional check-in
             if p.spawn_nearby_scouts_on_provisional_checkin ...
-            && workspace_object_was_added ...
+            && workspace_changed ...
             && current_agent_snapshot.support.total < p.thresholds.total_support_final % ie, was a provisional check-in
                 agent_pool = spawn_local_scouts( current_agent_snapshot, agent_pool, d );
             end
@@ -140,7 +144,7 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
             agent_pool(agent_index)  = [];
         
             % clean up the agent pool
-            if workspace_object_was_added
+            if workspace_changed
                 
                 if p.agent_pool_cleanup.agents_interested_in_found_objects
                     % clear out agents that are looking for objects that have reached final checkin
@@ -212,15 +216,15 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
         end
         records.agent_pool = agent_pool;
         records.workspace_final = workspace;
-        empty_inds = cellfun( @isempty, records.scouting_record (:,1) );
-        records.scouting_record(empty_inds,:) = [];
+        empty_inds = cellfun( @isempty, records.agent_record_flat (:,1) );
+        records.agent_record_flat(empty_inds,:) = [];
     
         % update visualization
         if p.show_visualization_on_end
             if ~exist('h','var'), h = []; end
             [~,fname_no_path] = fileparts(im_fname); 
             visualization_description = {fname_no_path; [num2str(iteration) '/' num2str(p.num_iterations)]};
-            [h, situate_visualizer_run_status] = situate_visualize( h, im, p, d, workspace, [], records.population_count, records.scout_record, visualization_description );
+            [h, situate_visualizer_run_status] = situate_visualize( h, im, p, d, workspace, [], records.population_count, records.agent_record, visualization_description );
             % interpret closing the window as 'no thank you'
             if ~ishandle(h), 
                 situate_visualizer_run_status = 'stop'; 

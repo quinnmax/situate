@@ -117,12 +117,14 @@ function d = situate_distribution_struct_update( d, p, workspace )
         % structure. for now, i'll just check to see that the conditional
         % model structure exists, and select the right part of it if it
         % does.
-        if isfield(d.learned_stuff,'conditional_models_structure')
+        if (ismember(d.location_method, {'mvn_conditional', 'mvn_conditional_and_salience'}) ...
+        || ismember(d.box_method,      {'independent_normals_log_aa','conditional_mvn_log_aa'}) ...
+        || ismember(d.box_method,      {'independent_normals_aa','conditional_mvn_aa'}) ...
+        || ismember(d.box_method,      {'independent_normals_log_wh','conditional_mvn_log_wh'}) ...
+        || ismember(d.box_method,      {'independent_normals_wh','conditional_mvn_wh'}) ) ...
+        && isfield(d.learned_stuff,'conditional_models_structure')
             [relevant_model, relevant_model_description] = conditional_model_selector( d.learned_stuff.conditional_models_structure, target_object, relevant_workspace_objects );
-        else
-            error('situate_distribution-struct_update:conditional models not present');
-        end
-        
+        end        
         
         
         
