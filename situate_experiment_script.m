@@ -35,7 +35,7 @@
     %   as possible will be used, given the available data and the number
     %   of folds.
     experiment_settings.num_folds           = 1;  
-    experiment_settings.testing_data_max    = 10;  
+    experiment_settings.testing_data_max    = 5;  
     experiment_settings.training_data_max   = 50; 
     
     % (won't matter if gui is on)
@@ -127,8 +127,8 @@
     p.rcnn_boxes = false;
     
     % classifier
-        %p.classification_method  = 'IOU-oracle';
-        p.classification_method  = 'CNN-SVM'; % uses Rory's cnn code
+        p.classification_method  = 'IOU-oracle';
+        %p.classification_method  = 'CNN-SVM'; % uses Rory's cnn code
         %p.classification_method  = 'HOG-SVM';
         
     % pipeline
@@ -186,12 +186,14 @@
     p.situation_objects_urgency_post    = experiment_settings.situations_struct.(experiment_settings.situation).object_urgency_post;
     
     % the default values for these are uniform for pre, and zeros for post
-    p.situation_objects_urgency_pre.('dogwalker')    = 1.00;
-    p.situation_objects_urgency_pre.('dog')          = 1.00;
-    p.situation_objects_urgency_pre.('leash')        = 0.10;
-    p.situation_objects_urgency_post.('dogwalker')   = 0.05;
-    p.situation_objects_urgency_post.('dog')         = 0.05;
-    p.situation_objects_urgency_post.('leash')       = 0.05;
+    if isequal(experiment_settings.situation, 'dogwalking')
+        p.situation_objects_urgency_pre.('dogwalker')    = 1.00;
+        p.situation_objects_urgency_pre.('dog')          = 1.00;
+        p.situation_objects_urgency_pre.('leash')        = 0.10;
+        p.situation_objects_urgency_post.('dogwalker')   = 0.05;
+        p.situation_objects_urgency_post.('dog')         = 0.05;
+        p.situation_objects_urgency_post.('leash')       = 0.05;
+    end
     
     
     
@@ -217,17 +219,17 @@
     temp.description = description;
     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
 
-%     description = 'uniform, uniform, uniform';
-%     temp = p;
-%     temp.location_method_before_conditioning            = 'uniform';
-%     temp.location_method_after_conditioning             = 'uniform';
-%     temp.box_method_before_conditioning                 = 'independent_uniform_log_aa';
-%     temp.box_method_after_conditioning                  = 'independent_uniform_log_aa';
-%     temp.location_sampling_method_before_conditioning   = 'sampling';
-%     temp.location_sampling_method_after_conditioning    = 'sampling';
-%     temp.description = description;
-%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
-%     
+    description = 'uniform, uniform, uniform';
+    temp = p;
+    temp.location_method_before_conditioning            = 'uniform';
+    temp.location_method_after_conditioning             = 'uniform';
+    temp.box_method_before_conditioning                 = 'independent_uniform_log_aa';
+    temp.box_method_after_conditioning                  = 'independent_uniform_log_aa';
+    temp.location_sampling_method_before_conditioning   = 'sampling';
+    temp.location_sampling_method_after_conditioning    = 'sampling';
+    temp.description = description;
+    if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+    
     % validate the options before we start running with them
     %    this just checks that methods_before and method_after type stuff is
     %    set to something present in the method_options arrays. just to
