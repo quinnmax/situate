@@ -35,8 +35,8 @@
     %   as possible will be used, given the available data and the number
     %   of folds.
     experiment_settings.num_folds           = 1;  
-    experiment_settings.testing_data_max    = 5;  
-    experiment_settings.training_data_max   = 30; 
+    experiment_settings.testing_data_max    = 100;  
+    experiment_settings.training_data_max   = 400; 
     
     % (won't matter if gui is on)
     experiment_settings.run_analysis_after_completion = true;
@@ -115,8 +115,8 @@
     p.rcnn_boxes = false;
     
     % classifier
-        p.classification_method  = 'IOU-oracle';
-        %p.classification_method  = 'CNN-SVM'; % uses Rory's cnn code
+        %p.classification_method  = 'IOU-oracle';
+        p.classification_method  = 'CNN-SVM'; % uses Rory's cnn code
         %p.classification_method  = 'HOG-SVM';
         
     % pipeline
@@ -126,9 +126,9 @@
         p.refresh_agent_pool_after_workspace_change = true; % prevents us from evaluating agents from a stale distribution
         
     % object priority
-        p.object_type_priority_before_example_is_found = 1;  
-        p.object_type_priority_after_example_is_found  = 0;  % 0 means never look for a better object box after something is sufficiently found
-    
+%         p.object_type_priority_before_example_is_found = 1;  
+%         p.object_type_priority_after_example_is_found  = 1;  % 0 means never look for a better object box after something is sufficiently found
+%     
     % inhibition and padding
         % p.inhibition_method = 'blackman';                     
         % p.dist_xy_padding_value = .05;    
@@ -138,8 +138,8 @@
         p.use_box_adjust = false; % based on Evan's classifier based move selection
         p.spawn_nearby_scouts_on_provisional_checkin = false; % based on Max's agent based local search
         % p.thresholds.internal_support = .25; % scout -> reviewer threshold
-        % p.thresholds.total_support_provisional = .25; (search continues)
-        % p.thresholds.total_support_final       = .5;  (search ends)
+        p.thresholds.total_support_provisional = .6; %(search continues)
+        p.thresholds.total_support_final       = .9;  %(search ends)
 
     % set up visualization parameters
     if experiment_settings.use_gui
@@ -189,17 +189,17 @@
     temp.description = description;
     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
 
-    description = 'uniform, uniform, uniform';
-    temp = p;
-    temp.location_method_before_conditioning            = 'uniform';
-    temp.location_method_after_conditioning             = 'uniform';
-    temp.box_method_before_conditioning                 = 'independent_uniform_log_aa';
-    temp.box_method_after_conditioning                  = 'independent_uniform_log_aa';
-    temp.location_sampling_method_before_conditioning   = 'sampling';
-    temp.location_sampling_method_after_conditioning    = 'sampling';
-    temp.description = description;
-    if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
-    
+%     description = 'uniform, uniform, uniform';
+%     temp = p;
+%     temp.location_method_before_conditioning            = 'uniform';
+%     temp.location_method_after_conditioning             = 'uniform';
+%     temp.box_method_before_conditioning                 = 'independent_uniform_log_aa';
+%     temp.box_method_after_conditioning                  = 'independent_uniform_log_aa';
+%     temp.location_sampling_method_before_conditioning   = 'sampling';
+%     temp.location_sampling_method_after_conditioning    = 'sampling';
+%     temp.description = description;
+%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+%     
     % validate the options before we start running with them
     %    this just checks that methods_before and method_after type stuff is
     %    set to something present in the method_options arrays. just to
