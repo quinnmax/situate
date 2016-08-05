@@ -151,8 +151,8 @@
         p.use_box_adjust = false; % based on Evan's classifier based move selection
         p.spawn_nearby_scouts_on_provisional_checkin = false; % based on Max's agent based local search
         % p.thresholds.internal_support = .25; % scout -> reviewer threshold
-        p.thresholds.total_support_provisional = .6; %(search continues)
-        p.thresholds.total_support_final       = .9;  %(search ends)
+        p.thresholds.total_support_provisional = .25; %(search continues)
+        p.thresholds.total_support_final       = .5;  %(search ends)
 
     % set up visualization parameters
     if experiment_settings.use_gui
