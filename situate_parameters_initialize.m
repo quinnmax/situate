@@ -142,8 +142,8 @@ function p = situate_parameters_initialize()
 
         p.thresholds = [];
         p.thresholds.internal_support = .25;
-        p.thresholds.total_support_provisional = .25; % (conditioning happens, but search continues)
-        p.thresholds.total_support_final       = .5;  % (search ends)
+        p.thresholds.total_support_provisional = .6; % (conditioning happens, but search continues)
+        p.thresholds.total_support_final       = .9;  % (search ends)
         
     % visualization options
 
