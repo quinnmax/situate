@@ -105,9 +105,9 @@
 
     % seed train
         % split_arg = now;
-        % split_arg = 1;
+        split_arg = 1;
         % split_arg = uigetdir(pwd);
-        split_arg = 'default_split/';
+        % split_arg = 'default_split/';
     
     % seed test
         seed_test = now;  % uses current time as the seed, stores it into p_structures
@@ -148,11 +148,11 @@
         % p.inhibition_intensity = .5;      
         
     % check-in and tweaking
-        p.use_box_adjust = false; % based on Evan's classifier based move selection
-        p.spawn_nearby_scouts_on_provisional_checkin = false; % based on Max's agent based local search
-        % p.thresholds.internal_support = .25; % scout -> reviewer threshold
-        p.thresholds.total_support_provisional = .25; %(search continues)
-        p.thresholds.total_support_final       = .5;  %(search ends)
+        p.use_box_adjust                                = false; % based on Evan's classifier based move selection
+        p.spawn_nearby_scouts_on_provisional_checkin    = false; % based on Max's agent based local search
+        p.thresholds.internal_support           = .25; % scout -> reviewer threshold
+        p.thresholds.total_support_provisional  = .25; % workspace entry, provisional (search continues)
+        p.thresholds.total_support_final        = .50; % workspace entry, final (search (maybe) ends) depends on p.situation_objects_urgency_post
 
     % set up visualization parameters
     if experiment_settings.use_gui
@@ -186,13 +186,23 @@
     p.situation_objects_urgency_post    = experiment_settings.situations_struct.(experiment_settings.situation).object_urgency_post;
     
     % the default values for these are uniform for pre, and zeros for post
-    if isequal(experiment_settings.situation, 'dogwalking')
-        p.situation_objects_urgency_pre.('dogwalker')    = 1.00;
-        p.situation_objects_urgency_pre.('dog')          = 1.00;
-        p.situation_objects_urgency_pre.('leash')        = 0.10;
-        p.situation_objects_urgency_post.('dogwalker')   = 0.05;
-        p.situation_objects_urgency_post.('dog')         = 0.05;
-        p.situation_objects_urgency_post.('leash')       = 0.05;
+    switch experiment_settings.situation
+        case 'pingpong'
+            p.situation_objects_urgency_pre.('table')      = 0.1;
+            p.situation_objects_urgency_pre.('net')        = 0.1;
+            p.situation_objects_urgency_pre.('player1')    = 1.0;
+            p.situation_objects_urgency_pre.('player2')    = 1.0;
+            p.situation_objects_urgency_post.('table')     = 0.1;
+            p.situation_objects_urgency_post.('net')       = 0.1;
+            p.situation_objects_urgency_post.('player1')   = 0.1;
+            p.situation_objects_urgency_post.('player2')   = 0.1;
+        case 'dogwalking'
+            p.situation_objects_urgency_pre.('dogwalker')  = 1.0;
+            p.situation_objects_urgency_pre.('dog')        = 1.0;
+            p.situation_objects_urgency_pre.('leash')      = 0.1;
+            p.situation_objects_urgency_post.('dogwalker') = 0.1;
+            p.situation_objects_urgency_post.('dog')       = 0.1;
+            p.situation_objects_urgency_post.('leash')     = 0.1;
     end
     
     

@@ -318,7 +318,6 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
 
     if show_failure_examples
         
-        display('boop');
         num_rows = 2;
         num_cols = 3;
         
