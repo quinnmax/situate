@@ -1,5 +1,5 @@
 
-function [p, inhibited_result_image] = ior_peaks( x, n, inhibition_width, inhibition_type, inhibition_intensity )
+function [p, inhibited_result_image,point_density] = ior_peaks( x, n, inhibition_width, inhibition_type, inhibition_intensity )
 
 
 
@@ -33,7 +33,7 @@ function [p, inhibited_result_image] = ior_peaks( x, n, inhibition_width, inhibi
     %   ior_sampling_ts
     %   ior_sampling
     
-
+    point_density = zeros(0,n);
     
     demo_mode = false;
     if ~exist('x','var') || isempty(x)
@@ -104,6 +104,7 @@ function [p, inhibited_result_image] = ior_peaks( x, n, inhibition_width, inhibi
         cc = floor((ind-1)/size(x,1))+1;
         
         p(ni,:) = [rc cc];
+        point_density(ni) = x(rc,cc) / sum(x(:));
         
         % find inhibition bounds
         r0 = rc - floor(inhibition_width/2);

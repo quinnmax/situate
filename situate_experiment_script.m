@@ -1,7 +1,7 @@
 
 
 
-%% try to get path in order
+%% try to get path in order 
 % check a little that sub directories are included
 
     situate_gui_or_experiment_path = fileparts(which('situate_experiment_script'));
@@ -11,14 +11,14 @@
 
    
    
-%% define experiment settings
+%% define experiment settings 
 %
 % These are some basic settings for the experimental run, relating to
 % whether or not you want to use the GUI, where to save the experiment
 % results, and how many images for training and testing.
 
     experiment_settings = [];
-    experiment_settings.use_gui = false;
+    experiment_settings.use_gui = true;
     
     experiment_settings.title               = 'experiment_title';
     experiment_settings.situations_struct   = situate_situation_definitions();
@@ -35,8 +35,8 @@
     %   as possible will be used, given the available data and the number
     %   of folds.
     experiment_settings.num_folds           = 1;  
-    experiment_settings.testing_data_max    = 3;  
-    experiment_settings.training_data_max   = 30; 
+    experiment_settings.testing_data_max    = 10;  
+    experiment_settings.training_data_max   = 50; 
     
     % (won't matter if gui is on)
     experiment_settings.run_analysis_after_completion = true;
@@ -55,7 +55,7 @@
     
 
     
-%% set the data directory
+%% set the data directory 
 %
 % situate_data_path points to a directory containing the images and label 
 % files for your experiment. 
@@ -80,7 +80,7 @@
     
 
 
-%% define your training testing splits
+%% define your training testing splits 
 %
 % These define how we get our training/testing splits, and lets us control
 % the seed value used at the beginning of each run. The benefit of
@@ -115,7 +115,7 @@
     
 
     
-%% define situate parameters: shared
+%% define situate parameters: shared 
 %
 % These are the shared settings across the different experimental
 % condtions. They can be modified in the next section to compare different
@@ -138,8 +138,9 @@
         p.refresh_agent_pool_after_workspace_change = true; % prevents us from evaluating agents from a stale distribution
         
     % object priority
-        p.object_type_priority_before_example_is_found = 1;  
-        p.object_type_priority_after_example_is_found  = 0;  % 0 means never look for a better object box after something is sufficiently found
+    % now defined in situate_situation_definitions script
+        %p.object_type_priority_before_example_is_found = 1;  
+        %p.object_type_priority_after_example_is_found  = 0;  % 0 means never look for a better object box after something is sufficiently found
     
     % inhibition and padding
         % p.inhibition_method = 'blackman';                     
@@ -176,10 +177,25 @@
             p.seed_train = split_arg;
         end
         p.seed_test  = seed_test;
+        
+    % add the situation information to the p structure
+    
+    p.situation_objects                 = experiment_settings.situations_struct.(experiment_settings.situation).situation_objects;
+    p.situation_objects_possible_labels = experiment_settings.situations_struct.(experiment_settings.situation).situation_objects_possible_labels;
+    p.situation_objects_urgency_pre     = experiment_settings.situations_struct.(experiment_settings.situation).object_urgency_pre;
+    p.situation_objects_urgency_post    = experiment_settings.situations_struct.(experiment_settings.situation).object_urgency_post;
+    
+    % the default values for these are uniform for pre, and zeros for post
+    p.situation_objects_urgency_pre.('dogwalker')    = 1.00;
+    p.situation_objects_urgency_pre.('dog')          = 1.00;
+    p.situation_objects_urgency_pre.('leash')        = 0.10;
+    p.situation_objects_urgency_post.('dogwalker')   = 0.05;
+    p.situation_objects_urgency_post.('dog')         = 0.05;
+    p.situation_objects_urgency_post.('leash')       = 0.05;
     
     
     
-%% define siutate parameters: experimental conditions
+%% define siutate parameters: experimental conditions 
 %
 % These are modifications to the shared situate parameters defined above.
 % Anything not modified here will use those settings.
@@ -220,13 +236,13 @@
 
    
    
-%% run the experiment
+%% run the experiment 
    
    situate_experiment_helper(experiment_settings, p_conditions, situate_data_path, split_arg);
    
    
    
-%% run the analysis
+%% run the analysis 
 
     if experiment_settings.run_analysis_after_completion && ~experiment_settings.use_gui
         situate_experiment_analysis( experiment_settings.results_directory );

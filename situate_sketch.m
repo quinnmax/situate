@@ -149,7 +149,7 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
                 if p.agent_pool_cleanup.agents_interested_in_found_objects
                     % clear out agents that are looking for objects that have reached final checkin
                     for i = 1:length(workspace.labels)
-                        if workspace.total_support > p.thresholds.total_support_final
+                        if workspace.total_support >= p.thresholds.total_support_final
                             interest_to_clear = workspace.labels{i};
                             inds_to_clear = false(length(agent_pool),1);
                             for j = 1:length(agent_pool)
@@ -270,6 +270,7 @@ function agent = agent_initialize(d,p)
     agent.support.external     = 0;
     agent.support.total        = 0;
     agent.support.GROUND_TRUTH = [];
+    agent.support.external_support_vect = [];
     agent.eval_function        = []; % not really using it right now :/
     
     agent.GT_label_raw = [];
@@ -313,18 +314,26 @@ function [agent_pool, d, workspace] = agent_evaluate( agent_pool, agent_index, i
     % implementing the direct scout -> reviewer -> builder pipeline
     if p.use_direct_scout_to_workspace_pipe ...
     && strcmp(agent_pool(agent_index).type, 'scout' ) ...
-    && length(agent_pool) > agent_pool_initial_length
+    && agent_pool(agent_index).support.internal >= p.thresholds.internal_support
         % We now know that a scout added a reviewer to the end of the agent
         % pool. We'll evaluate that and the associated builder, and then
         % delete both of them, keeping the iteration counter from ticking
         % up any further. The scout will be killed in the iteration loop
         % per usual.
         [agent_pool] = agent_evaluate_reviewer( agent_pool, length(agent_pool), p, workspace, d );
+        agent_pool(agent_index).support.total = agent_pool(end).support.total;
         if isequal(agent_pool(end).type,'reviewer')
+            % the reviewer failed to spawn a builder, so just fizzle
             agent_pool(end) = [];
         else
+            % the reviewer did spawn a builder, so evaluate it
             assert(isequal(agent_pool(end).type,'builder'));
-            [workspace, d] = agent_evaluate_builder(  agent_pool, length(agent_pool), workspace, d, p );
+            [workspace, d] = agent_evaluate_builder( agent_pool, length(agent_pool), workspace, d, p );
+            % feed the total support back to the scout, since this bonkers
+            % process is in effect and the addition to the workspace needs
+            % to be justified with a final score. alternatively, we could
+            % just turn scouts into reviewers and builders, rather than
+            % adding them to the pool...
             agent_pool([end-1 end]) = [];
         end
     end
@@ -335,9 +344,10 @@ end
 
 %% eval scout
 
-function [agent_pool,d] = agent_evaluate_scout(  agent_pool, agent_index, p, workspace, d, im, label )     
+function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, p, workspace, d, im, label )     
 
     cur_agent = agent_pool(agent_index);
+    assert( isequal( cur_agent.type, 'scout' ) );
     
     % pick a box for our scout (if it doesn't already have one)
     
@@ -346,7 +356,7 @@ function [agent_pool,d] = agent_evaluate_scout(  agent_pool, agent_index, p, wor
             % then we need to pick out a box for our scout
 
             di = find(strcmp({d.interest},cur_agent.interest)); 
-            [d(di), sampled_box_r0rfc0cf] = situate_sample_box( d(di), p );
+            [d(di), sampled_box_r0rfc0cf, box_density] = situate_sample_box( d(di), p );
 
             r0 = round(sampled_box_r0rfc0cf(1));
             rf = round(sampled_box_r0rfc0cf(2));
@@ -372,6 +382,10 @@ function [agent_pool,d] = agent_evaluate_scout(  agent_pool, agent_index, p, wor
             cur_agent.box.xcycwh   = [ xc yc  w  h ];
             cur_agent.box.aspect_ratio = w/h;
             cur_agent.box.area_ratio   = (w*h) / (size(im,1)*size(im,2));
+            
+            % for calculating external support
+            % regress internal support, box density, location density to IOU
+            cur_agent.support.external_support_vect = box_density;
 
         end
         
@@ -388,6 +402,7 @@ function [agent_pool,d] = agent_evaluate_scout(  agent_pool, agent_index, p, wor
         end
 
     % figure out the internal support
+    
         switch p.classification_method
             case 'HOG-SVM'
                 model_ind = find(strcmp(cur_agent.interest,p.situation_objects),1);
@@ -404,13 +419,13 @@ function [agent_pool,d] = agent_evaluate_scout(  agent_pool, agent_index, p, wor
             otherwise
                 error('unrecognized p.classification_method');
         end
-        internal_support_score_function = @(b_xywh) round(internal_support_score_function_raw(b_xywh) * 100)/100; % rounding to nearest .01 for consistency between display and internal behavior
+        internal_support_score_function = @(b_xywh) floor(internal_support_score_function_raw(b_xywh) * 100)/100; % rounding to nearest .01 for consistency between display and internal behavior
         cur_agent.support.internal = internal_support_score_function( cur_agent.box.xywh );
         
     % see if we can improve the initial box with some tweaking
         
         if p.use_box_adjust ...
-        && cur_agent.support.internal > p.thresholds.internal_support
+        && cur_agent.support.internal >= p.thresholds.internal_support
     
             cur_box_adjust_model        = d(di).learned_stuff.box_adjust_models;
             num_adjustment_iterations   = 9;
@@ -447,7 +462,7 @@ function [agent_pool,d] = agent_evaluate_scout(  agent_pool, agent_index, p, wor
         agent_pool(agent_index) = cur_agent;
         
         % consider adding a reviewer to the pool
-        if cur_agent.support.internal > p.thresholds.internal_support
+        if cur_agent.support.internal >= p.thresholds.internal_support
             agent_pool(end+1) = cur_agent;
             agent_pool(end).type = 'reviewer';
             agent_pool(end).urgency = p.agent_urgency_defaults.reviewer;
@@ -470,6 +485,7 @@ function [agent_pool] = agent_evaluate_reviewer( agent_pool, agent_index, p, wor
     % made for sure.
     
     cur_agent = agent_pool(agent_index);
+    assert( isequal( cur_agent.type, 'reviewer' ) );
     
     if isfield(p, 'external_support_weight') && p.external_support_weight > 0
         obj = find(strcmp(p.situation_objects, cur_agent.interest), 1);
@@ -486,7 +502,7 @@ function [agent_pool] = agent_evaluate_reviewer( agent_pool, agent_index, p, wor
     agent_pool(agent_index) = cur_agent;
 
     % consider adding a builder to the pool
-    if cur_agent.support.total > p.thresholds.total_support_provisional
+    if cur_agent.support.total >= p.thresholds.total_support_provisional
         agent_pool(end+1) = cur_agent;
         agent_pool(end).type = 'builder';
         agent_pool(end).urgency = p.agent_urgency_defaults.builder;
@@ -512,6 +528,8 @@ function [workspace,d,agent_pool] = agent_evaluate_builder( agent_pool, agent_in
     % scouts are modified to reflect the new information.
 
     cur_agent = agent_pool(agent_index);
+    assert( isequal( cur_agent.type, 'builder' ) );
+    
     
     object_was_added = false;
     
@@ -533,7 +551,7 @@ function [workspace,d,agent_pool] = agent_evaluate_builder( agent_pool, agent_in
             
         otherwise
             
-            if cur_agent.support.total > workspace.total_support(matching_workspace_object_index)
+            if cur_agent.support.total >= workspace.total_support(matching_workspace_object_index)
                 
                 % remove the old entry, add the current agent
                 workspace.boxes_r0rfc0cf(matching_workspace_object_index,:) = [];
@@ -554,7 +572,7 @@ function [workspace,d,agent_pool] = agent_evaluate_builder( agent_pool, agent_in
                 
             else
                 
-                % it wasn't an improvement, so fizzle
+                % it wasn't an improvement, so do nothing
                 
             end
             

@@ -15,7 +15,7 @@ function d = situate_distribution_struct_initialize( interest, p, im, learned_st
     % things that distributions will always have
 
         d.interest = interest;
-        d.interest_priority = p.situation_objects_prior_urgency(strcmp(interest,p.situation_objects));
+        d.interest_priority = p.situation_objects_urgency_pre.(interest);
         d.conditioning_objects = setsub( p.situation_objects, d.interest );
 
         d.image_size = [size(im,1) size(im,2) size(im,3)];

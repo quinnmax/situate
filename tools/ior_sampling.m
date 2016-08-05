@@ -1,5 +1,5 @@
 
-function [p, inhibited_result_image] = ior_sampling( x, n, inhibition_width, inhibition_type, inhibition_intensity )
+function [p, inhibited_result_image, point_density] = ior_sampling( x, n, inhibition_width, inhibition_type, inhibition_intensity )
 
 
 
@@ -63,6 +63,8 @@ function [p, inhibited_result_image] = ior_sampling( x, n, inhibition_width, inh
     end
     
     
+    point_density = zeros(0,n);
+    
     
     min_x = min(x(:));
     max_x = max(x(:));
@@ -125,6 +127,7 @@ function [p, inhibited_result_image] = ior_sampling( x, n, inhibition_width, inh
 
         if  is_good_point
             p(ni,:) = [rc,cc];
+            point_density(ni) = xp(rc,cc)/sum(xp(:));
             % inhibit
             xp(r0:rf,c0:cf) = xp(r0:rf,c0:cf) .* h;
         else

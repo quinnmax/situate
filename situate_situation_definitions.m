@@ -14,7 +14,10 @@ function situations_struct = situate_situation_definitions()
 
     desc = 'dogwalking';
     cur_situation.situation_objects =  { 'dogwalker', 'dog', 'leash' };
-    cur_situation.prior_object_urgency = [1 1 1];
+    object_urgency_pre  = [1 1 1];
+    object_urgency_post = [0 0 0];
+    for i = 1:length(cur_situation.situation_objects ), cur_situation.object_urgency_pre.( cur_situation.situation_objects{i}) = object_urgency_pre(i);  end
+    for i = 1:length(cur_situation.situation_objects ), cur_situation.object_urgency_post.(cur_situation.situation_objects{i}) = object_urgency_post(i); end
     cur_situation.situation_objects_possible_labels = {...
         {'dog-walker back', 'dog-walker front', 'dog-walker my-left', 'dog-walker my-right'},...
         {'dog back', 'dog front', 'dog my-left', 'dog my-right'},...
@@ -28,7 +31,10 @@ function situations_struct = situate_situation_definitions()
     
     desc = 'dogwalking_no_leash';
     cur_situation.situation_objects =  { 'dogwalker', 'dog' };
-    cur_situation.prior_object_urgency = [1 1];
+    object_urgency_pre  = [1 1];
+    object_urgency_post = [0 0];
+    for i = 1:length(cur_situation.situation_objects ), cur_situation.object_urgency_pre.( cur_situation.situation_objects{i}) = object_urgency_pre(i);  end
+    for i = 1:length(cur_situation.situation_objects ), cur_situation.object_urgency_post.(cur_situation.situation_objects{i}) = object_urgency_post(i); end
     cur_situation.situation_objects_possible_labels = {...
         {'dog-walker back', 'dog-walker front', 'dog-walker my-left', 'dog-walker my-right'},...
         {'dog back', 'dog front', 'dog my-left', 'dog my-right'}};
@@ -41,7 +47,10 @@ function situations_struct = situate_situation_definitions()
         
     desc = 'handshaking';
     cur_situation.situation_objects = { 'person_my_left', 'handshake', 'person_my_right' };
-    cur_situation.prior_object_urgency = [1 1 1];
+    object_urgency_pre  = [1 1 1];
+    object_urgency_post = [0 0 0];
+    for i = 1:length(cur_situation.situation_objects ), cur_situation.object_urgency_pre.( cur_situation.situation_objects{i}) = object_urgency_pre(i);  end
+    for i = 1:length(cur_situation.situation_objects ), cur_situation.object_urgency_post.(cur_situation.situation_objects{i}) = object_urgency_post(i); end
     cur_situation.situation_objects_possible_labels = {...
         {'person-my-left'}, ...
         {'handshake'}, ...
@@ -54,7 +63,10 @@ function situations_struct = situate_situation_definitions()
     
     desc = 'pingpong';
     cur_situation.situation_objects =  { 'table','net','player1','player2' };
-    cur_situation.prior_object_urgency = [1 1 1 1];
+    object_urgency_pre  = [1 1 1 1];
+    object_urgency_post = [0 0 0 0];
+    for i = 1:length(cur_situation.situation_objects ), cur_situation.object_urgency_pre.( cur_situation.situation_objects{i}) = object_urgency_pre(i);  end
+    for i = 1:length(cur_situation.situation_objects ), cur_situation.object_urgency_post.(cur_situation.situation_objects{i}) = object_urgency_post(i); end
     cur_situation.situation_objects_possible_labels = {...
         {'table'}, ...
         {'net'}, ...

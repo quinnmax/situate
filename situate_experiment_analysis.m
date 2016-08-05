@@ -1,41 +1,40 @@
 
 
-function situate_experiment_analysis( results_directory )
-
-
-show_failures = true;
-
-
-while ~exist( 'results_directory', 'var' ) || isempty(results_directory) || ~isdir(results_directory)
-
-    h = msgbox('Select directory containing the results to analyze');
-    uiwait(h);
-    results_directory = uigetdir(pwd);  
-    
-end
-
-temp = dir(fullfile(results_directory, '*.mat'));
-fn = cellfun( @(x) fullfile(results_directory,x), {temp.name}, 'UniformOutput', false );
-
-% explicit filenames
-% fn  =[];  
-% fn{end+1} = '/Users/Max/Dropbox/Projects/situate/situate_experiment_mm_1_results2016.05.05.12.37.44.mat';
-% fn{end+1} = '/Users/Max/Dropbox/Projects/situate/situate_experiment_mm_1_results2016.05.05.13.58.21.mat';
-% fn{end+1} = '/Users/Max/Dropbox/Projects/situate/situate_experiment_mm_1_results2016.05.05.15.55.05.mat';
-% fn{end+1} = '/Users/Max/Dropbox/Projects/situate/situate_experiment_mm_1_results2016.05.05.19.21.37.mat';
-% fn{end+1} = '/Users/Max/Dropbox/Projects/situate/situate_experiment_mm_1_results2016.05.06.10.11.53.mat';
+function situate_experiment_analysis( results_directory, show_failure_examples )
+% situate_experiment_analysis( results_directory, show_failure_examples );
 
 
 
+%% set data data 
+
+    if ~exist('show_failure_examples','var') || isempty(show_failure_examples)
+        show_failure_examples = true;
+    end
+
+    while ~exist( 'results_directory', 'var' ) || isempty(results_directory) || ~isdir(results_directory)
+
+        h = msgbox('Select directory containing the results to analyze');
+        uiwait(h);
+        results_directory = uigetdir(pwd);  
+
+    end
+
+    temp = dir(fullfile(results_directory, '*.mat'));
+    fn = cellfun( @(x) fullfile(results_directory,x), {temp.name}, 'UniformOutput', false );
+
+    % explicit filenames
+    % fn  =[];  
+    % fn{end+1} = '/Users/Max/Dropbox/Projects/situate/situate_experiment_mm_1_results2016.05.05.12.37.44.mat';
+    % fn{end+1} = '/Users/Max/Dropbox/Projects/situate/situate_experiment_mm_1_results2016.05.05.13.58.21.mat';
+    % fn{end+1} = '/Users/Max/Dropbox/Projects/situate/situate_experiment_mm_1_results2016.05.05.15.55.05.mat';
+    % fn{end+1} = '/Users/Max/Dropbox/Projects/situate/situate_experiment_mm_1_results2016.05.05.19.21.37.mat';
+    % fn{end+1} = '/Users/Max/Dropbox/Projects/situate/situate_experiment_mm_1_results2016.05.06.10.11.53.mat';
+
+    proposals_display_limit = 1000;
 
 
-    
-    
-proposals_display_limit = 1000;
-    
 
-
-%% reshaping the data
+%% reshaping the data 
     
     % gather all p_conditions and p_conditions descriptions
     p_conditions_temp = [];
@@ -98,8 +97,10 @@ proposals_display_limit = 1000;
     end
     end
     end
+   
     
-%% gather some interesting facts
+    
+%% gather some interesting facts 
     
     % check for successful detections against Ground Truth IOU
     
@@ -172,14 +173,16 @@ proposals_display_limit = 1000;
     
     detections_at_num_proposals_total = squeeze( sum(detections_at_num_proposals,2) );
 
-%% define conditions to include, set their order, and define the line and color specifications
+    
+    
+%% define condition inclusion, color and line specifications 
 
-    %include_conditions = find([1 1 0, 0 0 1, 0 0 0, 1 1 1, 1]);
     include_conditions = find(true(1,length(unique_descriptions)));
-
+    %include_conditions = find([1 1 0, 0 0 1, 0 0 0, 1 1 1, 1]);
+    
     % define color space
-    colors = cool(length(include_conditions));
-    %colors = color_fade([1 0 1; 0 0 0; 0 .75 0], length(include_conditions ) );
+    %colors = cool(length(include_conditions));
+    colors = color_fade([1 0 1; 0 0 0; 0 .75 0], length(include_conditions ) );
     colors = sqrt(colors);
 
     linespec = {'-','--','-.'};
@@ -196,7 +199,7 @@ proposals_display_limit = 1000;
 
 
 
-%% figure without bounds
+%% completed detections as a function of iterations 
 
     h2 = figure();
     h2.Color = [1 1 1];
@@ -234,7 +237,7 @@ proposals_display_limit = 1000;
      
     
     
-%% medians over conditions
+%% medians over conditions 
 
     clear temp_a temp_b temp_c
     fprintf('Median time to first detection\n')
@@ -258,16 +261,18 @@ proposals_display_limit = 1000;
     end
     fprintf('\n\n');
     
-%     clear temp_a temp_b temp_c
-%     fprintf('Median time to third detection \n')
-%     fprintf('  location: box shape; conditioning \n');
-%     for mi = display_order
-%         temp_a = reshape(detection_order_times(mi,:,:,3),1,[]);
-%         temp_b = prctile( temp_a, 50 );
-%         fprintf( '  %-50s  ', unique_descriptions{mi} );
-%         fprintf( '%*.1f\n',10, temp_b );
-%     end
-%     fprintf('\n\n');
+    if size( detection_order_times, 4 ) >= 3
+        clear temp_a temp_b temp_c
+        fprintf('Median time to third detection \n')
+        fprintf('  location: box shape; conditioning \n');
+        for mi = display_order
+            temp_a = reshape(detection_order_times(mi,:,:,3),1,[]);
+            temp_b = prctile( temp_a, 50 );
+            fprintf( '  %-50s  ', unique_descriptions{mi} );
+            fprintf( '%*.1f\n',10, temp_b );
+        end
+        fprintf('\n\n');
+    end
     
     clear temp_a temp_b temp_c
     fprintf('Median time from first to second detection \n')
@@ -281,17 +286,19 @@ proposals_display_limit = 1000;
     end
     fprintf('\n\n');
     
-%     clear temp_a temp_b temp_c
-%     fprintf('Median time from second to third detection \n')
-%     fprintf('  location: box shape; conditioning \n');
-%     for mi = display_order
-%         temp_a = reshape(detection_order_times(mi,:,:,2),1,[]);
-%         temp_b = reshape(detection_order_times(mi,:,:,3),1,[]);
-%         temp_c = prctile( temp_b - temp_a, 50 );
-%         fprintf( '  %-50s  ', unique_descriptions{mi} );
-%         fprintf( '%*.1f\n',10, temp_c );
-%     end
-%     fprintf('\n\n');
+    if size( detection_order_times, 4 ) >= 3
+        clear temp_a temp_b temp_c
+        fprintf('Median time from second to third detection \n')
+        fprintf('  location: box shape; conditioning \n');
+        for mi = display_order
+            temp_a = reshape(detection_order_times(mi,:,:,2),1,[]);
+            temp_b = reshape(detection_order_times(mi,:,:,3),1,[]);
+            temp_c = prctile( temp_b - temp_a, 50 );
+            fprintf( '  %-50s  ', unique_descriptions{mi} );
+            fprintf( '%*.1f\n',10, temp_c );
+        end
+        fprintf('\n\n');
+    end
     
     clear temp_a temp_b temp_c
     fprintf('Number of failed detections \n')
@@ -307,95 +314,40 @@ proposals_display_limit = 1000;
  
     
     
-%% report on failed detections
-% 
-%     p = p_conditions{1,1,1};
-% 
-%     completion_iteration    = inf( size(agent_records));
-%     ending_support          = cell(size(agent_records));
-%     for ci = 1:size(agent_records,1) % condition
-%     for fi = 1:size(agent_records,2) % fold
-%     for ii = 1:size(agent_records,3) % image
-%         [completion_iteration(ci,fi,ii), ...
-%             ending_support{ci,fi,ii}] = ...
-%             situate_workspace_entry_event_log_to_completion_time( ...
-%                 agent_records{ci,fi,ii}, ...
-%                 p, 1000 );
-%     end
-%     end
-%         ending_support{ci} = cell2mat(final_workspace_snippet(ci,:)');
-%     end
-% 
-% completion_iteration
-% 
-% %% draw the figures
-% % 
-% if show_failures
-%     for ci = 1:num_conditions
-%     % for mi = find(strcmp(unique_descriptions,'salience, learned, yes'));
-% 
-%         failed_completions_logical_index = squeeze(   gt( completion_iteration(ci,:,:),  proposals_display_limit   ) );
-%         failed_completions               = sum( failed_completions_logical_index(:));
-%         [failed_i, failed_j]             = find(failed_completions_logical_index);
-% 
-%         failures_count          = [];
-%         zero_iou_counts         = [];
-%         provisional_only_counts = [];
-%         for oi = 1:length(p.situation_objects)
-%             zero_iou_counts.(p.situation_objects{oi})           = sum( eq(ending_support{ci}(:,oi), 0 ) );
-%             provisional_only_counts.(p.situation_objects{oi})   = sum( lt(ending_support{ci}(:,oi), p.thresholds.total_support_final) .* gt(ending_support{ci}(:,oi), 0 ) );
-%             failures_count.(p.situation_objects{oi})            = sum( lt(ending_support{ci}(:,oi), p.thresholds.total_support_final) );
-%         end
-%         
-%         examples_num_rows = 3;
-%         examples_num_cols = 5;
-%         [miss_list_ii,miss_list_fi] = find(failed_completions_logical_index);
-%         num_examples_per_fig = examples_num_rows * examples_num_cols;
-%         for i = 1:length(miss_list_fi)
-%             if mod(i,num_examples_per_fig) == 1
-%                 h = draw_box([0 0 1 1],'xywh');
-%                 t = {};
-%                 t{1} = unique_descriptions{ci};
-%                 t{2} = sprintf('number images not completed:  %*d', 3, failed_completions );
-% 
-%                 for oi = 1:length(p.situation_objects)
-%                     t{2+oi} = sprintf('missed %s: %*d', p.situation_objects{oi}, 3, sum(lt(ending_support{ci}(:,oi),p.thresholds.total_support_final)) );
-%                 end
-%                 h_temp = text(.1,.5,t);
-%                 h_temp.FontName = 'MonoSpaced';
-%                 h.Parent.Visible = 'off';
-%             end
-% 
-% 
-% %             row = floor((mod(i-1,num_examples_per_fig))./examples_num_cols) + 1;
-% %             col = mod(i-1,examples_num_cols)+1;
-% %             subplot2(examples_num_rows+1,examples_num_cols,row+1,col);
-% 
-%             fi = miss_list_fi(i);
-%             ii = miss_list_ii(i);
-%             cur_im_fname = fnames_test_images{ ci, fi, ii };
-%             cur_workspace = workspaces_final{  ci, fi, ii };
-%             cur_p_struct = p_conditions{ ci,fi, ii };
-%             situate_draw_workspace( cur_im_fname, cur_p_struct, cur_workspace );
-% 
-%             
-%             waitforbuttonpress();
-%         end
-% 
-%         display( unique_descriptions{ci} );
-%         display( {fnames_test_images{failed_completions_logical_index}}' )
-% 
-%     end
-% end
+%% report on failed detections 
 
+    if show_failure_examples
+        
+        display('boop');
+        num_rows = 2;
+        num_cols = 3;
+        
+        for ci = 1:size(successful_completion,1)
+            figure();
+            cur_display_counter = 1;
+            for fi = 1:size(successful_completion,2)
+            for ii = 1:size(successful_completion,3)
+                if ~successful_completion(ci,fi,ii)
+                    subplot(num_rows,num_cols,cur_display_counter);
+                    situate_draw_workspace(fnames_test_images{ci,fi,ii},p_conditions{ci,fi,ii},workspaces_final{ci,fi,ii} );
+                    if cur_display_counter == 1
+                        title(p_conditions{ci,fi,ii}.description);
+                    end
+                    cur_display_counter = cur_display_counter + 1;
+                    if mod(cur_display_counter,num_rows*num_cols) == 1
+                        figure();
+                        cur_display_counter = 1;
+                    end   
+                end
+            end
+            end
+        end
+        
+    end
+     
+    
+    
 end
-
-
-
-
-
-
-
 
 
 
@@ -436,41 +388,36 @@ end
 
 
 
-
-
-
-
-
-function completion_iteration = situate_workspace_entry_event_log_to_completion_time( agent_record_in, p, iteration_limit )
-    
-    agent_record = agent_record_in;
-    for i = 1:length(agent_record), agent_record(i).iteration = i; end
-    if ~exist('iteration_limit','var') || isempty(iteration_limit)
-        iteration_limit = inf;
-    end
-    agent_record( cellfun(@isempty, {agent_record.interest}) ) = [];
-    agent_record(iteration_limit:end) = [];
-    
-    % remove everything but the last entry for each interest (situation
-    % object type)
-    unique_interests    = unique( {agent_record.interest} );
-    last_detection_inds = false( length(agent_record), 1 );
-    for cur_label_ind = 1:length(unique_interests)
-        cur_object = unique_interests{cur_label_ind};
-        ind_keep = find(strcmp(cur_object, {agent_record.interest} ), 1, 'last');
-        last_detection_inds(ind_keep) = true;
-    end
-    agent_record( ~last_detection_inds ) = [];
-    
-    % see if the detection was completed, report time
-    over_threshold_inds = arrayfun( @(x) x.support.GROUND_TRUTH >= p.thresholds.total_support_final, agent_record );
-    if isequal( sort({agent_record(over_threshold_inds).interest}), sort(p.situation_objects) )
-        completion_iteration = max( [agent_record(over_threshold_inds).iteration] );
-    else
-        completion_iteration = inf;
-    end
-  
-end
+% function completion_iteration = situate_workspace_entry_event_log_to_completion_time( agent_record_in, p, iteration_limit )
+%     
+%     agent_record = agent_record_in;
+%     for i = 1:length(agent_record), agent_record(i).iteration = i; end
+%     if ~exist('iteration_limit','var') || isempty(iteration_limit)
+%         iteration_limit = inf;
+%     end
+%     agent_record( cellfun(@isempty, {agent_record.interest}) ) = [];
+%     agent_record(iteration_limit:end) = [];
+%     
+%     % remove everything but the last entry for each interest (situation
+%     % object type)
+%     unique_interests    = unique( {agent_record.interest} );
+%     last_detection_inds = false( length(agent_record), 1 );
+%     for cur_label_ind = 1:length(unique_interests)
+%         cur_object = unique_interests{cur_label_ind};
+%         ind_keep = find(strcmp(cur_object, {agent_record.interest} ), 1, 'last');
+%         last_detection_inds(ind_keep) = true;
+%     end
+%     agent_record( ~last_detection_inds ) = [];
+%     
+%     % see if the detection was completed, report time
+%     over_threshold_inds = arrayfun( @(x) x.support.GROUND_TRUTH >= p.thresholds.total_support_final, agent_record );
+%     if isequal( sort({agent_record(over_threshold_inds).interest}), sort(p.situation_objects) )
+%         completion_iteration = max( [agent_record(over_threshold_inds).iteration] );
+%     else
+%         completion_iteration = inf;
+%     end
+%   
+% end
     
     
     

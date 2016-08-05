@@ -1,7 +1,7 @@
 
 
 
-function [inds,p] = sample_2d(pdf,n,x,y)
+function [inds,p,point_density] = sample_2d(pdf,n,x,y)
 
 
 
@@ -87,6 +87,8 @@ function [inds,p] = sample_2d(pdf,n,x,y)
     p = zeros(size(inds));
     p(:,1) = x( inds(:,2) );
     p(:,2) = y( inds(:,1) );
+    
+    point_density = s./sum_pdf;
     
     if demo_mode
         display('sample_2d is in DEMO MODE');

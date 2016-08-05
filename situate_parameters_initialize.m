@@ -122,8 +122,10 @@ function p = situate_parameters_initialize()
     
         p.num_iterations = 10000;
 
-        p.object_type_priority_before_example_is_found = 1;
-        p.object_type_priority_after_example_is_found  = 0;
+        % these are now set per-objecty type in the
+        % situate_situation_definitions
+        %p.object_type_priority_before_example_is_found = 1;
+        %p.object_type_priority_after_example_is_found  = 0;
         % decide how hard to look for things that have already been found. If
         % set to 0, then no new scouts will be generated looking for that
         % object type. the priority scores are included in a roulette wheel

@@ -22,16 +22,6 @@ function [] = situate_experiment_helper(experiment_settings, p_conditions, situa
 
     
     
-%% add experiment_settings.situation information to the p structure
-
-    for i = 1:length(p_conditions)
-        p_conditions(i).situation_objects                 = experiment_settings.situations_struct.(experiment_settings.situation).situation_objects;
-        p_conditions(i).situation_objects_possible_labels = experiment_settings.situations_struct.(experiment_settings.situation).situation_objects_possible_labels;
-        p_conditions(i).situation_objects_prior_urgency   = experiment_settings.situations_struct.(experiment_settings.situation).prior_object_urgency;
-    end
-    
-    
-    
 %% set training and testing sets
   
     fname_blacklist = {}; 

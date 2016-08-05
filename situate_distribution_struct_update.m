@@ -37,7 +37,7 @@ function d = situate_distribution_struct_update( d, p, workspace )
     % adjust object priority if it's committed to the workspace
         workspace_ind = find( strcmp( d.interest, workspace.labels ) );
         if  ~isempty(workspace_ind) && workspace.total_support(workspace_ind) >= p.thresholds.total_support_final
-            d.interest_priority = p.object_type_priority_after_example_is_found;
+            d.interest_priority = p.situation_objects_urgency_post.(d.interest);
         end
 
     % should we condition this distribution based on what's in the workspace?
