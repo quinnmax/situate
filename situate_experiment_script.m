@@ -9,8 +9,8 @@
     addpath(fullfile(situate_gui_or_experiment_path));
     addpath(genpath(fullfile(situate_gui_or_experiment_path, 'tools')));
 
-   
-   
+
+
 %% define experiment settings 
 %
 % These are some basic settings for the experimental run, relating to
@@ -51,9 +51,8 @@
     experiment_settings.results_directory = fullfile('/Users/',char(java.lang.System.getProperty('user.name')),'/Desktop/', [experiment_settings.title '_' datestr(now,'yyyy.mm.dd.HH.MM.SS')]);
     if ~exist(experiment_settings.results_directory,'dir') && ~experiment_settings.use_gui, mkdir(experiment_settings.results_directory); display(['made results directory ' experiment_settings.results_directory]); end
 
-   
-    
-    
+
+
 %% set the data directory 
 %
 % situate_data_path points to a directory containing the images and label 
@@ -76,7 +75,7 @@
             situate_data_path = uigetdir(pwd); 
         end
     end
-    
+
 
 
 %% define your training testing splits 
@@ -111,9 +110,9 @@
     % seed test
         seed_test = RandStream.shuffleSeed;  % generates a seed based on current time, stores it into p_structures
         % seed_test = 1;
-    
 
-    
+
+
 %% define situate parameters: shared 
 %
 % These are the shared settings across the different experimental
@@ -206,9 +205,9 @@
             %   situate_situation_definitions 
             
     end
-    
-    
-    
+
+
+
 %% define siutate parameters: experimental conditions 
 %
 % These are modifications to the shared situate parameters defined above.
@@ -248,14 +247,14 @@
     %    catch typos and stuff here.
     assert( all( arrayfun( @situate_parameters_validate, p_conditions ) ) );
 
-   
-   
+
+
 %% run the experiment 
 
     situate_experiment_helper(experiment_settings, p_conditions, situate_data_path, split_arg);
-   
-   
-   
+
+
+
 %% run the analysis 
 
     if experiment_settings.run_analysis_after_completion && ~experiment_settings.use_gui

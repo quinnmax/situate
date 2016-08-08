@@ -5,7 +5,7 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
 
 
 
-%% set data data 
+%% set data source 
 
     if ~exist('show_failure_examples','var') || isempty(show_failure_examples)
         show_failure_examples = true;
@@ -97,9 +97,9 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     end
     end
     end
-   
-    
-    
+
+
+
 %% gather some interesting facts 
     
     % check for successful detections against Ground Truth IOU
@@ -177,9 +177,9 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
         detections_at_num_proposals_total = reshape( detections_at_num_proposals_total, 1, [] );
     end
 
-    
-    
-%% define condition inclusion, color and line specifications 
+
+
+%% define conditions to include, color and line specifications 
 
     include_conditions = find(true(1,length(unique_descriptions)));
     %include_conditions = find([1 1 0, 0 0 1, 0 0 0, 1 1 1, 1]);
@@ -238,9 +238,9 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     
     h2.Position = [440 537 560 220];
     print(h2,fullfile(results_directory,'situate_experiment_figure'),'-r300', '-dpdf' );
-     
-    
-    
+
+
+
 %% table: medians over conditions 
 
     clear temp_a temp_b temp_c
@@ -315,9 +315,9 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
         fprintf( '%*d\n',10, temp_c );
     end
     fprintf('\n\n');
- 
-    
-    
+
+
+
 %% report: failed detections, final workspace 
 
     if show_failure_examples
@@ -347,9 +347,9 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
         end
         
     end
-     
-    
-    
+
+
+
 end
 
 
@@ -390,13 +390,3 @@ function output = color_fade(colors, n )
 end
 
 
-    
-        
-        
-        
-        
-        
-        
-        
-
-    
