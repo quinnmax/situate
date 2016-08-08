@@ -4,6 +4,8 @@ function [] = situate_experiment_helper(experiment_settings, p_conditions, situa
 
 
 
+%% deal with split_arg data
+
     if exist('split_arg','var') && ~isempty(split_arg)
         if isnumeric(split_arg)
             % we'll interpret it as a seed value
@@ -16,7 +18,7 @@ function [] = situate_experiment_helper(experiment_settings, p_conditions, situa
             error('don''t know what to do with that split_arg');
         end
     else
-        warning('split_arg_was empty, using current time as rng seed');
+        warning('split_arg_was empty, using current time as rng seed for testing');
         rng(now);
     end
 
@@ -38,8 +40,6 @@ function [] = situate_experiment_helper(experiment_settings, p_conditions, situa
         % title of the split file. not sure that that should be necessary.
         % something to think about and adjust in the future
         
-        warn_about_data_limits = false;
-        
         fnames_splits_train = dir(fullfile(split_file_directory, '*_fnames_split_*_train.txt'));
         fnames_splits_test  = dir(fullfile(split_file_directory, '*_fnames_split_*_test.txt' ));
         fnames_splits_train = cellfun( @(x) fullfile(split_file_directory, x), {fnames_splits_train.name}, 'UniformOutput', false );
@@ -55,22 +55,10 @@ function [] = situate_experiment_helper(experiment_settings, p_conditions, situa
         temp.fnames_lb_test  = cellfun( @(x) importdata(x, '\n'), fnames_splits_test,  'UniformOutput', false );
         data_folds = [];
         for i = 1:length(temp.fnames_lb_train)
-            
             data_folds(i).fnames_lb_train = temp.fnames_lb_train{i};
             data_folds(i).fnames_lb_test  = temp.fnames_lb_test{i};
             data_folds(i).fnames_im_train = cellfun( @(x) [x(1:end-4) 'jpg'], temp.fnames_lb_train{1}, 'UniformOutput', false );
             data_folds(i).fnames_im_test  = cellfun( @(x) [x(1:end-4) 'jpg'], temp.fnames_lb_test{1},  'UniformOutput', false );
-        
-            if ~isempty(experiment_settings.testing_data_max) && experiment_settings.testing_data_max < length(data_folds(i).fnames_lb_test)
-                data_folds(i).fnames_lb_test = data_folds(i).fnames_lb_test(1:experiment_settings.testing_data_max);
-                data_folds(i).fnames_im_test = data_folds(i).fnames_im_test(1:experiment_settings.testing_data_max);
-                warn_about_data_limits = true;
-            end
-            
-        end
-        
-        if warn_about_data_limits
-            warning(['using specified training data, but limiting testing data to experiment_settings.testing_data_max of: ' num2str(experiment_settings.testing_data_max)]);
         end
            
     else % generate splits based on situate_data_path, experiment_settings.training_data_max, experiment_settings.testing_data_max
@@ -120,13 +108,6 @@ function [] = situate_experiment_helper(experiment_settings, p_conditions, situa
                 data_folds(i).fnames_lb_train = setdiff( fnames_lb, data_folds(i).fnames_lb_test );
                 data_folds(i).fnames_im_test  = cellfun( @(x) [x(1:end-5) '.jpg'], data_folds(i).fnames_lb_test,  'UniformOutput', false );
                 data_folds(i).fnames_im_train = cellfun( @(x) [x(1:end-5) '.jpg'], data_folds(i).fnames_lb_train, 'UniformOutput', false );
-
-                if isfield(experiment_settings,'training_data_max') && ~isempty(experiment_settings.training_data_max) && experiment_settings.training_data_max > 0
-                    warning('situate is using limited training data');
-                    data_folds(i).fnames_lb_train = data_folds(i).fnames_lb_train(1:experiment_settings.training_data_max);
-                    data_folds(i).fnames_im_train = data_folds(i).fnames_im_train(1:experiment_settings.training_data_max);
-                end
-
             end
 
         % save splits to files (if not use gui)
@@ -145,7 +126,28 @@ function [] = situate_experiment_helper(experiment_settings, p_conditions, situa
                 end
             end
            
-    end    
+    end 
+    
+    if ~isempty(experiment_settings.testing_data_max) && experiment_settings.testing_data_max < length(data_folds(i).fnames_lb_test)
+        for i = 1:length(data_folds)
+            data_folds(i).fnames_lb_test = data_folds(i).fnames_lb_test(1:experiment_settings.testing_data_max);
+            data_folds(i).fnames_im_test = data_folds(i).fnames_im_test(1:experiment_settings.testing_data_max);
+        end
+    end
+
+    if isfield(experiment_settings,'training_data_max') && ~isempty(experiment_settings.training_data_max) && experiment_settings.training_data_max > 0
+        for i = 1:length(data_folds)
+            data_folds(i).fnames_lb_train = data_folds(i).fnames_lb_train(1:experiment_settings.training_data_max);
+            data_folds(i).fnames_im_train = data_folds(i).fnames_im_train(1:experiment_settings.training_data_max);
+        end
+    end
+    
+    if experiment_settings.perform_situate_run_on_training_data
+        for fold_ind = 1:length(data_folds)
+            data_folds(fold_ind).fnames_lb_test = data_folds(fold_ind).fnames_lb_train;
+            data_folds(fold_ind).fnames_im_test = data_folds(fold_ind).fnames_im_train;
+        end
+    end
 
     
     
@@ -283,7 +285,11 @@ function [] = situate_experiment_helper(experiment_settings, p_conditions, situa
             break; 
         else
             p_conditions_descriptions = {p_conditions.description};
-            save_fname = fullfile(experiment_settings.results_directory, [experiment_settings.title '_split_' num2str(fold_ind,'%02d') '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
+            if experiment_settings.perform_situate_run_on_training_data
+                save_fname = fullfile(experiment_settings.results_directory, [experiment_settings.title '_training_data_run' '_split_' num2str(fold_ind,'%02d') '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
+            else
+                save_fname = fullfile(experiment_settings.results_directory, [experiment_settings.title '_split_' num2str(fold_ind,'%02d') '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
+            end
             save(save_fname, ...
                 'p_conditions', ...
                 'workspaces_final', ...
@@ -300,8 +306,6 @@ function [] = situate_experiment_helper(experiment_settings, p_conditions, situa
         end
         
     end
-    
-    
     
     
 
@@ -449,11 +453,5 @@ function faster_rcnn_data_for_image = load_faster_rcnn_data(cur_fname_im)
     faster_rcnn_data_for_image.box_scores = cell2mat(cellfun( @(x) x(:,5),   faster_rcnn_data_raw.output(2,ind_keep)', 'UniformOutput', false));
     faster_rcnn_data_for_image.fnames_im  = faster_rcnn_fnames_im(ind_keep);
 end
-
-
-
-
-
-
 
 

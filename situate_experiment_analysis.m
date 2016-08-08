@@ -172,6 +172,10 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     end
     
     detections_at_num_proposals_total = squeeze( sum(detections_at_num_proposals,2) );
+    
+    if num_conditions == 1
+        detections_at_num_proposals_total = reshape( detections_at_num_proposals_total, 1, [] );
+    end
 
     
     
@@ -181,8 +185,8 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     %include_conditions = find([1 1 0, 0 0 1, 0 0 0, 1 1 1, 1]);
     
     % define color space
-    %colors = cool(length(include_conditions));
-    colors = color_fade([1 0 1; 0 0 0; 0 .75 0], length(include_conditions ) );
+    colors = cool(length(include_conditions));
+    %colors = color_fade([1 0 1; 0 0 0; 0 .75 0], length(include_conditions ) );
     colors = sqrt(colors);
 
     linespec = {'-','--','-.'};
@@ -199,7 +203,7 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
 
 
 
-%% completed detections as a function of iterations 
+%% figure: completed detections as a function of iterations 
 
     h2 = figure();
     h2.Color = [1 1 1];
@@ -237,7 +241,7 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
      
     
     
-%% medians over conditions 
+%% table: medians over conditions 
 
     clear temp_a temp_b temp_c
     fprintf('Median time to first detection\n')
@@ -314,7 +318,7 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
  
     
     
-%% report on failed detections 
+%% report: failed detections, final workspace 
 
     if show_failure_examples
         
@@ -386,41 +390,6 @@ function output = color_fade(colors, n )
 end
 
 
-
-% function completion_iteration = situate_workspace_entry_event_log_to_completion_time( agent_record_in, p, iteration_limit )
-%     
-%     agent_record = agent_record_in;
-%     for i = 1:length(agent_record), agent_record(i).iteration = i; end
-%     if ~exist('iteration_limit','var') || isempty(iteration_limit)
-%         iteration_limit = inf;
-%     end
-%     agent_record( cellfun(@isempty, {agent_record.interest}) ) = [];
-%     agent_record(iteration_limit:end) = [];
-%     
-%     % remove everything but the last entry for each interest (situation
-%     % object type)
-%     unique_interests    = unique( {agent_record.interest} );
-%     last_detection_inds = false( length(agent_record), 1 );
-%     for cur_label_ind = 1:length(unique_interests)
-%         cur_object = unique_interests{cur_label_ind};
-%         ind_keep = find(strcmp(cur_object, {agent_record.interest} ), 1, 'last');
-%         last_detection_inds(ind_keep) = true;
-%     end
-%     agent_record( ~last_detection_inds ) = [];
-%     
-%     % see if the detection was completed, report time
-%     over_threshold_inds = arrayfun( @(x) x.support.GROUND_TRUTH >= p.thresholds.total_support_final, agent_record );
-%     if isequal( sort({agent_record(over_threshold_inds).interest}), sort(p.situation_objects) )
-%         completion_iteration = max( [agent_record(over_threshold_inds).iteration] );
-%     else
-%         completion_iteration = inf;
-%     end
-%   
-% end
-    
-    
-    
-    
     
         
         

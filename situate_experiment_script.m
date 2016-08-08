@@ -18,20 +18,15 @@
 % results, and how many images for training and testing.
 
     experiment_settings = [];
-    experiment_settings.use_gui = true;
+    experiment_settings.use_gui = false;
     
     experiment_settings.title               = 'experiment_title';
     experiment_settings.situations_struct   = situate_situation_definitions();
     experiment_settings.situation           = 'dogwalking'; 
     
-    % results directory
-    %   results won't be saved if gui is on
-    experiment_settings.results_directory = fullfile('/Users/',char(java.lang.System.getProperty('user.name')),'/Desktop/', [experiment_settings.title '_' datestr(now,'yyyy.mm.dd.HH.MM.SS')]);
-    if ~exist(experiment_settings.results_directory,'dir') && ~experiment_settings.use_gui, mkdir(experiment_settings.results_directory); display(['made results directory ' experiment_settings.results_directory]); end
-
     % num_folds and training/testing images to use per fold
-    %   num_folds wont' matter if gui is on.
-    %   If testing_data_max or testing_data_min are set to [], then as much
+    %   -num_folds won't matter if gui is on.
+    %   -If testing_data_max or testing_data_min are set to [], then as much
     %   as possible will be used, given the available data and the number
     %   of folds.
     experiment_settings.num_folds           = 1;  
@@ -41,19 +36,23 @@
     % (won't matter if gui is on)
     experiment_settings.run_analysis_after_completion = true;
     
-    % save the full records
-    %   each scout:
-    %       box coords, internal support, gt iou
-    %   each dist_struct:
-    %       for each image and object type
-    experiment_settings.save_tons_of_data   = false;
     
-    % tune the model by running situate on the training data with an oracle 
-    % classifier. we'll build a regression model to help us scale outputs
-    % from the scouts
-    experiment_settings.intensive_training  = false;
     
+    % run situate on the training data, 
+    % save off both the oracle and classifier data,
+    experiment_settings.perform_situate_run_on_training_data = false;
+    
+    % save's all crops, for all images, all methods, all folds to the
+    % output data mat. be careful. don't use on big runs.
+    experiment_settings.save_all_crops = false;
+    
+    % results directory
+    %   results won't be saved if gui is on
+    experiment_settings.results_directory = fullfile('/Users/',char(java.lang.System.getProperty('user.name')),'/Desktop/', [experiment_settings.title '_' datestr(now,'yyyy.mm.dd.HH.MM.SS')]);
+    if ~exist(experiment_settings.results_directory,'dir') && ~experiment_settings.use_gui, mkdir(experiment_settings.results_directory); display(['made results directory ' experiment_settings.results_directory]); end
 
+   
+    
     
 %% set the data directory 
 %
@@ -105,12 +104,12 @@
 
     % seed train
         % split_arg = now;
-        split_arg = 1;
+        % split_arg = 1;
         % split_arg = uigetdir(pwd);
-        % split_arg = 'default_split/';
+        split_arg = 'default_split/';
     
     % seed test
-        seed_test = now;  % uses current time as the seed, stores it into p_structures
+        seed_test = RandStream.shuffleSeed;  % generates a seed based on current time, stores it into p_structures
         % seed_test = 1;
     
 
@@ -179,30 +178,33 @@
         p.seed_test  = seed_test;
         
     % add the situation information to the p structure
-    
-    p.situation_objects                 = experiment_settings.situations_struct.(experiment_settings.situation).situation_objects;
-    p.situation_objects_possible_labels = experiment_settings.situations_struct.(experiment_settings.situation).situation_objects_possible_labels;
-    p.situation_objects_urgency_pre     = experiment_settings.situations_struct.(experiment_settings.situation).object_urgency_pre;
-    p.situation_objects_urgency_post    = experiment_settings.situations_struct.(experiment_settings.situation).object_urgency_post;
+        p.situation_objects                 = experiment_settings.situations_struct.(experiment_settings.situation).situation_objects;
+        p.situation_objects_possible_labels = experiment_settings.situations_struct.(experiment_settings.situation).situation_objects_possible_labels;
+        p.situation_objects_urgency_pre     = experiment_settings.situations_struct.(experiment_settings.situation).object_urgency_pre;
+        p.situation_objects_urgency_post    = experiment_settings.situations_struct.(experiment_settings.situation).object_urgency_post;
     
     % the default values for these are uniform for pre, and zeros for post
     switch experiment_settings.situation
-        case 'pingpong'
-            p.situation_objects_urgency_pre.('table')      = 0.1;
-            p.situation_objects_urgency_pre.('net')        = 0.1;
-            p.situation_objects_urgency_pre.('player1')    = 1.0;
-            p.situation_objects_urgency_pre.('player2')    = 1.0;
-            p.situation_objects_urgency_post.('table')     = 0.1;
-            p.situation_objects_urgency_post.('net')       = 0.1;
-            p.situation_objects_urgency_post.('player1')   = 0.1;
-            p.situation_objects_urgency_post.('player2')   = 0.1;
         case 'dogwalking'
-            p.situation_objects_urgency_pre.('dogwalker')  = 1.0;
-            p.situation_objects_urgency_pre.('dog')        = 1.0;
-            p.situation_objects_urgency_pre.('leash')      = 0.1;
-            p.situation_objects_urgency_post.('dogwalker') = 0.1;
-            p.situation_objects_urgency_post.('dog')       = 0.1;
-            p.situation_objects_urgency_post.('leash')     = 0.1;
+            p.situation_objects_urgency_pre.(  'dogwalker') = 1.0;
+            p.situation_objects_urgency_pre.(  'dog')       = 1.0;
+            p.situation_objects_urgency_pre.(  'leash')     = 0.1;
+            p.situation_objects_urgency_post.( 'dogwalker') = 0.1;
+            p.situation_objects_urgency_post.( 'dog')       = 0.1;
+            p.situation_objects_urgency_post.( 'leash')     = 0.1;
+        case 'pingpong'            
+            p.situation_objects_urgency_pre.(  'table')     = 0.1;
+            p.situation_objects_urgency_pre.(  'net')       = 0.1;
+            p.situation_objects_urgency_pre.(  'player1')   = 1.0;
+            p.situation_objects_urgency_pre.(  'player2')   = 1.0;
+            p.situation_objects_urgency_post.( 'table')     = 0.1;
+            p.situation_objects_urgency_post.( 'net')       = 0.1;
+            p.situation_objects_urgency_post.( 'player1')   = 0.1;
+            p.situation_objects_urgency_post.( 'player2')   = 0.1;
+        otherwise
+            % Default urgencies will be used. Find them in:
+            %   situate_situation_definitions 
+            
     end
     
     
@@ -249,8 +251,8 @@
    
    
 %% run the experiment 
-   
-   situate_experiment_helper(experiment_settings, p_conditions, situate_data_path, split_arg);
+
+    situate_experiment_helper(experiment_settings, p_conditions, situate_data_path, split_arg);
    
    
    

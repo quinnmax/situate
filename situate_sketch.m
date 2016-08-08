@@ -77,7 +77,7 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
             workspace_snapshot  = workspace;
             agent_index                  = sample_1d( [agent_pool.urgency], 1 );
             [agent_pool,d,workspace]     = agent_evaluate( agent_pool, agent_index, im, label, d, p, workspace );
-            current_agent_snapshot = agent_pool(agent_index);
+            current_agent_snapshot       = agent_pool(agent_index);
             
         % take note of changes to the workspace
             workspace_changed = false;
@@ -270,7 +270,7 @@ function agent = agent_initialize(d,p)
     agent.support.external     = 0;
     agent.support.total        = 0;
     agent.support.GROUND_TRUTH = [];
-    agent.support.external_support_vect = [];
+    agent.support.sample_densities = [];
     agent.eval_function        = []; % not really using it right now :/
     
     agent.GT_label_raw = [];
@@ -385,7 +385,7 @@ function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, p, work
             
             % for calculating external support
             % regress internal support, box density, location density to IOU
-            cur_agent.support.external_support_vect = box_density;
+            cur_agent.support.sample_densities = box_density;
 
         end
         
