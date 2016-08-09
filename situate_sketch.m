@@ -6,8 +6,8 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
 % [ workspace, run_data, visualizer_status_string ] = situate_sketch( im_fname, p, learned_stuff );
 
 
-    
-    %% initialization
+
+    %% initialization 
         
     % load an image, label
         im = imresize_px(double( imread(im_fname))/255, p.image_redim_px);
@@ -64,10 +64,10 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
             return;
         end
     end
-    
-    
-    
-    %% the iteration loop
+
+
+
+    %% the iteration loop 
     
     for iteration = 1:p.num_iterations
             
@@ -77,7 +77,7 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
             workspace_snapshot  = workspace;
             agent_index                  = sample_1d( [agent_pool.urgency], 1 );
             [agent_pool,d,workspace]     = agent_evaluate( agent_pool, agent_index, im, label, d, p, workspace );
-            current_agent_snapshot = agent_pool(agent_index);
+            current_agent_snapshot       = agent_pool(agent_index);
             
         % take note of changes to the workspace
             workspace_changed = false;
@@ -205,10 +205,10 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
             end
             
     end % of main iteration loop
-    
-    
-    
-    %% final recording of results and visualizer updating
+
+
+
+    %% final recording of results and visualizer updating 
     
         % update records
         for agent_type = {'scout','reviewer','builder'}
@@ -236,14 +236,14 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
             % we'll assume that we should continue on to the next image
             situate_visualizer_return_status = 'next_image';
         end
-    
-        
-    
+
+
+
 end
 
 
 
-%% initialization functions
+%% initialization functions 
 
 function workspace = workspace_initialize()
 
@@ -253,7 +253,7 @@ function workspace = workspace_initialize()
     workspace.internal_support = [];
     workspace.total_support    = [];
     workspace.GT_IOU           = [];
-    
+
 end
 
 function agent = agent_initialize(d,p)
@@ -270,7 +270,7 @@ function agent = agent_initialize(d,p)
     agent.support.external     = 0;
     agent.support.total        = 0;
     agent.support.GROUND_TRUTH = [];
-    agent.support.external_support_vect = [];
+    agent.support.sample_densities = [];
     agent.eval_function        = []; % not really using it right now :/
     
     agent.GT_label_raw = [];
@@ -287,7 +287,7 @@ end
 
 
 
-%% eval agent (general, just routing)
+%% eval agent (general, just routing) 
 
 function [agent_pool, d, workspace] = agent_evaluate( agent_pool, agent_index, im, label, d, p, workspace )
 
@@ -342,7 +342,7 @@ end
 
 
 
-%% eval scout
+%% eval scout 
 
 function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, p, workspace, d, im, label )     
 
@@ -385,7 +385,7 @@ function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, p, work
             
             % for calculating external support
             % regress internal support, box density, location density to IOU
-            cur_agent.support.external_support_vect = box_density;
+            cur_agent.support.sample_densities = box_density;
 
         end
         
@@ -472,7 +472,7 @@ end
 
 
 
-%% eval reviewer
+%% eval reviewer 
 
 
 function [agent_pool] = agent_evaluate_reviewer( agent_pool, agent_index, p, workspace, d )
@@ -512,7 +512,7 @@ end
 
 
 
-%% eval builder
+%% eval builder 
 
 function [workspace,d,agent_pool] = agent_evaluate_builder( agent_pool, agent_index, workspace, d, p )
  
@@ -591,7 +591,8 @@ function [workspace,d,agent_pool] = agent_evaluate_builder( agent_pool, agent_in
 end
 
 
-%% spawn local scouts
+
+%% spawn local scouts 
 function agent_pool = spawn_local_scouts( agent_to_expand, agent_pool, d )
 
     % this is meant to take an agent and spawn a set of scouts that are
@@ -727,9 +728,5 @@ function agent_pool = spawn_local_scouts( agent_to_expand, agent_pool, d )
         agent_pool(end+1) = new_agent;
     
 end
-
-
-
-
 
 
