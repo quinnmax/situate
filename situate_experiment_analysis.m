@@ -3,7 +3,8 @@
 
 function situate_experiment_analysis( results_directory, show_failure_examples )
 % situate_experiment_analysis( results_directory, show_failure_examples );
-
+addpath('/home/rtan/common/Desktop/Situate');
+addpath('/home/rtan/common/Desktop/Situate/tools');
 
 
 %% set data source 
@@ -127,7 +128,7 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     for ii = 1:size(agent_records,3)
         temp_detection_times = inf(1,length(p_conditions{1,1,1}.situation_objects));
         situation_objects = p_conditions{ci,fi,ii}.situation_objects;
-        for oi = 1:length(situation_objects)
+        for oi = 1:length(workspaces_final{ci,fi,ii}.labels) %Fixes Median Graph: Limits GT_IOU checks to objects detected
             object_label = p_conditions{1,1,1}.situation_objects{oi};
             workspace_entry_event_inds_object_type    = strcmp(object_label,  {agent_records{ci,fi,ii}.interest} );
             cur_support_record = [agent_records{ci,fi,ii}.support];
@@ -136,13 +137,33 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
             b = reshape(workspace_entry_event_inds_over_threshold,1,[]);
             c = and(a,b);
             cur_obj_first_detection_ind = find(c,1,'first');
-            if ~isempty(cur_obj_first_detection_ind)
+            if ~isempty(cur_obj_first_detection_ind) && ~(oi > length(workspaces_final{ci,fi,ii}.GT_IOU)) 
                 temp_detection_times(oi) = cur_obj_first_detection_ind;
             end
         end
         [~,sort_order] = sort(temp_detection_times,'ascend');
         detection_order_times(ci,fi,ii,:) = temp_detection_times(sort_order);
         detection_order_labels(ci,fi,ii,:) = situation_objects(sort_order);
+    end
+    end
+    end
+    
+    %GT_IOU Check: Fixes Median Graphs 
+    for it = 1:length(situation_objects)
+    for ci = 1:size(workspaces_final,1)
+    for fi = 1:size(workspaces_final,2)
+    for ii = 1:size(workspaces_final,3)
+        for oi = 1:size(workspaces_final{ci,fi,ii}.GT_IOU, 2)
+        if workspaces_final{ci,fi,ii}.GT_IOU(oi) < iou_threshold
+            detection_order_times(ci,fi,ii,oi) = inf; 
+        end
+        end
+        [detection_order_times(ci,fi,ii,:), indexes] = sort(detection_order_times(ci,fi,ii,:)); 
+        labels_old = detection_order_labels(ci,fi,ii,:);
+        for oi = 1:length(indexes)
+            detection_order_labels(ci,fi,ii,oi) = labels_old(indexes(oi)); 
+        end
+    end
     end
     end
     end
@@ -285,7 +306,9 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     for ci = display_order
         temp_a = reshape(detection_order_times(ci,:,:,1),1,[]);
         temp_b = reshape(detection_order_times(ci,:,:,2),1,[]);
-        temp_c = prctile( temp_b - temp_a, 50 );
+        rem_NaNs = temp_b - temp_a;
+        rem_NaNs(isnan(rem_NaNs)) = inf;
+        temp_c = prctile( rem_NaNs, 50 );
         fprintf( '  %-50s  ', unique_descriptions{ci} );
         fprintf( '%*.1f\n',10, temp_c );
     end
@@ -298,6 +321,8 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
         for mi = display_order
             temp_a = reshape(detection_order_times(mi,:,:,2),1,[]);
             temp_b = reshape(detection_order_times(mi,:,:,3),1,[]);
+            rem_NaNs = temp_b - temp_a;
+            rem_NaNs(isnan(rem_NaNs)) = inf;
             temp_c = prctile( temp_b - temp_a, 50 );
             fprintf( '  %-50s  ', unique_descriptions{mi} );
             fprintf( '%*.1f\n',10, temp_c );
