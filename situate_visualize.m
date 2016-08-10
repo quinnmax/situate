@@ -1,9 +1,9 @@
 
+
+
 function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, cur_agent, population_count, scout_record, visualization_description )
-
-
-
-% [h, return_status_string] = situate_visualize( h, im, p, d, workspace, cur_agent, population_count, scout_record, visualization_description );
+% [h, return_status_string] = situate_visualize( h, im, p, d,
+%        workspace, cur_agent, population_count, scout_record, visualization_description ); 
 %
 % to initialize
 %   [h, return_status_string] = situate_visualize( [], im, p, d, workspace, cur_agent, population_count, scout_record, visualization_description )
@@ -16,7 +16,7 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
 
     
 
-    %% get set up 
+%% get set up 
     % see if this is an initial drawing, 
     % see if the workspace has been updated
     
@@ -81,10 +81,10 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
     end
     
     set(h,'UserData',UserData);
-
     
     
-    %% draw workspace (main image) 
+    
+%% draw workspace (main image) 
     
         subplot2(3,sp_cols,1,1,2,3); 
         
@@ -113,7 +113,7 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
         
         
        
-    %% draw bottom left graph (something about the population) 
+%% draw bottom left graph (something about the population) 
     % draw a population distribution or interest counts
     subplot2(3,sp_cols,3,1,3,3);
     plotting_subject = 'interest_iterations';
@@ -139,7 +139,7 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
     
     
     
-    %% draw the xy distributions 
+%% draw the xy distributions 
         % only the distribution associated with the interest of the most
         % recent scout should have changed, so just draw that one if
         % possible
@@ -157,7 +157,7 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
        
         
         
-    %% draw the box distributions 
+%% draw the box distributions 
    
     if initial_figure_generation || workspace_has_updated || strcmp(situate_visualizer_run_status,'end')
         
@@ -311,9 +311,156 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
         
     end
       
+    
+    
+%% draw workspace information onto distributions 
+    
+    if ~isempty(workspace)
+
+        point_format_final = 'or';
+        point_format_provisional = 'xr';
+        bounding_box_format_final = 'r';
+        bounding_box_format_provisional = 'r--';
+
+        subplot2(3,sp_cols,1,1,2,3); 
+
+        % draw workspace boxes onto main image
+        hold on;
+        for wi = 1:size(workspace.boxes_r0rfc0cf,1)
+            if workspace.total_support(wi) >= p.thresholds.total_support_final
+                UserData.handles(end+1) = draw_box(workspace.boxes_r0rfc0cf(wi,:), 'r0rfc0cf', bounding_box_format_final);
+            else
+                UserData.handles(end+1) = draw_box(workspace.boxes_r0rfc0cf(wi,:), 'r0rfc0cf', bounding_box_format_provisional);
+            end
+        end
+
+        % then draw the text ( so boxes don't cover text )
+        for wi = 1:size(workspace.boxes_r0rfc0cf,1)
+            label_text = {...
+                workspace.labels{wi}; ...
+                ['  total: ' num2str(workspace.total_support(wi))]; ...
+                ['  gt:    ' num2str(workspace.GT_IOU(wi))]};
+            t1 = text( workspace.boxes_r0rfc0cf(wi,3), workspace.boxes_r0rfc0cf(wi,1), label_text);
+            set(t1,'color',[0 0 0]);
+            set(t1,'FontSize',14);
+            set(t1,'FontWeight','bold');
+            t2 = text( workspace.boxes_r0rfc0cf(wi,3)+1, workspace.boxes_r0rfc0cf(wi,1)+1, label_text);
+            set(t2,'color',[1 1 1]);
+            set(t2,'FontSize',14);
+            set(t2,'FontWeight','bold');
+
+            UserData.handles(end+1) = t1;
+            UserData.handles(end+1) = t2;
+        end
+        hold off;
+
+        % draw workspace stats onto distributions that generated them
+        for wi = 1:size(workspace.boxes_r0rfc0cf,1)
+
+            if workspace.total_support(wi) >= p.thresholds.total_support_final
+                point_format = point_format_final;
+                bounding_box_format = bounding_box_format_final;
+            else
+                point_format = point_format_provisional;
+                bounding_box_format = bounding_box_format_provisional;
+            end
+
+            width  = workspace.boxes_r0rfc0cf(wi,4) - workspace.boxes_r0rfc0cf(wi,3) + 1;
+            height = workspace.boxes_r0rfc0cf(wi,2) - workspace.boxes_r0rfc0cf(wi,1) + 1;
+            width_ratio = width / sqrt(d(1).image_size_px);
+            height_ratio = height / sqrt(d(1).image_size_px);
+            aspect_ratio =  width / height;
+            area_ratio   = (width * height) / d(1).image_size_px;
+
+            oi = find(strcmp(workspace.labels{wi},p.situation_objects));
+            if length(oi) > 1, oi = oi(randi(length(oi))); end
+
+            switch d(oi).box_display.method
+
+                case 'plots'
+
+                    switch d(oi).box_method
+                        case {'independent_uniform_log_aa','independent_normals_log_aa','conditional_mvn_log_aa'}
+                            x1_val = log2(aspect_ratio);
+                            x2_val = log10(area_ratio);
+                        case {'independent_uniform_aa','independent_normals_aa','conditional_mvn_aa'}
+                            x1_val = aspect_ratio;
+                            x2_val = area_ratio;
+                        case {'independent_uniform_wh','independent_normals_wh','conditional_mvn_wh'}
+                            x1_val = width_ratio;
+                            x2_val = height_ratio;
+                        case {'independent_uniform_log_wh','independent_normals_log_wh','conditional_mvn_log_wh'}
+                            x1_val = log( width_ratio);
+                            x2_val = log( height_ratio);
+                        otherwise
+                            error('unimplemented');
+                    end
+
+                    [~,y1_val_ind] = min( abs( x1_val - d(oi).box_display.x1) );
+                    y1_val = d(oi).box_display.y1(y1_val_ind);
+
+                    [~,y2_val_ind] = min( abs( x2_val - d(oi).box_display.x2 ) );
+                    y2_val = d(oi).box_display.y2(y2_val_ind);
+
+                    subplot2(3,sp_cols,2,3 + oi);
+                    hold on;
+                    temp_h = plot( x1_val, y1_val, point_format );
+                    hold off;
+                    UserData.handles(end+1) = temp_h;
+
+                    subplot2(3,sp_cols,3,3 + oi); 
+                    hold on;
+                    temp_h = plot( x2_val, y2_val, point_format );
+                    hold off;
+                    UserData.handles(end+1) = temp_h;
+
+                case 'map'
+
+                    switch d(oi).box_method
+                        case 'conditional_mvn_log_aa'
+                            x_val = log2(aspect_ratio);
+                            y_val = log10(area_ratio);
+                        case 'conditional_mvn_aa'
+                            x_val = area_ratio;
+                            y_val = aspect_ratio;
+                        case 'conditional_mvn_log_wh'
+                            x_val = log(width_ratio);
+                            y_val = log(height_ratio);
+                        case 'conditional_mvn_wh'
+                            x_val = log(width_ratio);
+                            y_val = log(height_ratio);
+                        otherwise
+                            error('unimplemented');
+                    end
+                    subplot2(3,sp_cols,2,3+oi,3,3+oi);
+                    hold on;
+                    temp_h = plot_onto_imshow( x_val, y_val, d(oi).box_display.xrange, d(oi).box_display.yrange, point_format );
+                    hold off;
+                    UserData.handles(end+1) = temp_h;
+
+
+                otherwise
+                    subplot2(3,sp_cols,2,3 + oi); 
+
+            end
+
+            % now draw any checked in boxes onto the 
+            % location distribution maps
+
+            subplot2(3,sp_cols,1,3+oi);
+            hold on
+            temp_h = draw_box(workspace.boxes_r0rfc0cf(wi,:), 'r0rfc0cf', bounding_box_format);
+            hold off;
+            UserData.handles(end+1) = temp_h;
+
+        end
+    end
         
+    set(h,'UserData',UserData);
         
-    %% draw representation of current scout onto distributions 
+   
+    
+%% draw representation of current scout onto distributions 
     
     if ~isempty(cur_agent) && isequal( cur_agent.type, 'scout' )
         
@@ -326,7 +473,10 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
         UserData.handles(end+1) = draw_box(cur_agent.box.r0rfc0cf, 'r0rfc0cf', 'blue');
         hold off;
 
-        label_text = [cur_agent.interest '?'];
+        label_text = {...
+            [cur_agent.interest '?']; ...
+            ['  internal: ' num2str(cur_agent.support.total)]; ...
+            ['  gt:       ' num2str(cur_agent.support.GROUND_TRUTH)]};
         t1 = text( cur_agent.box.r0rfc0cf(3), cur_agent.box.r0rfc0cf(1), label_text);
         set(t1,'color',[0 0 0]);
         set(t1,'FontSize',14);
@@ -431,158 +581,7 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
 
     
     
-    %% draw workspace information onto distributions 
-    
-        if ~isempty(workspace)
-            
-            point_format_final = 'or';
-            point_format_provisional = 'xr';
-            bounding_box_format_final = 'r';
-            bounding_box_format_provisional = 'r--';
-
-            subplot2(3,sp_cols,1,1,2,3); 
-
-            % draw workspace boxes onto main image
-            hold on;
-            for wi = 1:size(workspace.boxes_r0rfc0cf,1)
-                if workspace.total_support(wi) >= p.thresholds.total_support_final
-                    UserData.handles(end+1) = draw_box(workspace.boxes_r0rfc0cf(wi,:), 'r0rfc0cf', bounding_box_format_final);
-                else
-                    UserData.handles(end+1) = draw_box(workspace.boxes_r0rfc0cf(wi,:), 'r0rfc0cf', bounding_box_format_provisional);
-                end
-            end
-
-            % then draw the text ( so boxes don't cover text )
-            for wi = 1:size(workspace.boxes_r0rfc0cf,1)
-                label_text = workspace.labels{wi};
-                label_text = [label_text  ': ' sprintf( '%0.2f',workspace.internal_support(wi)) ', ' sprintf( '%0.2f',workspace.total_support(wi))];
-                if ~isequal(p.classification_method,'IOU_oracle')
-                    label_text_original = label_text;
-                    label_text = cell(2,1);
-                    label_text{1} = label_text_original;
-                    label_text{2} = ['<gt iou: ' num2str(workspace.GT_IOU(wi)) '>'];
-                end
-                t1 = text( workspace.boxes_r0rfc0cf(wi,3), workspace.boxes_r0rfc0cf(wi,1), label_text);
-                set(t1,'color',[0 0 0]);
-                set(t1,'FontSize',14);
-                set(t1,'FontWeight','bold');
-                t2 = text( workspace.boxes_r0rfc0cf(wi,3)+1, workspace.boxes_r0rfc0cf(wi,1)+1, label_text);
-                set(t2,'color',[1 1 1]);
-                set(t2,'FontSize',14);
-                set(t2,'FontWeight','bold');
-
-                UserData.handles(end+1) = t1;
-                UserData.handles(end+1) = t2;
-            end
-            hold off;
-
-            % draw workspace stats onto distributions that generated them
-            for wi = 1:size(workspace.boxes_r0rfc0cf,1)
-                
-                if workspace.total_support(wi) >= p.thresholds.total_support_final
-                    point_format = point_format_final;
-                    bounding_box_format = bounding_box_format_final;
-                else
-                    point_format = point_format_provisional;
-                    bounding_box_format = bounding_box_format_provisional;
-                end
-                
-                width  = workspace.boxes_r0rfc0cf(wi,4) - workspace.boxes_r0rfc0cf(wi,3) + 1;
-                height = workspace.boxes_r0rfc0cf(wi,2) - workspace.boxes_r0rfc0cf(wi,1) + 1;
-                width_ratio = width / sqrt(d(1).image_size_px);
-                height_ratio = height / sqrt(d(1).image_size_px);
-                aspect_ratio =  width / height;
-                area_ratio   = (width * height) / d(1).image_size_px;
- 
-                oi = find(strcmp(workspace.labels{wi},p.situation_objects));
-                if length(oi) > 1, oi = oi(randi(length(oi))); end
-                
-                switch d(oi).box_display.method
-
-                    case 'plots'
-
-                        switch d(oi).box_method
-                            case {'independent_uniform_log_aa','independent_normals_log_aa','conditional_mvn_log_aa'}
-                                x1_val = log2(aspect_ratio);
-                                x2_val = log10(area_ratio);
-                            case {'independent_uniform_aa','independent_normals_aa','conditional_mvn_aa'}
-                                x1_val = aspect_ratio;
-                                x2_val = area_ratio;
-                            case {'independent_uniform_wh','independent_normals_wh','conditional_mvn_wh'}
-                                x1_val = width_ratio;
-                                x2_val = height_ratio;
-                            case {'independent_uniform_log_wh','independent_normals_log_wh','conditional_mvn_log_wh'}
-                                x1_val = log( width_ratio);
-                                x2_val = log( height_ratio);
-                            otherwise
-                                error('unimplemented');
-                        end
-
-                        [~,y1_val_ind] = min( abs( x1_val - d(oi).box_display.x1) );
-                        y1_val = d(oi).box_display.y1(y1_val_ind);
-
-                        [~,y2_val_ind] = min( abs( x2_val - d(oi).box_display.x2 ) );
-                        y2_val = d(oi).box_display.y2(y2_val_ind);
-                       
-                        subplot2(3,sp_cols,2,3 + oi);
-                        hold on;
-                        temp_h = plot( x1_val, y1_val, point_format );
-                        hold off;
-                        UserData.handles(end+1) = temp_h;
-
-                        subplot2(3,sp_cols,3,3 + oi); 
-                        hold on;
-                        temp_h = plot( x2_val, y2_val, point_format );
-                        hold off;
-                        UserData.handles(end+1) = temp_h;
-
-                    case 'map'
-
-                        switch d(oi).box_method
-                            case 'conditional_mvn_log_aa'
-                                x_val = log2(aspect_ratio);
-                                y_val = log10(area_ratio);
-                            case 'conditional_mvn_aa'
-                                x_val = area_ratio;
-                                y_val = aspect_ratio;
-                            case 'conditional_mvn_log_wh'
-                                x_val = log(width_ratio);
-                                y_val = log(height_ratio);
-                            case 'conditional_mvn_wh'
-                                x_val = log(width_ratio);
-                                y_val = log(height_ratio);
-                            otherwise
-                                error('unimplemented');
-                        end
-                        subplot2(3,sp_cols,2,3+oi,3,3+oi);
-                        hold on;
-                        temp_h = plot_onto_imshow( x_val, y_val, d(oi).box_display.xrange, d(oi).box_display.yrange, point_format );
-                        hold off;
-                        UserData.handles(end+1) = temp_h;
-
-
-                    otherwise
-                        subplot2(3,sp_cols,2,3 + oi); 
-
-                end
-                
-                % now draw any checked in boxes onto the 
-                % location distribution maps
-                
-                subplot2(3,sp_cols,1,3+oi);
-                hold on
-                temp_h = draw_box(workspace.boxes_r0rfc0cf(wi,:), 'r0rfc0cf', bounding_box_format);
-                hold off;
-                UserData.handles(end+1) = temp_h;
-                
-            end
-        end
-        
-    set(h,'UserData',UserData);
-       
-    
-    
-    %% start, stop, step buttons 
+%% start, stop, step buttons 
 
     if initial_figure_generation
             
@@ -676,9 +675,6 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
         end
         
     end
-    
-    
-    
     
    
     

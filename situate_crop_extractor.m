@@ -58,7 +58,7 @@ function [crops_target, crops_negative] = situate_crop_extractor( fname_lb, targ
     end
     
     % check the IOU scores of the proposals, cull boxes
-    iou_scores = intersection_over_union_xywh( image_data.boxes_xywh(inds_target,:), boxes_negative_xywh );
+    iou_scores = intersection_over_union( image_data.boxes_xywh(inds_target,:), boxes_negative_xywh, 'xywh' );
     boxes_negative_xywh( iou_scores >= iou_limit, : ) = [];
     rp = randperm(size(boxes_negative_xywh,1));
     boxes_negative_xywh = boxes_negative_xywh( rp(1:min(num_negatives,length(rp))), : );

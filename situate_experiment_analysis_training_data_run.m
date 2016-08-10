@@ -108,7 +108,7 @@ function situate_experiment_analysis_training_data_run( results_directory, show_
             else
                 regression_data(end+1,:) = cur_regression_data_row;
             end
-            if cur_agent.support.internal > p_conditions{ci,fi,ii}.thresholds.total_support_provisional
+            if cur_agent.support.internal >= p_conditions{ci,fi,ii}.thresholds.total_support_provisional
                 conditioning_list = [conditioning_list cur_agent.interest];
                 conditioning_list = unique(conditioning_list);
             end
