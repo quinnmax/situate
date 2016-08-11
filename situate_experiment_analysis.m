@@ -3,8 +3,6 @@
 
 function situate_experiment_analysis( results_directory, show_failure_examples )
 % situate_experiment_analysis( results_directory, show_failure_examples );
-addpath('/home/rtan/common/Desktop/Situate');
-addpath('/home/rtan/common/Desktop/Situate/tools');
 
 
 %% set data source 
