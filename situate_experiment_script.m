@@ -18,7 +18,7 @@
 % results, and how many images for training and testing.
 
     experiment_settings = [];
-    experiment_settings.use_gui = false;
+    experiment_settings.use_gui = true;
     
     experiment_settings.title               = 'experiment_title';
     experiment_settings.situations_struct   = situate_situation_definitions();
@@ -35,8 +35,6 @@
     
     % (won't matter if gui is on)
     experiment_settings.run_analysis_after_completion = true;
-    
-    
     
     % run situate on the training data, 
     % save off both the oracle and classifier data,
@@ -125,9 +123,10 @@
     p.rcnn_boxes = false;
     
     % classifier
-        p.classification_method  = 'IOU-oracle';
-        %p.classification_method  = 'CNN-SVM'; % uses Rory's cnn code
-        %p.classification_method  = 'HOG-SVM';
+        % p.classification_method  = 'IOU-oracle';
+        p.classification_method  = 'noisy-oracle';
+        % p.classification_method  = 'CNN-SVM'; % uses Rory's cnn code
+        % p.classification_method  = 'HOG-SVM';
         
     % pipeline
         % p.num_scouts = 10; % sets how many agents the pool will be initialized with, and how many it will be filled back up to. should probalby be called min_agent_pool_size
@@ -148,9 +147,9 @@
     % check-in and tweaking
         p.use_box_adjust                                = false; % based on Evan's classifier based move selection
         p.spawn_nearby_scouts_on_provisional_checkin    = false; % based on Max's agent based local search
-        p.thresholds.internal_support           = .25; % scout -> reviewer threshold
-        p.thresholds.total_support_provisional  = .25; % workspace entry, provisional (search continues)
-        p.thresholds.total_support_final        = .50; % workspace entry, final (search (maybe) ends) depends on p.situation_objects_urgency_post
+        p.thresholds.internal_support                   = .25; % scout -> reviewer threshold
+        p.thresholds.total_support_provisional          = .25; % workspace entry, provisional (search continues)
+        p.thresholds.total_support_final                = .50; % workspace entry, final (search (maybe) ends) depends on p.situation_objects_urgency_post
 
     % set up visualization parameters
     if experiment_settings.use_gui

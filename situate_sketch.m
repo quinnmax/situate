@@ -2,8 +2,7 @@
 
 
 function [ workspace, records, situate_visualizer_return_status ] = situate_sketch( im_fname, p, learned_models )
-
-% [ workspace, run_data, visualizer_status_string ] = situate_sketch( im_fname, p, learned_stuff );
+% [ workspace, records, situate_visualizer_return_status ] = situate_sketch( im_fname, p, learned_models );
 
 
 
@@ -80,6 +79,7 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
             current_agent_snapshot       = agent_pool(agent_index);
             
         % take note of changes to the workspace
+        % update distribution structs
             workspace_changed = false;
             if ~isequal(workspace,workspace_snapshot)
                 workspace_changed = true;
@@ -127,7 +127,7 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
             end
             
         % see if we're done with iterations due to a sufficient detection
-            if workspace_changed && situate_situation_found( workspace, p )
+            if workspace_changed && stopping_conditions_met( workspace, p )
                 break; 
             end
             
@@ -344,7 +344,7 @@ end
 
 %% eval scout 
 
-function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, p, workspace, d, im, label )     
+function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, p, workspace, d, im, label ) 
 
     cur_agent = agent_pool(agent_index);
     assert( isequal( cur_agent.type, 'scout' ) );
@@ -395,7 +395,7 @@ function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, p, work
         try
             relevant_label_ind = find(strcmp(cur_agent.interest,label.labels_adjusted),1,'first');
             ground_truth_box_xywh = label.boxes_xywh(relevant_label_ind,:);
-            cur_agent.support.GROUND_TRUTH = intersection_over_union_xywh( cur_agent.box.xywh, ground_truth_box_xywh );
+            cur_agent.support.GROUND_TRUTH = intersection_over_union( cur_agent.box.xywh, ground_truth_box_xywh, 'xywh' );
             cur_agent.GT_label_raw = label.labels_raw{relevant_label_ind};
         catch
            warning('couldn''t find the relevent objects in the label file, so GROUND_TRUTH_IOU won''t work');
@@ -412,7 +412,12 @@ function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, p, work
                 relevant_label_ind = find(strcmp(cur_agent.interest,label.labels_adjusted),1,'first');
                 if isempty(relevant_label_ind), error('couldn''t find the relevent object in the label file, so IOU oracle won''t work'); end
                 ground_truth_box_xywh = label.boxes_xywh(relevant_label_ind,:);
-                internal_support_score_function_raw = @(b_xywh) intersection_over_union_xywh( b_xywh, ground_truth_box_xywh );
+                internal_support_score_function_raw = @(b_xywh) intersection_over_union( b_xywh, ground_truth_box_xywh, 'xywh' );
+            case 'noisy-oracle'
+                relevant_label_ind = find(strcmp(cur_agent.interest,label.labels_adjusted),1,'first');
+                if isempty(relevant_label_ind), error('couldn''t find the relevent object in the label file, so IOU oracle won''t work'); end
+                ground_truth_box_xywh = label.boxes_xywh(relevant_label_ind,:);
+                internal_support_score_function_raw = @(b_xywh) .15*.3*randn()+intersection_over_union( b_xywh, ground_truth_box_xywh, 'xywh' );
             case 'CNN-SVM'
                 model_ind = find(strcmp(cur_agent.interest, p.situation_objects), 1 );
                 internal_support_score_function_raw = @(b_xywh) cnn.score_subimage( im, b_xywh, model_ind, d, p );
@@ -474,8 +479,7 @@ end
 
 %% eval reviewer 
 
-
-function [agent_pool] = agent_evaluate_reviewer( agent_pool, agent_index, p, workspace, d )
+function [agent_pool] = agent_evaluate_reviewer( agent_pool, agent_index, p, workspace, d ) 
     
     % the reviewer checks to see how compatible a proposed object is with
     % our understanding of the relationships between objects. if the
@@ -531,7 +535,7 @@ end
 
 %% eval builder 
 
-function [workspace,d,agent_pool] = agent_evaluate_builder( agent_pool, agent_index, workspace, d, p )
+function [workspace,d,agent_pool] = agent_evaluate_builder( agent_pool, agent_index, workspace, d, p ) 
  
     % the builder checks to see if a proposed object, which has passed both
     % scout and reviewer processes, is actually an improvement over what
@@ -547,10 +551,15 @@ function [workspace,d,agent_pool] = agent_evaluate_builder( agent_pool, agent_in
     cur_agent = agent_pool(agent_index);
     assert( isequal( cur_agent.type, 'builder' ) );
     
-    
     object_was_added = false;
     
     matching_workspace_object_index = find(strcmp( workspace.labels, agent_pool(agent_index).interest) );
+    
+    overlap_iou_limit = .5;
+    if ~isempty(workspace.boxes_r0rfc0cf)
+        workspace_object_overlap_iou = intersection_over_union( cur_agent.box.r0rfc0cf, workspace.boxes_r0rfc0cf, 'r0rfc0cf' );
+        if any(workspace_object_overlap_iou > overlap_iou_limit ), return; end
+    end
 
     switch length(matching_workspace_object_index)
         
@@ -590,27 +599,41 @@ function [workspace,d,agent_pool] = agent_evaluate_builder( agent_pool, agent_in
             else
                 
                 % it wasn't an improvement, so do nothing
+                return;
                 
             end
             
     end
-     
-    if object_was_added 
-        
-        % something was added, update the distribution structures
-       
+    
+    if object_was_added
         for di = 1:length(d)
             d(di) = situate_distribution_struct_update( d(di), p, workspace );
         end
-        
     end
     
 end
 
 
 
+%% stopping conditions
+
+function is_complete = stopping_conditions_met( workspace, p )
+ 
+    is_complete = false;
+
+    committed_objects = workspace.labels( workspace.total_support >= p.thresholds.total_support_final );
+    
+    if isequal( sort(committed_objects), sort(p.situation_objects) );
+        is_complete = true;
+    end
+
+end
+
+
+
 %% spawn local scouts 
-function agent_pool = spawn_local_scouts( agent_to_expand, agent_pool, d )
+
+function agent_pool = spawn_local_scouts( agent_to_expand, agent_pool, d ) 
 
     % this is meant to take an agent and spawn a set of scouts that are
     % focusesed on the same object, but nearby boxes. those boxes are:
@@ -621,10 +644,10 @@ function agent_pool = spawn_local_scouts( agent_to_expand, agent_pool, d )
     new_agent_template = agent_to_expand;
     new_agent_template.type = 'scout';
     new_agent_template.urgency = 5;
-    new_agent_template.support.internal     = [];
-    new_agent_template.support.external     = [];
-    new_agent_template.support.total        = [];
-    new_agent_template.support.GROUND_TRUTH = [];
+    new_agent_template.support.internal     = 0;
+    new_agent_template.support.external     = 0;
+    new_agent_template.support.total        = 0;
+    new_agent_template.support.GROUND_TRUTH = 0;
     new_agent_template.GT_label_raw = [];
     
     box_w  = new_agent_template.box.xywh(3);
@@ -745,5 +768,7 @@ function agent_pool = spawn_local_scouts( agent_to_expand, agent_pool, d )
         agent_pool(end+1) = new_agent;
     
 end
+
+
 
 
