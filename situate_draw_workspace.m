@@ -44,9 +44,10 @@ function h = situate_draw_workspace( input, p, workspace )
 
     % then draw the text ( so boxes don't cover text )
     for wi = 1:size(workspace.boxes_r0rfc0cf,1)
-        label_text = workspace.labels{wi};
-        if strcmp(label_text,'person'), label_text = 'dog walker'; end
-        label_text = [label_text  ': ' sprintf( '%0.2f',workspace.internal_support(wi)) ': ' sprintf( '%0.2f',workspace.GT_IOU(wi))];
+        label_text = {...
+            workspace.labels{wi};  ...
+            ['internal:     ' sprintf( '%0.2f',workspace.internal_support(wi))]; ...
+            ['ground truth: ' sprintf( '%0.2f',workspace.GT_IOU(wi))] };
         t1 = text( workspace.boxes_r0rfc0cf(wi,3), workspace.boxes_r0rfc0cf(wi,1), label_text);
         set(t1,'color',[0 0 0]);
         set(t1,'FontSize',14);

@@ -627,10 +627,10 @@ function agent_pool = spawn_local_scouts( agent_to_expand, agent_pool, d )
     new_agent_template = agent_to_expand;
     new_agent_template.type = 'scout';
     new_agent_template.urgency = 5;
-    new_agent_template.support.internal     = [];
-    new_agent_template.support.external     = [];
-    new_agent_template.support.total        = [];
-    new_agent_template.support.GROUND_TRUTH = [];
+    new_agent_template.support.internal     = 0;
+    new_agent_template.support.external     = 0;
+    new_agent_template.support.total        = 0;
+    new_agent_template.support.GROUND_TRUTH = 0;
     new_agent_template.GT_label_raw = [];
     
     box_w  = new_agent_template.box.xywh(3);

@@ -5,6 +5,7 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
 % situate_experiment_analysis( results_directory, show_failure_examples );
 
 
+
 %% set data source 
 
     if ~exist('show_failure_examples','var') || isempty(show_failure_examples)
@@ -124,48 +125,29 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     for ci = 1:size(agent_records,1)
     for fi = 1:size(agent_records,2)
     for ii = 1:size(agent_records,3)
-        temp_detection_times = inf(1,length(p_conditions{1,1,1}.situation_objects));
         situation_objects = p_conditions{ci,fi,ii}.situation_objects;
-        for oi = 1:length(workspaces_final{ci,fi,ii}.labels) %Fixes Median Graph: Limits GT_IOU checks to objects detected
-            object_label = p_conditions{1,1,1}.situation_objects{oi};
-            workspace_entry_event_inds_object_type    = strcmp(object_label,  {agent_records{ci,fi,ii}.interest} );
-            cur_support_record = [agent_records{ci,fi,ii}.support];
+        temp_detection_times = inf(1,length(situation_objects));
+        cur_support_record = [agent_records{ci,fi,ii}.support];
+        for i = 1:length(cur_support_record), if isempty(cur_support_record(i).total), cur_support_record(i).total = 0; end; end % this should already be true, but there was a situation where it wasn't initialized properly. fixed now
+        for oi = 1:length(situation_objects)
+            object_label = situation_objects{oi};
+            workspace_entry_event_inds_object_type = strcmp(object_label,  {agent_records{ci,fi,ii}.interest} );
             workspace_entry_event_inds_over_threshold = ge( round(100*[cur_support_record.total])/100, iou_threshold );
             a = reshape(workspace_entry_event_inds_object_type,1,[]);
             b = reshape(workspace_entry_event_inds_over_threshold,1,[]);
             c = and(a,b);
             cur_obj_first_detection_ind = find(c,1,'first');
-            if ~isempty(cur_obj_first_detection_ind) && ~(oi > length(workspaces_final{ci,fi,ii}.GT_IOU)) 
+            if ~isempty(cur_obj_first_detection_ind) 
                 temp_detection_times(oi) = cur_obj_first_detection_ind;
             end
         end
         [~,sort_order] = sort(temp_detection_times,'ascend');
-        detection_order_times(ci,fi,ii,:) = temp_detection_times(sort_order);
+        detection_order_times(ci,fi,ii,:)  = temp_detection_times(sort_order);
         detection_order_labels(ci,fi,ii,:) = situation_objects(sort_order);
     end
     end
     end
     
-    %GT_IOU Check: Fixes Median Graphs 
-    for it = 1:length(situation_objects)
-    for ci = 1:size(workspaces_final,1)
-    for fi = 1:size(workspaces_final,2)
-    for ii = 1:size(workspaces_final,3)
-        for oi = 1:size(workspaces_final{ci,fi,ii}.GT_IOU, 2)
-        if workspaces_final{ci,fi,ii}.GT_IOU(oi) < iou_threshold
-            detection_order_times(ci,fi,ii,oi) = inf; 
-        end
-        end
-        [detection_order_times(ci,fi,ii,:), indexes] = sort(detection_order_times(ci,fi,ii,:)); 
-        labels_old = detection_order_labels(ci,fi,ii,:);
-        for oi = 1:length(indexes)
-            detection_order_labels(ci,fi,ii,oi) = labels_old(indexes(oi)); 
-        end
-    end
-    end
-    end
-    end
-        
     % reshape for detections as a function of number of proposals
     
     max_proposals = max(cellfun( @(x) x.num_iterations, p_conditions_temp));
