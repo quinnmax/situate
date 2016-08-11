@@ -507,6 +507,13 @@ function [agent_pool] = agent_evaluate_reviewer( agent_pool, agent_index, p, wor
         cur_agent.support.external = -dot(reg_data.B(3:end), cur_agent.support.sample_densities);
         cur_agent.support.total = 1 - sigmf(reg_data.B(1) + reg_data.B(2) * cur_agent.support.internal - cur_agent.support.external, [1 0]);
         
+        cur_agent.support.logistic_regression_data.coefficients = reg_data.B;
+        cur_agent.support.logistic_regression_data.external = cur_agent.support.sample_densities;
+        disp('Logistic regression coefficients (bias, internal, externals):');
+        disp(reg_data.B);
+        disp('External probability densities:');
+        disp(cur_agent.support.sample_densities);
+        
     elseif isfield(p, 'external_support_weight') && p.external_support_weight > 0
         obj = find(strcmp(p.situation_objects, cur_agent.interest), 1);
         x = d(obj).location_data(cur_agent.box.xcycwh(2), cur_agent.box.xcycwh(1));
