@@ -50,6 +50,7 @@ fnames_splits
 # Do not ignore #
 #################
 !+cnn/imagenet-vgg-f.mat
+!default_models/*
 
 # Local experiment scripts #
 ############################

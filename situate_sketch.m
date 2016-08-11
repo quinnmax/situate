@@ -487,18 +487,35 @@ function [agent_pool] = agent_evaluate_reviewer( agent_pool, agent_index, p, wor
     cur_agent = agent_pool(agent_index);
     assert( isequal( cur_agent.type, 'reviewer' ) );
     
-    if isfield(p, 'external_support_weight') && p.external_support_weight > 0
+        
+    if isfield(p, 'use_logistic_regression') && p.use_logistic_regression
+        obj = find(strcmp(p.situation_objects, cur_agent.interest), 1);
+        %cur_agent.support.sample_densities;
+        condition_on = map(workspace.labels, @(x) find(strcmp(p.situation_objects, x), 1), true);
+        condition_on = condition_on(condition_on ~= obj);
+        condition_on = sort(condition_on);
+        condition_on = map(condition_on, @num2str);
+        condition_on = [condition_on{:} ''];
+        
+        load default_models/logistic_regression_dogwalking.mat   % contains [reg_data]
+        sets = {reg_data(obj, :).cond};
+        reg_data = reg_data(obj, find(strcmp(sets, condition_on), 1));
+        cur_agent.support.external = -dot(reg_data.B(3:end), cur_agent.support.sample_densities);
+        cur_agent.support.total = 1 - sigmf(reg_data.B(1) + reg_data.B(2) * cur_agent.support.internal - cur_agent.support.external, [1 0]);
+        
+    elseif isfield(p, 'external_support_weight') && p.external_support_weight > 0
         obj = find(strcmp(p.situation_objects, cur_agent.interest), 1);
         x = d(obj).location_data(cur_agent.box.xcycwh(2), cur_agent.box.xcycwh(1));
         m = mean(mean(d(obj).location_data));
         cur_agent.support.external = .5 ^ (m / x);
+        cur_agent.support.total = cur_agent.support.internal * (1-p.external_support_weight) ...
+                                  + cur_agent.support.external * p.external_support_weight;
+                              
     else
         cur_agent.support.external = 0;
-        p.external_support_weight = 0;
+        cur_agent.support.total = cur_agent.support.internal;
     end
     
-    cur_agent.support.total = cur_agent.support.internal * (1-p.external_support_weight) ...
-                              + cur_agent.support.external * p.external_support_weight;
     agent_pool(agent_index) = cur_agent;
 
     % consider adding a builder to the pool
