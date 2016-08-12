@@ -502,17 +502,21 @@ function [agent_pool] = agent_evaluate_reviewer( agent_pool, agent_index, p, wor
         condition_on = [condition_on{:} ''];
         
         load default_models/logistic_regression_dogwalking.mat   % contains [reg_data]
-        sets = {reg_data(obj, :).cond};
+        sets = {reg_data(obj, :).desc};
         reg_data = reg_data(obj, find(strcmp(sets, condition_on), 1));
-        cur_agent.support.external = -dot(reg_data.B(3:end), cur_agent.support.sample_densities);
-        cur_agent.support.total = 1 - sigmoid(reg_data.B(1) + reg_data.B(2) * cur_agent.support.internal - cur_agent.support.external);
+        reg_data.B = -reg_data.B;
+        normalized_data = ([cur_agent.support.internal, cur_agent.support.sample_densities] - reg_data.means) ./ reg_data.stds;
+        cur_agent.support.external = reg_data.B(1) + dot(reg_data.B(2:end), normalized_data);
+        cur_agent.support.total = sigmoid(cur_agent.support.external);
         
         cur_agent.support.logistic_regression_data.coefficients = reg_data.B;
         cur_agent.support.logistic_regression_data.external = cur_agent.support.sample_densities;
         disp('Logistic regression coefficients (bias, internal, externals):');
-        disp(reg_data.B);
-        disp('External probability densities:');
-        disp(cur_agent.support.sample_densities);
+        disp(reg_data.B');
+        disp('Bias, normalized internal score, external probability densities:');
+        disp([1, normalized_data]);
+        disp('Total logistic regression score:');
+        disp(cur_agent.support.external);
         
     elseif isfield(p, 'external_support_weight') && p.external_support_weight > 0
         obj = find(strcmp(p.situation_objects, cur_agent.interest), 1);
