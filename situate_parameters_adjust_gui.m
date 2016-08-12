@@ -178,7 +178,7 @@ function apply_changes( hObject, callbackdata, p, handles  )
     p.num_iterations = round( get(handles.agent_iterations_slider,'Value') );
 
     p.classification_method                 = p.classification_options{ get(handles.classification_method,'Value')};
-    p.thresholds.internal_support           = get(handles.checkin_threshold_1_slider,'Value');
+    %p.thresholds.internal_support           = get(handles.checkin_threshold_1_slider,'Value');
     p.thresholds.total_support_provisional  = get(handles.checkin_threshold_1_slider,'Value');
     p.thresholds.total_support_final        = get(handles.checkin_threshold_2_slider,'Value');
     
