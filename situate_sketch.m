@@ -70,16 +70,14 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
     
     for iteration = 1:p.num_iterations
             
-        % select and evaluate an agent
-        %   take snapshot of the agent
-        %   see if workspace changed
+        % select an agent
+        % evaluate it
+        % take a snapshot of it
+        % see if workspace changed
             workspace_snapshot  = workspace;
             agent_index                  = sample_1d( [agent_pool.urgency], 1 );
             [agent_pool,d,workspace]     = agent_evaluate( agent_pool, agent_index, im, label, d, p, workspace );
             current_agent_snapshot       = agent_pool(agent_index);
-            
-        % take note of changes to the workspace
-        % update distribution structs
             workspace_changed = false;
             if ~isequal(workspace,workspace_snapshot)
                 workspace_changed = true;
@@ -678,8 +676,8 @@ function agent_pool = spawn_local_scouts( agent_to_expand, agent_pool, d )
     
     box_w  = new_agent_template.box.xywh(3);
     box_h  = new_agent_template.box.xywh(4);
-    step_w = .15 * box_w;
-    step_h = .15 * box_h;
+    step_w = .2 * box_w;
+    step_h = .2 * box_h;
     
     % agent up
         new_agent = new_agent_template;
