@@ -427,6 +427,12 @@ function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, p, work
         internal_support_score_function = @(b_xywh) floor(internal_support_score_function_raw(b_xywh) * 100)/100; % rounding to nearest .01 for consistency between display and internal behavior
         cur_agent.support.internal = internal_support_score_function( cur_agent.box.xywh );
         
+        
+        if isfield(p, 'save_CNN_score') && p.save_CNN_score
+            model_ind = find(strcmp(cur_agent.interest, p.situation_objects), 1 );
+            cur_agent.support.unused_classifier_value = cnn.score_subimage( im, cur_agent.box.xywh, model_ind, d, p );
+        end
+        
     % see if we can improve the initial box with some tweaking
         
         if p.use_box_adjust ...
@@ -505,9 +511,17 @@ function [agent_pool] = agent_evaluate_reviewer( agent_pool, agent_index, p, wor
         sets = {reg_data(obj, :).desc};
         reg_data = reg_data(obj, find(strcmp(sets, condition_on), 1));
         reg_data.B = -reg_data.B;
-        normalized_data = ([cur_agent.support.internal, cur_agent.support.sample_densities] - reg_data.means) ./ reg_data.stds;
+        if isfield(p, 'save_CNN_score') && p.save_CNN_score
+            normalized_data = ([cur_agent.support.unused_classifier_value, cur_agent.support.sample_densities] - reg_data.means) ./ reg_data.stds;
+        else
+            normalized_data = ([cur_agent.support.internal, cur_agent.support.sample_densities] - reg_data.means) ./ reg_data.stds;
+        end
         cur_agent.support.external = reg_data.B(1) + dot(reg_data.B(2:end), normalized_data);
-        cur_agent.support.total = sigmoid(cur_agent.support.external);
+        if isfield(p, 'save_CNN_score') && p.save_CNN_score
+            cur_agent.support.total = cur_agent.support.internal;
+        else
+            cur_agent.support.total = sigmoid(cur_agent.support.external);
+        end
         
         cur_agent.support.logistic_regression_data.coefficients = reg_data.B;
         cur_agent.support.logistic_regression_data.external = cur_agent.support.sample_densities;
@@ -525,11 +539,12 @@ function [agent_pool] = agent_evaluate_reviewer( agent_pool, agent_index, p, wor
         cur_agent.support.external = .5 ^ (m / x);
         cur_agent.support.total = cur_agent.support.internal * (1-p.external_support_weight) ...
                                   + cur_agent.support.external * p.external_support_weight;
-                              
+        
     else
         cur_agent.support.external = 0;
         cur_agent.support.total = cur_agent.support.internal;
     end
+    
     
     agent_pool(agent_index) = cur_agent;
 

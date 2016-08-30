@@ -102,13 +102,13 @@
         conditioning_list = {};
         for ai = 1:length(agent_records{ci,fi,ii})
             cur_agent = agent_records{ci,fi,ii}(ai);
-            cur_regression_data_row = {cur_agent.interest, conditioning_list, cur_agent.support.GROUND_TRUTH, cur_agent.support.internal cur_agent.support.sample_densities};
+            cur_regression_data_row = {cur_agent.interest, conditioning_list, cur_agent.support.GROUND_TRUTH, cur_agent.support.unused_classifier_value cur_agent.support.sample_densities};
             if isempty(regression_data)
                 regression_data = cur_regression_data_row;
             else
                 regression_data(end+1,:) = cur_regression_data_row;
             end
-            if cur_agent.support.internal >= p_conditions{ci,fi,ii}.thresholds.total_support_provisional
+            if cur_agent.support.total >= p_conditions{ci,fi,ii}.thresholds.total_support_provisional
                 conditioning_list = [conditioning_list cur_agent.interest];
                 conditioning_list = unique(conditioning_list);
             end

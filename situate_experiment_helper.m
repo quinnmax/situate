@@ -318,7 +318,9 @@ function learned_stuff = load_or_build_models( cur_experiment_parameters, fnames
 
     % if either cnn or box_adjust are being used, check to see that 
     % matconvnet is working properly
-        if any(strcmp([ cur_experiment_parameters.classification_method ],'CNN-SVM')) || any([ cur_experiment_parameters.use_box_adjust ])
+        if any(strcmp([ cur_experiment_parameters.classification_method ],'CNN-SVM')) ...
+                || any([ cur_experiment_parameters.use_box_adjust ]) ...
+                || (isfield(cur_experiment_parameters, 'save_CNN_score') && cur_experiment_parameters.save_CNN_score)
             % see if matconvnet has been built. if not, see if we can
             % install it
             try 
@@ -380,7 +382,8 @@ function learned_stuff = load_or_build_models( cur_experiment_parameters, fnames
     end
     
     % cnn models
-    if strcmp( 'CNN-SVM', cur_experiment_parameters.classification_method )
+    if strcmp( 'CNN-SVM', cur_experiment_parameters.classification_method ) ...
+                || (isfield(cur_experiment_parameters, 'save_CNN_score') && cur_experiment_parameters.save_CNN_score)
         if isfield(learned_stuff, 'cnn_svm_models'), 
             % do nothing, it's already been dtrained with this data set
         else
