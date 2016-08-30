@@ -1,6 +1,6 @@
 
 
-function situate_experiment_analysis_training_data_run( results_directory, show_failure_examples )
+%function situate_experiment_analysis_training_data_run( results_directory, show_failure_examples )
 % situate_experiment_analysis_training_data_run( results_directory, show_failure_examples );
 
 
@@ -113,12 +113,12 @@ function situate_experiment_analysis_training_data_run( results_directory, show_
                 conditioning_list = unique(conditioning_list);
             end
         end
-        progress(ii,size(agent_record,3),'generating regression data cell array');
+        progress(ii,size(agent_records,3),'generating regression data cell array');
     end
     end
     end
     
-end
+%end
 
 
     

@@ -324,9 +324,42 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
         bounding_box_format_provisional = 'r--';
         
         subplot2(3,sp_cols,1,1,2,3); 
+        
+        % draw workspace boxes onto main image
         temp_h = situate_draw_workspace( gcf, p, workspace );
         UserData.handles(end+1:end+length(temp_h)) = temp_h;
-        
+
+%         % draw workspace boxes onto main image
+%         hold on;
+%         for wi = 1:size(workspace.boxes_r0rfc0cf,1)
+%             if workspace.total_support(wi) >= p.thresholds.total_support_final
+%                 UserData.handles(end+1) = draw_box(workspace.boxes_r0rfc0cf(wi,:), 'r0rfc0cf', bounding_box_format_final);
+%             else
+%                 UserData.handles(end+1) = draw_box(workspace.boxes_r0rfc0cf(wi,:), 'r0rfc0cf', bounding_box_format_provisional);
+%             end
+%         end
+% 
+%         % then draw the text ( so boxes don't cover text )
+%         for wi = 1:size(workspace.boxes_r0rfc0cf,1)
+%             label_text = {...
+%                 workspace.labels{wi}; ...
+%                 ['  internal: ' num2str(workspace.internal_support(wi))]
+%                 ['  total: ' num2str(workspace.total_support(wi))]; ...
+%                 ['  gt:    ' num2str(workspace.GT_IOU(wi))]};
+%             t1 = text( workspace.boxes_r0rfc0cf(wi,3), workspace.boxes_r0rfc0cf(wi,1), label_text);
+%             set(t1,'color',[0 0 0]);
+%             set(t1,'FontSize',14);
+%             set(t1,'FontWeight','bold');
+%             t2 = text( workspace.boxes_r0rfc0cf(wi,3)+1, workspace.boxes_r0rfc0cf(wi,1)+1, label_text);
+%             set(t2,'color',[1 1 1]);
+%             set(t2,'FontSize',14);
+%             set(t2,'FontWeight','bold');
+% 
+%             UserData.handles(end+1) = t1;
+%             UserData.handles(end+1) = t2;
+%         end
+%         hold off;
+
         % draw workspace stats onto distributions that generated them
         for wi = 1:size(workspace.boxes_r0rfc0cf,1)
 
@@ -448,8 +481,13 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
 
         label_text = {...
             [cur_agent.interest '?']; ...
-            ['  internal: ' num2str(cur_agent.support.total)]; ...
+            ['  internal: ' num2str(cur_agent.support.internal)]; ...
+            ['  total:    ' num2str(cur_agent.support.total)]; ...
             ['  gt:       ' num2str(cur_agent.support.GROUND_TRUTH)]};
+        if isfield(cur_agent.support, 'logistic_regression_data')
+            label_text{end+1} = ['  coeff:    ' num2str(cur_agent.support.logistic_regression_data.coefficients)];
+            label_text{end+1} = ['  external: ' num2str(cur_agent.support.logistic_regression_data.external)];
+        end
         t1 = text( cur_agent.box.r0rfc0cf(3), cur_agent.box.r0rfc0cf(1), label_text);
         set(t1,'color',[0 0 0]);
         set(t1,'FontSize',14);

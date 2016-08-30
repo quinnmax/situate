@@ -8,6 +8,7 @@
 *.so
 *.pyc
 *.m~
+*.mexa64
 
 # Packages #
 ############
