@@ -48,11 +48,15 @@ saved_models_hog_svm
 saved_models_rcnn_scores
 fnames_splits
 
+# Results files #
+#################
+*.pdf
+
+# Local experiment scripts #
+############################
+w
 # Do not ignore #
 #################
 !+cnn/imagenet-vgg-f.mat
 !default_models/*
 
-# Local experiment scripts #
-############################
-*.pdf
