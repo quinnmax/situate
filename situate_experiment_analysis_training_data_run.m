@@ -102,6 +102,9 @@
         conditioning_list = {};
         for ai = 1:length(agent_records{ci,fi,ii})
             cur_agent = agent_records{ci,fi,ii}(ai);
+            if isempty(cur_agent.support.GROUND_TRUTH)
+                break
+            end
             cur_regression_data_row = {cur_agent.interest, conditioning_list, cur_agent.support.GROUND_TRUTH, cur_agent.support.unused_classifier_value cur_agent.support.sample_densities};
             if isempty(regression_data)
                 regression_data = cur_regression_data_row;

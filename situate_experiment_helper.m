@@ -406,8 +406,15 @@ function learned_stuff = load_or_build_models( cur_experiment_parameters, fnames
             end
         end
     end
-      
-     % box adjust models
+    
+    % finetuned cnn models
+    if strcmp( 'Finetuned-CNN', cur_experiment_parameters.classification_method )
+        if ~isfield(learned_stuff, 'finetuned_cnn_models'), 
+            learned_stuff.finetuned_cnn_models = cnn.load_finetuned_cnn_models(cur_experiment_parameters);
+        end
+    end
+    
+    % box adjust models
     if cur_experiment_parameters.use_box_adjust
         if isfield(learned_stuff, 'box_adjust_models'), 
             % do nothing, it's already been dtrained with this data set
