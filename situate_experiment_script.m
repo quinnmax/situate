@@ -179,6 +179,14 @@
         end
         p.seed_test  = seed_test;
         
+    % if running a training data collection run, make sure the cnn score
+    % gets saved off
+        if experiment_settings.perform_situate_run_on_training_data
+            p.save_CNN_score = true;
+        else
+            p.save_CNN_score = false;
+        end
+        
     % add the situation information to the p structure
         p.situation_objects                 = experiment_settings.situations_struct.(experiment_settings.situation).situation_objects;
         p.situation_objects_possible_labels = experiment_settings.situations_struct.(experiment_settings.situation).situation_objects_possible_labels;

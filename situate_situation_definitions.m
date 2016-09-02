@@ -46,7 +46,7 @@ function situations_struct = situate_situation_definitions()
     situations_struct.(desc) = cur_situation;
         
     desc = 'handshaking';
-    cur_situation.situation_objects = { 'person_my_left', 'handshake', 'person_my_right' };
+    cur_situation.situation_objects = { 'left', 'handshake', 'right' };
     object_urgency_pre  = [1 1 1];
     object_urgency_post = [0 0 0];
     for i = 1:length(cur_situation.situation_objects ), cur_situation.object_urgency_pre.( cur_situation.situation_objects{i}) = object_urgency_pre(i);  end

@@ -688,6 +688,7 @@ function agent_pool = spawn_local_scouts( agent_to_expand, agent_pool, d )
         rf = new_agent.box.r0rfc0cf(2) - step_h;
         c0 = new_agent.box.r0rfc0cf(3);
         cf = new_agent.box.r0rfc0cf(4);
+        r0 = max(1,round(r0)); rf = min(d(1).image_size(1),round(rf)); c0 = max(1,round(c0)); cf = min(d(1).image_size(2),round(cf));
         x  = c0; y  = r0; w  = cf-c0+1; h  = rf-r0+1; xc = x+w/2; yc = y+w/2;
         new_agent.box.r0rfc0cf = [r0 rf c0 cf];
         new_agent.box.xywh     = [ x  y  w  h];
@@ -702,6 +703,7 @@ function agent_pool = spawn_local_scouts( agent_to_expand, agent_pool, d )
         rf = new_agent.box.r0rfc0cf(2) + step_h;
         c0 = new_agent.box.r0rfc0cf(3);
         cf = new_agent.box.r0rfc0cf(4);
+        r0 = max(1,round(r0)); rf = min(d(1).image_size(1),round(rf)); c0 = max(1,round(c0)); cf = min(d(1).image_size(2),round(cf));
         x  = c0; y  = r0; w  = cf-c0+1; h  = rf-r0+1; xc = x+w/2; yc = y+w/2;
         new_agent.box.r0rfc0cf = [r0 rf c0 cf];
         new_agent.box.xywh     = [ x  y  w  h];
@@ -716,6 +718,7 @@ function agent_pool = spawn_local_scouts( agent_to_expand, agent_pool, d )
         rf = new_agent.box.r0rfc0cf(2);
         c0 = new_agent.box.r0rfc0cf(3) - step_w;
         cf = new_agent.box.r0rfc0cf(4) - step_h;
+        r0 = max(1,round(r0)); rf = min(d(1).image_size(1),round(rf)); c0 = max(1,round(c0)); cf = min(d(1).image_size(2),round(cf));
         x  = c0; y  = r0; w  = cf-c0+1; h  = rf-r0+1; xc = x+w/2; yc = y+w/2;
         new_agent.box.r0rfc0cf = [r0 rf c0 cf];
         new_agent.box.xywh     = [ x  y  w  h];
@@ -730,6 +733,7 @@ function agent_pool = spawn_local_scouts( agent_to_expand, agent_pool, d )
         rf = new_agent.box.r0rfc0cf(2);
         c0 = new_agent.box.r0rfc0cf(3) + step_w;
         cf = new_agent.box.r0rfc0cf(4) + step_h;
+        r0 = max(1,round(r0)); rf = min(d(1).image_size(1),round(rf)); c0 = max(1,round(c0)); cf = min(d(1).image_size(2),round(cf));
         x  = c0; y  = r0; w  = cf-c0+1; h  = rf-r0+1; xc = x+w/2; yc = y+w/2;
         new_agent.box.r0rfc0cf = [r0 rf c0 cf];
         new_agent.box.xywh     = [ x  y  w  h];
@@ -744,6 +748,7 @@ function agent_pool = spawn_local_scouts( agent_to_expand, agent_pool, d )
         rf = new_agent.box.r0rfc0cf(2) + step_h/2;
         c0 = new_agent.box.r0rfc0cf(3) - step_w/2;
         cf = new_agent.box.r0rfc0cf(4) + step_w/2;
+        r0 = max(1,round(r0)); rf = min(d(1).image_size(1),round(rf)); c0 = max(1,round(c0)); cf = min(d(1).image_size(2),round(cf));
         x  = c0; y  = r0; w  = cf-c0+1; h  = rf-r0+1; xc = x+w/2; yc = y+w/2;
         new_agent.box.r0rfc0cf = [r0 rf c0 cf];
         new_agent.box.xywh     = [ x  y  w  h];
@@ -758,6 +763,7 @@ function agent_pool = spawn_local_scouts( agent_to_expand, agent_pool, d )
         rf = new_agent.box.r0rfc0cf(2) - step_h/2;
         c0 = new_agent.box.r0rfc0cf(3) + step_w/2;
         cf = new_agent.box.r0rfc0cf(4) - step_w/2;
+        r0 = max(1,round(r0)); rf = min(d(1).image_size(1),round(rf)); c0 = max(1,round(c0)); cf = min(d(1).image_size(2),round(cf));
         x  = c0; y  = r0; w  = cf-c0+1; h  = rf-r0+1; xc = x+w/2; yc = y+w/2;
         new_agent.box.r0rfc0cf = [r0 rf c0 cf];
         new_agent.box.xywh     = [ x  y  w  h];
@@ -772,6 +778,7 @@ function agent_pool = spawn_local_scouts( agent_to_expand, agent_pool, d )
         rf = new_agent.box.r0rfc0cf(2) + step_h/2;
         c0 = new_agent.box.r0rfc0cf(3) + step_w/2;
         cf = new_agent.box.r0rfc0cf(4) - step_w/2;
+        r0 = max(1,round(r0)); rf = min(d(1).image_size(1),round(rf)); c0 = max(1,round(c0)); cf = min(d(1).image_size(2),round(cf));
         x  = c0; y  = r0; w  = cf-c0+1; h  = rf-r0+1; xc = x+w/2; yc = y+w/2;
         new_agent.box.r0rfc0cf = [r0 rf c0 cf];
         new_agent.box.xywh     = [ x  y  w  h];
@@ -786,6 +793,7 @@ function agent_pool = spawn_local_scouts( agent_to_expand, agent_pool, d )
         rf = new_agent.box.r0rfc0cf(2) - step_h/2;
         c0 = new_agent.box.r0rfc0cf(3) - step_w/2;
         cf = new_agent.box.r0rfc0cf(4) + step_w/2;
+        r0 = max(1,round(r0)); rf = min(d(1).image_size(1),round(rf)); c0 = max(1,round(c0)); cf = min(d(1).image_size(2),round(cf));
         x  = c0; y  = r0; w  = cf-c0+1; h  = rf-r0+1; xc = x+w/2; yc = y+w/2;
         new_agent.box.r0rfc0cf = [r0 rf c0 cf];
         new_agent.box.xywh     = [ x  y  w  h];
