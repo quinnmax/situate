@@ -419,6 +419,9 @@ function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, p, work
             case 'CNN-SVM'
                 model_ind = find(strcmp(cur_agent.interest, p.situation_objects), 1 );
                 internal_support_score_function_raw = @(b_xywh) cnn.score_subimage( im, b_xywh, model_ind, d, p );
+            case 'Finetuned-CNN'
+                model_ind = find(strcmp(cur_agent.interest, p.situation_objects), 1 );
+                internal_support_score_function_raw = @(b_xywh) cnn.score_subimage_finetuned( im, b_xywh, model_ind, d );
             otherwise
                 error('unrecognized p.classification_method');
         end
