@@ -156,20 +156,20 @@
         p.thresholds.total_support_final                = .50; % workspace entry, final (search (maybe) ends) depends on p.situation_objects_urgency_post
 
     % set up visualization parameters
-    if experiment_settings.use_gui
-        p.show_visualization_on_iteration           = true;
-        p.show_visualization_on_iteration_mod       = 1;
-        p.show_visualization_on_workspace_change    = false;
-        p.show_visualization_on_end                 = true;
-        p.start_paused                              = true;
-        % use_training_testing_split_files = false;
-    else
-        p.show_visualization_on_iteration           = false;
-        p.show_visualization_on_iteration_mod       = 1; % moot
-        p.show_visualization_on_workspace_change    = false;
-        p.show_visualization_on_end                 = false;
-        p.start_paused                              = false;
-    end
+        if experiment_settings.use_gui
+            p.show_visualization_on_iteration           = true;
+            p.show_visualization_on_iteration_mod       = 1;
+            p.show_visualization_on_workspace_change    = false;
+            p.show_visualization_on_end                 = true;
+            p.start_paused                              = true;
+            % use_training_testing_split_files = false;
+        else
+            p.show_visualization_on_iteration           = false;
+            p.show_visualization_on_iteration_mod       = 1; % moot
+            p.show_visualization_on_workspace_change    = false;
+            p.show_visualization_on_end                 = false;
+            p.start_paused                              = false;
+        end
     
     % add the seed values to p
         if ischar(split_arg)

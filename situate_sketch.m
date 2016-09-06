@@ -686,14 +686,16 @@ function agent_pool = spawn_local_scouts( agent_to_expand, agent_pool, d )
         c0 = new_agent.box.r0rfc0cf(3);
         cf = new_agent.box.r0rfc0cf(4);
         r0 = max(1,round(r0)); rf = min(d(1).image_size(1),round(rf)); c0 = max(1,round(c0)); cf = min(d(1).image_size(2),round(cf));
-        x  = c0; y  = r0; w  = cf-c0+1; h  = rf-r0+1; xc = x+w/2; yc = y+w/2;
-        new_agent.box.r0rfc0cf = [r0 rf c0 cf];
-        new_agent.box.xywh     = [ x  y  w  h];
-        new_agent.box.xcycwh   = [xc yc  w  h];
-        new_agent.box.aspect_ratio = w/h;
-        new_agent.box.area_ratio   = (w*h) / d(1).image_size_px;
-        agent_pool(end+1) = new_agent;
-        
+        if r0>=1 && c0>=1 && rf<=d(1).image_size(1) && cf<=d(1).image_size(2) && rf>r0 && cf>c0
+            x  = c0; y  = r0; w  = cf-c0+1; h  = rf-r0+1; xc = x+w/2; yc = y+w/2;
+            new_agent.box.r0rfc0cf = [r0 rf c0 cf];
+            new_agent.box.xywh     = [ x  y  w  h];
+            new_agent.box.xcycwh   = [xc yc  w  h];
+            new_agent.box.aspect_ratio = w/h;
+            new_agent.box.area_ratio   = (w*h) / d(1).image_size_px;
+            agent_pool(end+1) = new_agent;
+        end
+            
     % agent down
         new_agent = new_agent_template;
         r0 = new_agent.box.r0rfc0cf(1) + step_h;
@@ -701,13 +703,15 @@ function agent_pool = spawn_local_scouts( agent_to_expand, agent_pool, d )
         c0 = new_agent.box.r0rfc0cf(3);
         cf = new_agent.box.r0rfc0cf(4);
         r0 = max(1,round(r0)); rf = min(d(1).image_size(1),round(rf)); c0 = max(1,round(c0)); cf = min(d(1).image_size(2),round(cf));
-        x  = c0; y  = r0; w  = cf-c0+1; h  = rf-r0+1; xc = x+w/2; yc = y+w/2;
-        new_agent.box.r0rfc0cf = [r0 rf c0 cf];
-        new_agent.box.xywh     = [ x  y  w  h];
-        new_agent.box.xcycwh   = [xc yc  w  h];
-        new_agent.box.aspect_ratio = w/h;
-        new_agent.box.area_ratio   = (w*h) / d(1).image_size_px;
-        agent_pool(end+1) = new_agent;
+        if r0>=1 && c0>=1 && rf<=d(1).image_size(1) && cf<=d(1).image_size(2) && rf>r0 && cf>c0
+            x  = c0; y  = r0; w  = cf-c0+1; h  = rf-r0+1; xc = x+w/2; yc = y+w/2;
+            new_agent.box.r0rfc0cf = [r0 rf c0 cf];
+            new_agent.box.xywh     = [ x  y  w  h];
+            new_agent.box.xcycwh   = [xc yc  w  h];
+            new_agent.box.aspect_ratio = w/h;
+            new_agent.box.area_ratio   = (w*h) / d(1).image_size_px;
+            agent_pool(end+1) = new_agent;
+        end
         
     % agent left
         new_agent = new_agent_template;
@@ -716,13 +720,15 @@ function agent_pool = spawn_local_scouts( agent_to_expand, agent_pool, d )
         c0 = new_agent.box.r0rfc0cf(3) - step_w;
         cf = new_agent.box.r0rfc0cf(4) - step_h;
         r0 = max(1,round(r0)); rf = min(d(1).image_size(1),round(rf)); c0 = max(1,round(c0)); cf = min(d(1).image_size(2),round(cf));
-        x  = c0; y  = r0; w  = cf-c0+1; h  = rf-r0+1; xc = x+w/2; yc = y+w/2;
-        new_agent.box.r0rfc0cf = [r0 rf c0 cf];
-        new_agent.box.xywh     = [ x  y  w  h];
-        new_agent.box.xcycwh   = [xc yc  w  h];
-        new_agent.box.aspect_ratio = w/h;
-        new_agent.box.area_ratio   = (w*h) / d(1).image_size_px;
-        agent_pool(end+1) = new_agent;
+        if r0>=1 && c0>=1 && rf<=d(1).image_size(1) && cf<=d(1).image_size(2) && rf>r0 && cf>c0
+            x  = c0; y  = r0; w  = cf-c0+1; h  = rf-r0+1; xc = x+w/2; yc = y+w/2;
+            new_agent.box.r0rfc0cf = [r0 rf c0 cf];
+            new_agent.box.xywh     = [ x  y  w  h];
+            new_agent.box.xcycwh   = [xc yc  w  h];
+            new_agent.box.aspect_ratio = w/h;
+            new_agent.box.area_ratio   = (w*h) / d(1).image_size_px;
+            agent_pool(end+1) = new_agent;
+        end
         
     % agent right
         new_agent = new_agent_template;
@@ -731,13 +737,15 @@ function agent_pool = spawn_local_scouts( agent_to_expand, agent_pool, d )
         c0 = new_agent.box.r0rfc0cf(3) + step_w;
         cf = new_agent.box.r0rfc0cf(4) + step_h;
         r0 = max(1,round(r0)); rf = min(d(1).image_size(1),round(rf)); c0 = max(1,round(c0)); cf = min(d(1).image_size(2),round(cf));
-        x  = c0; y  = r0; w  = cf-c0+1; h  = rf-r0+1; xc = x+w/2; yc = y+w/2;
-        new_agent.box.r0rfc0cf = [r0 rf c0 cf];
-        new_agent.box.xywh     = [ x  y  w  h];
-        new_agent.box.xcycwh   = [xc yc  w  h];
-        new_agent.box.aspect_ratio = w/h;
-        new_agent.box.area_ratio   = (w*h) / d(1).image_size_px;
-        agent_pool(end+1) = new_agent;
+        if r0>=1 && c0>=1 && rf<=d(1).image_size(1) && cf<=d(1).image_size(2) && rf>r0 && cf>c0
+            x  = c0; y  = r0; w  = cf-c0+1; h  = rf-r0+1; xc = x+w/2; yc = y+w/2;
+            new_agent.box.r0rfc0cf = [r0 rf c0 cf];
+            new_agent.box.xywh     = [ x  y  w  h];
+            new_agent.box.xcycwh   = [xc yc  w  h];
+            new_agent.box.aspect_ratio = w/h;
+            new_agent.box.area_ratio   = (w*h) / d(1).image_size_px;
+            agent_pool(end+1) = new_agent;
+        end
         
     % agent bigger
         new_agent = new_agent_template;
@@ -746,13 +754,15 @@ function agent_pool = spawn_local_scouts( agent_to_expand, agent_pool, d )
         c0 = new_agent.box.r0rfc0cf(3) - step_w/2;
         cf = new_agent.box.r0rfc0cf(4) + step_w/2;
         r0 = max(1,round(r0)); rf = min(d(1).image_size(1),round(rf)); c0 = max(1,round(c0)); cf = min(d(1).image_size(2),round(cf));
-        x  = c0; y  = r0; w  = cf-c0+1; h  = rf-r0+1; xc = x+w/2; yc = y+w/2;
-        new_agent.box.r0rfc0cf = [r0 rf c0 cf];
-        new_agent.box.xywh     = [ x  y  w  h];
-        new_agent.box.xcycwh   = [xc yc  w  h];
-        new_agent.box.aspect_ratio = w/h;
-        new_agent.box.area_ratio   = (w*h) / d(1).image_size_px;
-        agent_pool(end+1) = new_agent;
+        if r0>=1 && c0>=1 && rf<=d(1).image_size(1) && cf<=d(1).image_size(2) && rf>r0 && cf>c0
+            x  = c0; y  = r0; w  = cf-c0+1; h  = rf-r0+1; xc = x+w/2; yc = y+w/2;
+            new_agent.box.r0rfc0cf = [r0 rf c0 cf];
+            new_agent.box.xywh     = [ x  y  w  h];
+            new_agent.box.xcycwh   = [xc yc  w  h];
+            new_agent.box.aspect_ratio = w/h;
+            new_agent.box.area_ratio   = (w*h) / d(1).image_size_px;
+            agent_pool(end+1) = new_agent;
+        end
         
     % agent smaller
         new_agent = new_agent_template;
@@ -761,13 +771,15 @@ function agent_pool = spawn_local_scouts( agent_to_expand, agent_pool, d )
         c0 = new_agent.box.r0rfc0cf(3) + step_w/2;
         cf = new_agent.box.r0rfc0cf(4) - step_w/2;
         r0 = max(1,round(r0)); rf = min(d(1).image_size(1),round(rf)); c0 = max(1,round(c0)); cf = min(d(1).image_size(2),round(cf));
-        x  = c0; y  = r0; w  = cf-c0+1; h  = rf-r0+1; xc = x+w/2; yc = y+w/2;
-        new_agent.box.r0rfc0cf = [r0 rf c0 cf];
-        new_agent.box.xywh     = [ x  y  w  h];
-        new_agent.box.xcycwh   = [xc yc  w  h];
-        new_agent.box.aspect_ratio = w/h;
-        new_agent.box.area_ratio   = (w*h) / d(1).image_size_px;
-        agent_pool(end+1) = new_agent;
+        if r0>=1 && c0>=1 && rf<=d(1).image_size(1) && cf<=d(1).image_size(2) && rf>r0 && cf>c0
+            x  = c0; y  = r0; w  = cf-c0+1; h  = rf-r0+1; xc = x+w/2; yc = y+w/2;
+            new_agent.box.r0rfc0cf = [r0 rf c0 cf];
+            new_agent.box.xywh     = [ x  y  w  h];
+            new_agent.box.xcycwh   = [xc yc  w  h];
+            new_agent.box.aspect_ratio = w/h;
+            new_agent.box.area_ratio   = (w*h) / d(1).image_size_px;
+            agent_pool(end+1) = new_agent;
+        end
         
     % agent taller and narrower
         new_agent = new_agent_template;
@@ -776,13 +788,15 @@ function agent_pool = spawn_local_scouts( agent_to_expand, agent_pool, d )
         c0 = new_agent.box.r0rfc0cf(3) + step_w/2;
         cf = new_agent.box.r0rfc0cf(4) - step_w/2;
         r0 = max(1,round(r0)); rf = min(d(1).image_size(1),round(rf)); c0 = max(1,round(c0)); cf = min(d(1).image_size(2),round(cf));
-        x  = c0; y  = r0; w  = cf-c0+1; h  = rf-r0+1; xc = x+w/2; yc = y+w/2;
-        new_agent.box.r0rfc0cf = [r0 rf c0 cf];
-        new_agent.box.xywh     = [ x  y  w  h];
-        new_agent.box.xcycwh   = [xc yc  w  h];
-        new_agent.box.aspect_ratio = w/h;
-        new_agent.box.area_ratio   = (w*h) / d(1).image_size_px;
-        agent_pool(end+1) = new_agent;
+        if r0>=1 && c0>=1 && rf<=d(1).image_size(1) && cf<=d(1).image_size(2) && rf>r0 && cf>c0
+            x  = c0; y  = r0; w  = cf-c0+1; h  = rf-r0+1; xc = x+w/2; yc = y+w/2;
+            new_agent.box.r0rfc0cf = [r0 rf c0 cf];
+            new_agent.box.xywh     = [ x  y  w  h];
+            new_agent.box.xcycwh   = [xc yc  w  h];
+            new_agent.box.aspect_ratio = w/h;
+            new_agent.box.area_ratio   = (w*h) / d(1).image_size_px;
+            agent_pool(end+1) = new_agent;
+        end
         
     % agent shorter and wider
         new_agent = new_agent_template;
@@ -791,13 +805,15 @@ function agent_pool = spawn_local_scouts( agent_to_expand, agent_pool, d )
         c0 = new_agent.box.r0rfc0cf(3) - step_w/2;
         cf = new_agent.box.r0rfc0cf(4) + step_w/2;
         r0 = max(1,round(r0)); rf = min(d(1).image_size(1),round(rf)); c0 = max(1,round(c0)); cf = min(d(1).image_size(2),round(cf));
-        x  = c0; y  = r0; w  = cf-c0+1; h  = rf-r0+1; xc = x+w/2; yc = y+w/2;
-        new_agent.box.r0rfc0cf = [r0 rf c0 cf];
-        new_agent.box.xywh     = [ x  y  w  h];
-        new_agent.box.xcycwh   = [xc yc  w  h];
-        new_agent.box.aspect_ratio = w/h;
-        new_agent.box.area_ratio   = (w*h) / d(1).image_size_px;
-        agent_pool(end+1) = new_agent;
+        if r0>=1 && c0>=1 && rf<=d(1).image_size(1) && cf<=d(1).image_size(2) && rf>r0 && cf>c0
+            x  = c0; y  = r0; w  = cf-c0+1; h  = rf-r0+1; xc = x+w/2; yc = y+w/2;
+            new_agent.box.r0rfc0cf = [r0 rf c0 cf];
+            new_agent.box.xywh     = [ x  y  w  h];
+            new_agent.box.xcycwh   = [xc yc  w  h];
+            new_agent.box.aspect_ratio = w/h;
+            new_agent.box.area_ratio   = (w*h) / d(1).image_size_px;
+            agent_pool(end+1) = new_agent;
+        end
     
 end
 
