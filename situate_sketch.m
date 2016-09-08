@@ -23,17 +23,18 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
         %
         % it also contains a little bit of image information that can be
         % passed around.
-        workspace = workspace_initialize();
+        workspace = workspace_initialize(p);
         
     % initialize distributions for object type, box size, box shape, object location
         for di = 1:length(p.situation_objects)
-            d(di) = situate_distribution_struct_initialize( p.situation_objects{di}, p, im, learned_models ); 
+            d_prior(di) = situate_distribution_struct_initialize( p.situation_objects{di}, p, im, learned_models ); 
         end
+        d_conditioned = d_prior;
         
     % initialize the agent pool
         agent_pool = repmat( agent_initialize(), 1, p.num_scouts );
         for ai = 1:length(agent_pool)
-            agent_pool(ai) = agent_initialize(d,p);
+            agent_pool(ai) = agent_initialize(d_prior,p);
         end
         
     % initialize record keeping 
@@ -55,7 +56,7 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
     situate_visualizer_run_status = 'unstarted'; % this does need to be here. it is looked at from within the visualizer
     if p.show_visualization_on_iteration || p.show_visualization_on_workspace_change || p.show_visualization_on_end
         [~,visualization_description] = fileparts(im_fname);
-        [h, situate_visualizer_run_status] = situate_visualize( [], im, p, d, workspace, [], records.population_count, records.agent_record, visualization_description );
+        [h, situate_visualizer_run_status] = situate_visualize( [], im, p, d_prior, workspace, [], records.population_count, records.agent_record, visualization_description );
         % see if an exit command came from the GUI
         if ~ishandle(h), situate_visualizer_run_status = 'stop'; end
         if any( strcmp( situate_visualizer_run_status, {'next_image','restart','stop'} ) )
@@ -74,16 +75,50 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
         % evaluate it
         % take a snapshot of it
         % see if workspace changed
-            workspace_snapshot  = workspace;
-            agent_index                  = sample_1d( [agent_pool.urgency], 1 );
-            [agent_pool,d,workspace]     = agent_evaluate( agent_pool, agent_index, im, label, d, p, workspace );
-            current_agent_snapshot       = agent_pool(agent_index);
+        
+            workspace_snapshot = workspace;
+            agent_index        = sample_1d( [agent_pool.urgency], 1 );
+            
+            % pick a distribution to use based on temperature
+            if rand() < workspace.temperature.distribution_selection_function(workspace.temperature.value)
+                d = d_conditioned;
+            else
+                d = d_prior;
+            end
+            
+            [agent_pool,d_temp,workspace] = agent_evaluate( agent_pool, agent_index, im, label, d, p, workspace );
+            current_agent_snapshot         = agent_pool(agent_index);
+            
             workspace_changed = false;
             if ~isequal(workspace,workspace_snapshot)
                 workspace_changed = true;
             end
             
+            % some hacks, some temp adjustment stuff
+            if workspace_changed
+                d_conditioned = d_temp;
+                di = find( strcmp( {d_conditioned.interest}, current_agent_snapshot.interest ) );
+                d_conditioned(di).interest_priority = p.situation_objects_urgency_post.(current_agent_snapshot.interest);
+                d_prior(di).interest_priority =  p.situation_objects_urgency_post.(current_agent_snapshot.interest);
+            end
+                
+            % update temperature
+            workspace.temperature.value = workspace.temperature.value - (p.temperature.initial_value / 1000 );
+            
+            % update temperature based visualization
+            for di = 1:length(d_prior)
+                if p.show_visualization_on_iteration
+                    alpha = workspace.temperature.distribution_selection_function(workspace.temperature.value);
+                    % not an accurate representation, but easier to
+                    % interpret visually as it changes.
+                    location_display = (1-alpha) * mat2gray(d_prior(di).location_data) + alpha * mat2gray(d_conditioned(di).location_data);
+                    d_conditioned(di).location_display = location_display;
+                    d_prior(di).location_display = location_display;
+                end
+            end
+            
         % update records
+        
             % update record of scouting behavior
             records.workspace_record(iteration) = workspace_snapshot;
             records.agent_record(iteration)     = current_agent_snapshot;
@@ -111,10 +146,11 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
             end
             
         % update visualization
+        
             if (p.show_visualization_on_iteration           && mod(iteration,p.show_visualization_on_iteration_mod)==0) ...
             || (p.show_visualization_on_workspace_change    && workspace_changed)
                 [~,fname_no_path] = fileparts(im_fname); 
-                visualization_description = {fname_no_path; [num2str(iteration) '/' num2str(p.num_iterations)]};
+                visualization_description = {fname_no_path; [num2str(iteration) '/' num2str(p.num_iterations)]; ['temp: ' num2str(workspace.temperature.value)]};
                 [h, situate_visualizer_run_status] = situate_visualize( h, im, p, d, workspace, current_agent_snapshot, records.population_count, records.agent_record, visualization_description );
                 % see if an exit command came from the GUI
                 if ~ishandle(h), situate_visualizer_run_status = 'stop'; end
@@ -125,15 +161,24 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
             end
             
         % see if we're done with iterations due to a sufficient detection
+        % or temperature based break
+        
             if workspace_changed && stopping_conditions_met( workspace, p )
+                %display('stopped due to stopping_conditions_met');
                 break; 
             end
             
-        % consider spawning nearby scouts on provisional check-in
+            if p.use_temperature && isfield(workspace,'temperature') && p.user_temperature_based_stopping && rand() < workspace.temperature.stopping_probability_function( workspace.temperature.value )
+                %display('stopped due to temperature stochastic break');
+                break;
+            end
+            
+        % spawn nearby scouts on provisional check-in
+            
             if p.spawn_nearby_scouts_on_provisional_checkin ...
             && workspace_changed ...
             && current_agent_snapshot.support.total < p.thresholds.total_support_final % ie, was a provisional check-in
-                agent_pool = spawn_local_scouts( current_agent_snapshot, agent_pool, d );
+                agent_pool = spawn_local_scouts( current_agent_snapshot, agent_pool, d_prior );
             end
             
         % update the agent pool
@@ -181,7 +226,7 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
             
             % if the pool is under size, top off with default scouts
             while isempty(agent_pool) || sum( strcmp( 'scout', {agent_pool.type} ) ) < p.num_scouts
-                agent_pool(end+1) = agent_initialize(d,p);
+                agent_pool(end+1) = agent_initialize(d_prior,p);
             end
             records.population_count(iteration).scout = sum( strcmp( 'scout', {agent_pool.type} ) );
            
@@ -194,10 +239,10 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
         %
         % The solution is to just return the tentatively checked-in objects
         % to their original priority and continue on.
-            if sum( [d.interest_priority] ) == 0, 
+            if sum( [d_prior.interest_priority] ) == 0, 
             for wi = 1:size(workspace.boxes,1)
             if workspace.total_support(wi) < p.thresholds.total_support_final, 
-            d( strcmp( workspace.labels{wi}, {d.interest} ) ).interest_priority = p.object_type_priority_before_example_is_found; 
+            d_prior( strcmp( workspace.labels{wi}, {d_prior.interest} ) ).interest_priority = p.object_type_priority_before_example_is_found; 
             end
             end
             end
@@ -222,7 +267,7 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
             if ~exist('h','var'), h = []; end
             [~,fname_no_path] = fileparts(im_fname); 
             visualization_description = {fname_no_path; [num2str(iteration) '/' num2str(p.num_iterations)]};
-            [h, situate_visualizer_run_status] = situate_visualize( h, im, p, d, workspace, [], records.population_count, records.agent_record, visualization_description );
+            [h, situate_visualizer_run_status] = situate_visualize( h, im, p, d_prior, workspace, [], records.population_count, records.agent_record, visualization_description );
             % interpret closing the window as 'no thank you'
             if ~ishandle(h), 
                 situate_visualizer_run_status = 'stop'; 
@@ -243,7 +288,7 @@ end
 
 %% initialization functions 
 
-function workspace = workspace_initialize()
+function workspace = workspace_initialize(p)
 
     workspace.boxes_r0rfc0cf   = [];
     workspace.labels           = {};
@@ -251,7 +296,13 @@ function workspace = workspace_initialize()
     workspace.internal_support = [];
     workspace.total_support    = [];
     workspace.GT_IOU           = [];
-
+    
+    if p.use_temperature && isfield(p,'temperature')
+        workspace.temperature = [];
+        workspace.temperature.value                             = p.temperature.initial_value;
+        workspace.temperature.stopping_probability_function     = p.temperature.stopping_probability_function;
+        workspace.temperature.distribution_selection_function   = p.temperature.distribution_p_function;
+    end
 end
 
 function agent = agent_initialize(d,p)
@@ -353,9 +404,9 @@ function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, p, work
 
             % then we need to pick out a box for our scout
 
-            di = find(strcmp({d.interest},cur_agent.interest)); 
+            di = find(strcmp({d.interest},cur_agent.interest));
             [d(di), sampled_box_r0rfc0cf, box_density] = situate_sample_box( d(di), p );
-
+             
             r0 = round(sampled_box_r0rfc0cf(1));
             rf = round(sampled_box_r0rfc0cf(2));
             c0 = round(sampled_box_r0rfc0cf(3));

@@ -144,15 +144,25 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
         % recent scout should have changed, so just draw that one if
         % possible
         
-        if initial_figure_generation || workspace_has_updated || strcmp(situate_visualizer_run_status,'end')
-            
-            % do a full redraw of each distribution
-            for oi = 1:length(d)
-                subplot2(3,sp_cols,1,4+oi-1); 
-                imshow(d(oi).location_display, []); 
-                title([d(oi).interest ' location']);
-            end
-            
+        % this is for when we don't want to update the visual depiction
+        % every step of the way. with temp, we do want to, so it'll be way
+        % more expensive
+%         if initial_figure_generation || workspace_has_updated || strcmp(situate_visualizer_run_status,'end')
+%             
+%             % do a full redraw of each distribution
+%             for oi = 1:length(d)
+%                 subplot2(3,sp_cols,1,4+oi-1); 
+%                 imshow(d(oi).location_display, []); 
+%                 title([d(oi).interest ' location']);
+%             end
+%             
+%         end
+        
+     % do a full redraw of each distribution
+        for oi = 1:length(d)
+            subplot2(3,sp_cols,1,4+oi-1); 
+            imshow(d(oi).location_display, []); 
+            title([d(oi).interest ' location']);
         end
        
         

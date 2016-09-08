@@ -9,7 +9,25 @@ function p = situate_parameters_initialize()
     
     p.description = '';
     
+    p.use_temperature = true;
+    
+    % temperature settings
+        
+        p.temperature.initial_value = 100;
+        
+        % p of using the conditional distribution, rather than the prior
+        min = -2;
+        max =  5;
+        p.temperature.distribution_p_function = @(x) sigmoid( (max - min) * ( 1 - (x/p.temperature.initial_value) ) + min );
+        
+        % p of stopping on any given round
+        min = -25;
+        max =   0;
+        sigmoid = @(x) 1 ./ (1+exp(-x));
+        p.temperature.stopping_probability_function = @(x) sigmoid( (max - min) * (1-(x/p.temperature.initial_value)) + min );
+        
     % pipeline
+    
         p.use_direct_scout_to_workspace_pipe = false; % hides stochastic agent stuff a bit, more comparable to other methods     
         p.agent_pool_cleanup = [];
         p.agent_pool_cleanup.agents_interested_in_found_objects = true;
@@ -17,7 +35,6 @@ function p = situate_parameters_initialize()
     
         p.use_box_adjust = false;                             % Evan's classifier based method for picking sequential moves
         p.spawn_nearby_scouts_on_provisional_checkin = false; % Max's agent based method for local search on provisional checkin
-        
         
     p.salience_model = hmaxq_model_initialize();
     p.image_redim_px = 250000;

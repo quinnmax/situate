@@ -6,8 +6,6 @@ function d = situate_distribution_struct_update( d, p, workspace )
 %
 %   uses workspace info to update the existing distribution structure d
 %   p specifies the parameters used to do this
-%
-%
 
     use_reinhibition = false;
     
@@ -45,6 +43,7 @@ function d = situate_distribution_struct_update( d, p, workspace )
         for cur_conditioning_object = d.conditioning_objects
             if any( strcmp(cur_conditioning_object, workspace.labels ) )
                 is_time_to_condition = true;
+                d.dist_is_prior = false;
             end
         end
        
@@ -58,21 +57,21 @@ function d = situate_distribution_struct_update( d, p, workspace )
         d.location_method           = p.location_method_after_conditioning;
         d.box_method                = p.box_method_after_conditioning;
 
-        % build reinhibition mask
+        % build reinhibition map
         if use_reinhibition
             inhibition_width = p.inhibition_size;
-            reinhibition_mask = ones( size(d.location_data,1) + 2*inhibition_width, size(d.location_data,2) + 2*inhibition_width );
+            reinhibition_map = ones( size(d.location_data,1) + 2*inhibition_width, size(d.location_data,2) + 2*inhibition_width );
             for i = 1:size(d.sampled_boxes_record_centers,1)
                 r0 = d.sampled_boxes_record_centers(i,1) - ceil(inhibition_width/2) + 1 + inhibition_width;
                 rf = r0 + inhibition_width - 1;
                 c0 = d.sampled_boxes_record_centers(i,2) - ceil(inhibition_width/2) + 1 + inhibition_width;
                 cf = c0 + inhibition_width - 1;
-                reinhibition_mask( r0:rf, c0:cf ) = reinhibition_mask( r0:rf, c0:cf ) .* d.inhibition_mask;
+                reinhibition_map( r0:rf, c0:cf ) = reinhibition_map( r0:rf, c0:cf ) .* d.inhibition_mask;
             end
-            reinhibition_mask = reinhibition_mask(inhibition_width+1:end-inhibition_width,inhibition_width+1:end-inhibition_width);
+            reinhibition_map = reinhibition_map(inhibition_width+1:end-inhibition_width,inhibition_width+1:end-inhibition_width);
         else
             % no-change mask
-            reinhibition_mask = ones( size(d.location_data,1), size(d.location_data,2) );
+            reinhibition_map = ones( size(d.location_data,1), size(d.location_data,2) );
         end
         
         
@@ -172,7 +171,7 @@ function d = situate_distribution_struct_update( d, p, workspace )
                 warning('newmethodwarning','new method code goes here');
                 error('unrecognized location method');
         end
-        d.location_data    = d.location_data .* reinhibition_mask;
+        d.location_data    = d.location_data .* reinhibition_map;
         d.location_data    = d.location_data / sum(d.location_data(:));
         d.location_display = d.location_data;
         

@@ -7,11 +7,22 @@ function d = situate_distribution_struct_initialize( interest, p, im, learned_st
     % p has a lot of options 
     %
     % see also situate_parameters_initialize.m
-
-    if isfield( learned_stuff, 'conditional_models_structure' )
-        conditional_models_structure = learned_stuff.conditional_models_structure;
-    end
-
+    
+    % fields
+    %   interest
+    %   interest_urgency
+    %   
+    % methods
+    %   dist_struct.sample_box_prior();
+    %   dist_struct.sample_box_conditioned();
+    %   dist_struct.update( workspace );
+    %
+    %   dist_struct.visualize_location( subplot_handle );
+    %   dist_struct.visualize_box( subplot_handle );
+    %   dist_struct.visualize_box_shape( subplot_handle );
+    %   dist_struct.visualize_box_size( subplot_handle );
+    
+    
     % things that distributions will always have
 
         d.interest = interest;
@@ -21,10 +32,12 @@ function d = situate_distribution_struct_initialize( interest, p, im, learned_st
         d.image_size = [size(im,1) size(im,2) size(im,3)];
         d.image_size_px = size(im,1) * size(im,2);
         
-    % define yourself
+        d.dist_is_prior = true;
+        
+    % store the methods being used
     
-        d.location_sampling_method = p.location_sampling_method_before_conditioning;
-        d.location_method          = p.location_method_before_conditioning;
+        d.location_sampling_method       = p.location_sampling_method_before_conditioning;
+        d.location_method = p.location_method_before_conditioning;
         
     % will we need salience at some point?
         
@@ -79,6 +92,8 @@ function d = situate_distribution_struct_initialize( interest, p, im, learned_st
         end
 
         d.location_data = (d.location_data) / sum(d.location_data(:)); % normalize, only really matters for sampling without IOR
+        d.location_data = d.location_data;
+        
         d.location_display = d.location_data;
 
     % box stuff    
@@ -101,8 +116,13 @@ function d = situate_distribution_struct_initialize( interest, p, im, learned_st
         switch d.box_method
        
             case '4d_log_aa'
-                if ~exist('conditional_models_structure','var') || isempty(conditional_models_structure), error('conditional models structure not provided'); end
-
+                
+                if isfield( learned_stuff, 'conditional_models_structure' )
+                    conditional_models_structure = learned_stuff.conditional_models_structure;
+                else
+                    error('conditional models structure not provided'); 
+                end
+               
                 interest_index = find( strcmp( interest, conditional_models_structure.labels_in_indexing_order ), 1, 'first' ); 
                 none_index     = find( strcmp( 'none',   conditional_models_structure.labels_in_indexing_order ) ); 
                 
@@ -197,8 +217,12 @@ function d = situate_distribution_struct_initialize( interest, p, im, learned_st
                 
             case 'independent_normals_log_aa'
 
-                if ~exist('conditional_models_structure','var') || isempty(conditional_models_structure), error('conditional models structure not provided'); end
-
+                if isfield( learned_stuff, 'conditional_models_structure' )
+                    conditional_models_structure = learned_stuff.conditional_models_structure;
+                else
+                    error('conditional models structure not provided'); 
+                end
+                
                 interest_index = find( strcmp( interest, conditional_models_structure.labels_in_indexing_order ), 1, 'first' ); 
                 none_index     = find( strcmp( 'none',   conditional_models_structure.labels_in_indexing_order ) ); 
                 
@@ -234,8 +258,12 @@ function d = situate_distribution_struct_initialize( interest, p, im, learned_st
                
             case 'independent_normals_log_wh'
                 
-                if ~exist('conditional_models_structure','var') || isempty(conditional_models_structure), error('conditional models structure not provided'); end
-
+                if isfield( learned_stuff, 'conditional_models_structure' )
+                    conditional_models_structure = learned_stuff.conditional_models_structure;
+                else
+                    error('conditional models structure not provided'); 
+                end
+                
                 interest_index = find( strcmp( interest, conditional_models_structure.labels_in_indexing_order ), 1, 'first' ); 
                 none_index     = find( strcmp( 'none',   conditional_models_structure.labels_in_indexing_order ) ); 
                 
@@ -271,8 +299,12 @@ function d = situate_distribution_struct_initialize( interest, p, im, learned_st
                
             case 'independent_normals_aa'
                 
-                if ~exist('conditional_models_structure','var') || isempty(conditional_models_structure), error('conditional models structure not provided'); end
-
+                if isfield( learned_stuff, 'conditional_models_structure' )
+                    conditional_models_structure = learned_stuff.conditional_models_structure;
+                else
+                    error('conditional models structure not provided'); 
+                end
+                
                 interest_index = find( strcmp( interest, conditional_models_structure.labels_in_indexing_order ), 1, 'first' ); 
                 none_index     = find( strcmp( 'none',   conditional_models_structure.labels_in_indexing_order ) ); 
                 
@@ -308,8 +340,12 @@ function d = situate_distribution_struct_initialize( interest, p, im, learned_st
                 
             case 'independent_normals_wh'
                 
-                if ~exist('conditional_models_structure','var') || isempty(conditional_models_structure), error('conditional models structure not provided'); end
-
+                if isfield( learned_stuff, 'conditional_models_structure' )
+                    conditional_models_structure = learned_stuff.conditional_models_structure;
+                else
+                    error('conditional models structure not provided'); 
+                end
+                
                 interest_index = find( strcmp( interest, conditional_models_structure.labels_in_indexing_order ), 1, 'first' ); 
                 none_index     = find( strcmp( 'none',   conditional_models_structure.labels_in_indexing_order ) ); 
                 
