@@ -65,6 +65,7 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
         || UserData.workspace_temperature ~= workspace.temperature.value
             workspace_has_updated = true;
             UserData.workspace_support_total = sum( workspace.total_support);
+            UserData.workspace_temperature = workspace.temperature.value;
         end
     end
     UserData.handles = [];
