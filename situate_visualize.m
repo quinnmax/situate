@@ -466,11 +466,11 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
         end
         t1 = text( cur_agent.box.r0rfc0cf(3), cur_agent.box.r0rfc0cf(1), label_text);
         set(t1,'color',[0 0 0]);
-        set(t1,'FontSize',14);
+        set(t1,'FontSize',10);
         set(t1,'FontWeight','bold');
         t2 = text( cur_agent.box.r0rfc0cf(3)+1, cur_agent.box.r0rfc0cf(1)+1, label_text);
         set(t2,'color',[1 1 1]);
-        set(t2,'FontSize',14);
+        set(t2,'FontSize',10);
         set(t2,'FontWeight','bold');
         UserData.handles(end+1) = t1;
         UserData.handles(end+1) = t2;

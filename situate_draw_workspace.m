@@ -58,11 +58,11 @@ function h = situate_draw_workspace( input, p, workspace )
             ['  gt:       ' num2str(workspace.GT_IOU(wi))]};
         t1 = text( workspace.boxes_r0rfc0cf(wi,3), workspace.boxes_r0rfc0cf(wi,1), label_text);
         set(t1,'color',[0 0 0]);
-        set(t1,'FontSize',14);
+        set(t1,'FontSize',10);
         set(t1,'FontWeight','bold');
         t2 = text( workspace.boxes_r0rfc0cf(wi,3)+1, workspace.boxes_r0rfc0cf(wi,1)+1, label_text);
         set(t2,'color',[1 1 1]);
-        set(t2,'FontSize',14);
+        set(t2,'FontSize',10);
         set(t2,'FontWeight','bold');
 
         %UserData.handles(end+1) = t1;
