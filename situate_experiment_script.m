@@ -42,7 +42,7 @@
     % if true, it should do it with the actual IOU deciding when something
     % is committed to the workspace, and the CNN value should just be
     % recorded. this is definitely not the case.
-    experiment_settings.perform_situate_run_on_training_data = true;
+    experiment_settings.perform_situate_run_on_training_data = false;
     
     % save's all crops, for all images, all methods, all folds to the
     % output data mat. be careful. don't use on big runs.

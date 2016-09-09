@@ -9,13 +9,21 @@ function p = situate_parameters_initialize()
     
     p.description = '';
     
-    p.use_temperature = true;
+    p.image_redim_px = 250000;
+    
+    % center it at the uniform prior value for the size of the empirical
+    % distribution that we're using (i.e. we're using 250000 pixels, so
+    % each has a value of 1/250000, so make that the center of the external
+    % support activation function).
+    p.external_support_function = @(x) sigmoid(   1 * (1/p.image_redim_px) * (x-p.image_redim_px)     );
+    
+    p.total_support_function = @(internal,external) (internal + external) / 2;
     
     % temperature settings
-        
+    
+        p.use_temperature = true;
+    
         p.temperature.initial_value = 100;
-        
-        sigmoid = @(x) 1 ./ (1+exp(-x));
         
         % p of using the conditional distribution, rather than the prior
         min = -2;
@@ -40,7 +48,6 @@ function p = situate_parameters_initialize()
         p.spawn_nearby_scouts_on_provisional_checkin = false; % Max's agent based method for local search on provisional checkin
         
     p.salience_model = hmaxq_model_initialize();
-    p.image_redim_px = 250000;
     
     p.use_direct_scout_to_workspace_pipe = false;
     p.refresh_agent_pool_after_workspace_change = false;

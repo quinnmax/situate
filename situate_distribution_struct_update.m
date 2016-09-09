@@ -587,6 +587,24 @@ function d = situate_distribution_struct_update( d, p, workspace )
                 warning('all:newmethodwarning','new method code goes here');
                 error('unrecognized box method');
         end
+        
+        
+        
+        
+        % now that we've updated the distribtuions, we're going to go back
+        % into the workspace and update the external and total support for
+        % each object.
+        
+        wi = find(strcmp(d.interest,workspace.labels));
+        if ~isempty(wi)
+            rc = workspace.boxes_r0rfc0cf(wi,2) - workspace.boxes_r0rfc0cf(wi,1)/2;
+            cc = workspace.boxes_r0rfc0cf(wi,4) - workspace.boxes_r0rfc0cf(wi,3)/2;
+            new_location_density = d.location_data( round(rc), round(cc) );
+            new_external_support = p.external_support_function( new_location_density );
+            workspace.external_support(wi) = new_external_support;
+            workspace.total_support(wi) = p.total_support_function( workspace.internal_support(wi), new_external_support );
+        end
+            
     
         
         
