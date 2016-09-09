@@ -15,6 +15,8 @@ function p = situate_parameters_initialize()
         
         p.temperature.initial_value = 100;
         
+        sigmoid = @(x) 1 ./ (1+exp(-x));
+        
         % p of using the conditional distribution, rather than the prior
         min = -2;
         max =  5;
@@ -23,7 +25,6 @@ function p = situate_parameters_initialize()
         % p of stopping on any given round
         min = -25;
         max =   0;
-        sigmoid = @(x) 1 ./ (1+exp(-x));
         p.temperature.stopping_probability_function = @(x) sigmoid( (max - min) * (1-(x/p.temperature.initial_value)) + min );
         
     % pipeline

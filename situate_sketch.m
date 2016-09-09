@@ -103,7 +103,7 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
             end
                 
             % update temperature
-            workspace.temperature.value = workspace.temperature.value - (p.temperature.initial_value / 1000 );
+            workspace.temperature.value = workspace.temperature.value - (p.temperature.initial_value / p.num_iterations );
             
             % update temperature based visualization
             for di = 1:length(d_prior)
