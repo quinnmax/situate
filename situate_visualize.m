@@ -49,6 +49,7 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
             situate_visualizer_run_status = 'running';
         end
         UserData.workspace_support_total = 0;
+        UserData.workspace_temperature = workspace.temperature.value;
         tic;
         UserData.last_draw_time = toc;
     else
@@ -59,8 +60,9 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
         for i = 1:length(UserData.handles)
             delete(UserData.handles(i));
         end
-        % see if the workspace has an imporved support total since last time we updated
-        if sum(workspace.total_support) > UserData.workspace_support_total
+        % see if the workspace or temperature have changed since we last updated
+        if sum(workspace.total_support) ~= UserData.workspace_support_total ...
+        || UserData.workspace_temperature ~= workspace.temperature.value
             workspace_has_updated = true;
             UserData.workspace_support_total = sum( workspace.total_support);
         end
@@ -147,24 +149,17 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
         % this is for when we don't want to update the visual depiction
         % every step of the way. with temp, we do want to, so it'll be way
         % more expensive
-%         if initial_figure_generation || workspace_has_updated || strcmp(situate_visualizer_run_status,'end')
-%             
-%             % do a full redraw of each distribution
-%             for oi = 1:length(d)
-%                 subplot2(3,sp_cols,1,4+oi-1); 
-%                 imshow(d(oi).location_display, []); 
-%                 title([d(oi).interest ' location']);
-%             end
-%             
-%         end
-        
-     % do a full redraw of each distribution
-        for oi = 1:length(d)
-            subplot2(3,sp_cols,1,4+oi-1); 
-            imshow(d(oi).location_display, []); 
-            title([d(oi).interest ' location']);
+        if initial_figure_generation || workspace_has_updated || strcmp(situate_visualizer_run_status,'end')
+            
+            % do a full redraw of each distribution
+            for oi = 1:length(d)
+                subplot2(3,sp_cols,1,4+oi-1); 
+                imshow(d(oi).location_display, []); 
+                title([d(oi).interest ' location']);
+            end
+            
         end
-       
+        
         
         
 %% draw the box distributions 
@@ -339,37 +334,6 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
         temp_h = situate_draw_workspace( gcf, p, workspace );
         UserData.handles(end+1:end+length(temp_h)) = temp_h;
 
-%         % draw workspace boxes onto main image
-%         hold on;
-%         for wi = 1:size(workspace.boxes_r0rfc0cf,1)
-%             if workspace.total_support(wi) >= p.thresholds.total_support_final
-%                 UserData.handles(end+1) = draw_box(workspace.boxes_r0rfc0cf(wi,:), 'r0rfc0cf', bounding_box_format_final);
-%             else
-%                 UserData.handles(end+1) = draw_box(workspace.boxes_r0rfc0cf(wi,:), 'r0rfc0cf', bounding_box_format_provisional);
-%             end
-%         end
-% 
-%         % then draw the text ( so boxes don't cover text )
-%         for wi = 1:size(workspace.boxes_r0rfc0cf,1)
-%             label_text = {...
-%                 workspace.labels{wi}; ...
-%                 ['  internal: ' num2str(workspace.internal_support(wi))]
-%                 ['  total: ' num2str(workspace.total_support(wi))]; ...
-%                 ['  gt:    ' num2str(workspace.GT_IOU(wi))]};
-%             t1 = text( workspace.boxes_r0rfc0cf(wi,3), workspace.boxes_r0rfc0cf(wi,1), label_text);
-%             set(t1,'color',[0 0 0]);
-%             set(t1,'FontSize',14);
-%             set(t1,'FontWeight','bold');
-%             t2 = text( workspace.boxes_r0rfc0cf(wi,3)+1, workspace.boxes_r0rfc0cf(wi,1)+1, label_text);
-%             set(t2,'color',[1 1 1]);
-%             set(t2,'FontSize',14);
-%             set(t2,'FontWeight','bold');
-% 
-%             UserData.handles(end+1) = t1;
-%             UserData.handles(end+1) = t2;
-%         end
-%         hold off;
-
         % draw workspace stats onto distributions that generated them
         for wi = 1:size(workspace.boxes_r0rfc0cf,1)
 
@@ -478,7 +442,10 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
     
 %% draw representation of current scout onto distributions 
     
-    if ~isempty(cur_agent) && isequal( cur_agent.type, 'scout' )
+    if ~isempty(cur_agent) && isequal( cur_agent.type, 'scout' ) ...
+    && ~any(cellfun( @(x) isequal(x,cur_agent.box.r0rfc0cf), row2cell(workspace.boxes_r0rfc0cf) ) )
+        
+        %  && ~isequal( cur_agent.bo
         
         di = find(strcmp(cur_agent.interest,p.situation_objects));
         if length(di) > 1, di = di(randi(length(di))); end
@@ -492,7 +459,6 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
         label_text = {...
             [cur_agent.interest '?']; ...
             ['  internal: ' num2str(cur_agent.support.internal)]; ...
-            ['  total:    ' num2str(cur_agent.support.total)]; ...
             ['  gt:       ' num2str(cur_agent.support.GROUND_TRUTH)]};
         if isfield(cur_agent.support, 'logistic_regression_data')
             label_text{end+1} = ['  coeff:    ' num2str(cur_agent.support.logistic_regression_data.coefficients)];

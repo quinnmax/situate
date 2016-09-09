@@ -15,7 +15,11 @@ function p = situate_parameters_initialize()
     % distribution that we're using (i.e. we're using 250000 pixels, so
     % each has a value of 1/250000, so make that the center of the external
     % support activation function).
-    p.external_support_function = @(x) sigmoid(   1 * (1/p.image_redim_px) * (x-p.image_redim_px)     );
+    % x = linspace(0, 10 * 1/p.image_redim_px, 100);
+    % figure(); plot(x,p.external_support_function(x));
+    p.external_support_function = @(x) sigmoid(   3 * p.image_redim_px * ( x - (1/p.image_redim_px) )     );
+    %x = linspace(0, 10 * 1/p.image_redim_px, 100);
+    %figure(); plot(x,p.external_support_function(x));
     
     p.total_support_function = @(internal,external) (internal + external) / 2;
     

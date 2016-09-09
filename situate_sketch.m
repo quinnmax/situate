@@ -658,6 +658,8 @@ function [workspace,d,agent_pool] = agent_evaluate_builder( agent_pool, agent_in
     
     matching_workspace_object_index = find(strcmp( workspace.labels, agent_pool(agent_index).interest) );
     
+    % this prevents 2 objects with the same label from existing in the same
+    % place
     overlap_iou_limit = .5;
     if ~isempty(workspace.boxes_r0rfc0cf)
         workspace_object_overlap_iou = intersection_over_union( cur_agent.box.r0rfc0cf, workspace.boxes_r0rfc0cf, 'r0rfc0cf' );
@@ -712,9 +714,23 @@ function [workspace,d,agent_pool] = agent_evaluate_builder( agent_pool, agent_in
     end
     
     if object_was_added
+        
         for di = 1:length(d)
             d(di) = situate_distribution_struct_update( d(di), p, workspace );
+            
+            % update the workspace with new external support values
+            wi = find(strcmp(d(di).interest,workspace.labels));
+            if ~isempty(wi)
+                rc = workspace.boxes_r0rfc0cf(wi,2) - workspace.boxes_r0rfc0cf(wi,1)/2;
+                cc = workspace.boxes_r0rfc0cf(wi,4) - workspace.boxes_r0rfc0cf(wi,3)/2;
+                new_location_density = d(di).location_data( round(rc), round(cc) );
+                new_external_support = p.external_support_function( new_location_density );
+                workspace.external_support(wi) = new_external_support;
+                workspace.total_support(wi)    = p.total_support_function( workspace.internal_support(wi), new_external_support );
+            end
+        
         end
+        
     end
     
 end
