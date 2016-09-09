@@ -114,9 +114,14 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
                     alpha = workspace.temperature.distribution_selection_function(workspace.temperature.value);
                     % not an accurate representation, but easier to
                     % interpret visually as it changes.
-                    location_display = (1-alpha) * mat2gray(d_prior(di).location_data) + alpha * mat2gray(d_conditioned(di).location_data);
+                    map_prior = d_prior(di).location_data;
+                    map_conditioned = mat2gray(d_conditioned(di).location_data);
+                    if abs(1-min(map_prior(:))/max(map_prior(:))) < 1e-10
+                        map_prior = ones(size(map_prior));
+                    end
+                    location_display = (1-alpha) * mat2gray(map_prior) + alpha * mat2gray(map_conditioned);
                     d_conditioned(di).location_display = location_display;
-                    d_prior(di).location_display = location_display;
+                    d_prior(di).location_display       = location_display;
                 end
             end
             
@@ -718,11 +723,15 @@ function [workspace,d,agent_pool] = agent_evaluate_builder( agent_pool, agent_in
         for di = 1:length(d)
             d(di) = situate_distribution_struct_update( d(di), p, workspace );
             
+            if size(workspace.boxes_r0rfc0cf,1) > 1
+                display('boop');
+            end
+            
             % update the workspace with new external support values
             wi = find(strcmp(d(di).interest,workspace.labels));
             if ~isempty(wi)
-                rc = workspace.boxes_r0rfc0cf(wi,2) - workspace.boxes_r0rfc0cf(wi,1)/2;
-                cc = workspace.boxes_r0rfc0cf(wi,4) - workspace.boxes_r0rfc0cf(wi,3)/2;
+                rc = (workspace.boxes_r0rfc0cf(wi,2) + workspace.boxes_r0rfc0cf(wi,1))/2;
+                cc = (workspace.boxes_r0rfc0cf(wi,4) + workspace.boxes_r0rfc0cf(wi,3))/2;
                 new_location_density = d(di).location_data( round(rc), round(cc) );
                 new_external_support = p.external_support_function( new_location_density );
                 workspace.external_support(wi) = new_external_support;

@@ -17,11 +17,11 @@ function p = situate_parameters_initialize()
     % support activation function).
     % x = linspace(0, 10 * 1/p.image_redim_px, 100);
     % figure(); plot(x,p.external_support_function(x));
-    p.external_support_function = @(x) sigmoid(   3 * p.image_redim_px * ( x - (1/p.image_redim_px) )     );
-    %x = linspace(0, 10 * 1/p.image_redim_px, 100);
-    %figure(); plot(x,p.external_support_function(x));
-    
-    p.total_support_function = @(internal,external) (internal + external) / 2;
+    p.external_support_function = @(x) sigmoid(   2 * p.image_redim_px * ( x - (2/p.image_redim_px) )     );
+%     x = linspace(0, 10 * 1/p.image_redim_px, 100);
+%     figure(); plot(x,p.external_support_function(x));
+
+    p.total_support_function = @(internal,external) .75 * internal + .25 * external;
     
     % temperature settings
     
@@ -33,11 +33,15 @@ function p = situate_parameters_initialize()
         min = -2;
         max =  5;
         p.temperature.distribution_p_function = @(x) sigmoid( (max - min) * ( 1 - (x/p.temperature.initial_value) ) + min );
+%         x = linspace(0,100,100);
+%         figure(); plot(x, p.temperature.distribution_p_function(x) );
         
         % p of stopping on any given round
         min = -25;
         max =   0;
         p.temperature.stopping_probability_function = @(x) sigmoid( (max - min) * (1-(x/p.temperature.initial_value)) + min );
+%         x = linspace(0,100,100);
+%         figure(); plot(x, p.temperature.stopping_probability_function(x) );
         
         p.use_temperature_based_stopping = true;
         

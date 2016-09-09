@@ -29,7 +29,7 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
     sp_cols = 3 + length(p.situation_objects); % number of columns in the subplot
     
     initial_figure_generation = false;
-    workspace_has_updated = false;
+    redraw_density_maps = false;
     if ~exist('h','var') || isempty(h)
         
         initial_figure_generation = true;
@@ -63,7 +63,7 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
         % see if the workspace or temperature have changed since we last updated
         if sum(workspace.total_support) ~= UserData.workspace_support_total ...
         || UserData.workspace_temperature ~= workspace.temperature.value
-            workspace_has_updated = true;
+            redraw_density_maps = true;
             UserData.workspace_support_total = sum( workspace.total_support);
             UserData.workspace_temperature = workspace.temperature.value;
         end
@@ -150,12 +150,12 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
         % this is for when we don't want to update the visual depiction
         % every step of the way. with temp, we do want to, so it'll be way
         % more expensive
-        if initial_figure_generation || workspace_has_updated || strcmp(situate_visualizer_run_status,'end')
+        if initial_figure_generation || redraw_density_maps || strcmp(situate_visualizer_run_status,'end')
             
             % do a full redraw of each distribution
             for oi = 1:length(d)
                 subplot2(3,sp_cols,1,4+oi-1); 
-                imshow(d(oi).location_display, []); 
+                imshow(d(oi).location_display ); 
                 title([d(oi).interest ' location']);
             end
             
@@ -165,7 +165,7 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
         
 %% draw the box distributions 
    
-    if initial_figure_generation || workspace_has_updated || strcmp(situate_visualizer_run_status,'end')
+    if initial_figure_generation || redraw_density_maps || strcmp(situate_visualizer_run_status,'end')
         
         for oi = 1:length(d)
             

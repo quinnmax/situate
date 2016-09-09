@@ -68,34 +68,50 @@ function d = situate_distribution_struct_initialize( interest, p, im, learned_st
             end
         end
 
+        
+        
         switch d.location_method
+            
             case 'salience'
                 d.location_data = d.hmaxq_data.salience_r + p.dist_xy_padding_value;
+                d.location_data = (d.location_data) / sum(d.location_data(:)); 
+                d.location_display = d.location_data;
+
             case 'salience_blurry'
                 blur_diameter = .3 * sqrt(p.image_redim_px);
                 blur_filter = blackman(blur_diameter)*blackman(blur_diameter)';
                 sal_map = filtern( blur_filter, d.hmaxq_data.salience_r );
                 d.location_data = sal_map + p.dist_xy_padding_value;
+                d.location_data = (d.location_data) / sum(d.location_data(:)); 
+                d.location_display = d.location_data;
+
             case 'salience_center_surround'
                 small_stack = d.hmaxq_data.c1a_r;
                 center_surround_diameter = round( sqrt(size(small_stack,1)*size(small_stack,2)) );
                 h_center_surround = center_surround( center_surround_diameter );
                 center_surround_stack = filtern( h_center_surround, small_stack );
                 d.location_data = mat2gray( imresize( sum( center_surround_stack, 3 ), d.image_size(1:2) ) ) + p.dist_xy_padding_value;
+                d.location_data = (d.location_data) / sum(d.location_data(:)); 
+                d.location_display = d.location_data;
+
             case 'uniform'
                 d.location_data = ones( size(im,1), size(im,2) );
+                d.location_data = (d.location_data) / sum(d.location_data(:)); 
+                d.location_display = ones( size(im,1), size(im,2) );
+
             case 'noise'
                 d.location_data = rand( size(im,1), size(im,2) );
+                d.location_data = (d.location_data) / sum(d.location_data(:)); 
+                d.location_display = d.location_data;
+
             otherwise
                 warning('all:newmethodwarning','new method code goes here');
                 error('initialize_distribution_struct_v2:unrecognized p.location_method_before_conditioning');
+                
         end
 
-        d.location_data = (d.location_data) / sum(d.location_data(:)); % normalize, only really matters for sampling without IOR
-        d.location_data = d.location_data;
         
-        d.location_display = d.location_data;
-
+        
     % box stuff    
 
         d.box_method = p.box_method_before_conditioning;
