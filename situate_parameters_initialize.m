@@ -27,6 +27,8 @@ function p = situate_parameters_initialize()
         max =   0;
         p.temperature.stopping_probability_function = @(x) sigmoid( (max - min) * (1-(x/p.temperature.initial_value)) + min );
         
+        p.use_temperature_based_stopping = true;
+        
     % pipeline
     
         p.use_direct_scout_to_workspace_pipe = false; % hides stochastic agent stuff a bit, more comparable to other methods     

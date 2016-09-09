@@ -168,7 +168,7 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
                 break; 
             end
             
-            if p.use_temperature && isfield(workspace,'temperature') && p.user_temperature_based_stopping && rand() < workspace.temperature.stopping_probability_function( workspace.temperature.value )
+            if p.use_temperature && isfield(workspace,'temperature') && p.use_temperature_based_stopping && rand() < workspace.temperature.stopping_probability_function( workspace.temperature.value )
                 %display('stopped due to temperature stochastic break');
                 break;
             end
