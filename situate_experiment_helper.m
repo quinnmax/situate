@@ -152,7 +152,7 @@ function [] = situate_experiment_helper(experiment_settings, p_conditions, situa
 
     
     
-%% run the main loop 
+%% run the main experiment loop (experimental conditions, images) 
 
     for fold_ind = 1:experiment_settings.num_folds
         
@@ -175,22 +175,22 @@ function [] = situate_experiment_helper(experiment_settings, p_conditions, situa
             
         % run through experimental settings
         
-            workspaces_final    = cell(length(p_conditions),length(fnames_im_test));
-            agent_records       = cell(length(p_conditions),length(fnames_im_test));
-            run_data            = cell(length(p_conditions),length(fnames_im_test));
+            workspaces_final    = cell(1,length(fnames_im_test));
+            agent_records       = cell(1,length(fnames_im_test));
+            %run_data            = cell(length(p_conditions),length(fnames_im_test));
             
             for experiment_ind = 1:length(p_conditions)
 
                 cur_experiment_parameters = p_conditions(experiment_ind);
-                
+
                 rng( cur_experiment_parameters.seed_test );
-                            
+
                 progress( 0, length(fnames_im_test),cur_experiment_parameters.description); 
-                
+
                 cur_image_ind  = 1;
                 keep_going = true;
                 while keep_going
-                    
+
                     if experiment_settings.use_gui
                     % get changes to the running parameters using the
                     % parameters GUI
@@ -211,66 +211,78 @@ function [] = situate_experiment_helper(experiment_settings, p_conditions, situa
                             break;
                         end
                     end
-                    
+
+                    % this is here, in the image loop, because users can adjust parameters in the gui after each image. 
+                    % you might need to load up new models...
                     learned_stuff = load_or_build_models( cur_experiment_parameters, fnames_lb_train, learned_stuff );
-                   
+                    
+% % edit: changing distirbution shape
+% display('boop');
+% 
+% situation_struct.objects = cur_experiment_parameters.situation_objects;
+% situation_struct.possible_labels = cur_experiment_parameters.situation_objects_possible_labels;
+% 
+% distribution_obj = situation_distribution_class();
+% distribution_obj = distribution_obj.train( fnames_lb_train, situation_struct );
+                    
+                    
                     % run on the current image
-                    cur_fname_im = fnames_im_test{cur_image_ind};
-  
-                    if cur_experiment_parameters.rcnn_boxes
-                        assert( isequal(experiment_settings.situation,'dogwalking')...
-                            || isequal(experiment_settings.situation,'dogwalking_no_leash'));
-                        % grab the rcnn boxes for this particular image
-                        faster_rcnn_data          = load_faster_rcnn_data(cur_fname_im);
-                        [~,linear_scaling_factor] = imresize_px( imread(cur_fname_im), cur_experiment_parameters.image_redim_px );
-                        faster_rcnn_data.boxes_xywh = linear_scaling_factor * double( faster_rcnn_data.boxes_xywh );
-                        learned_stuff.faster_rcnn_data = faster_rcnn_data;
-                    end
-                    
-                    tic;
-                    [ ~, run_data_cur, visualizer_status_string ] = situate_sketch( cur_fname_im, cur_experiment_parameters, learned_stuff );
-                    
-                    if ~experiment_settings.use_gui
-                        run_data{experiment_ind,cur_image_ind}         = run_data_cur;
-                        workspaces_final{experiment_ind,cur_image_ind} = run_data_cur.workspace_final;
-                        agent_records{experiment_ind,cur_image_ind}    = run_data_cur.agent_record;
-                    end
-                    
-                    num_iterations_run = sum(cellfun(@(x) ~isempty(x),{run_data_cur.agent_record.interest}));
-                    progress_string = [cur_experiment_parameters.description ', ' num2str(num_iterations_run), ' steps, ' num2str(toc) 's'];
-                    progress(cur_image_ind,length(fnames_im_test),progress_string);
-                   
+                        cur_fname_im = fnames_im_test{cur_image_ind};
+
+                        if cur_experiment_parameters.rcnn_boxes
+                            assert( isequal(experiment_settings.situation,'dogwalking')...
+                                || isequal(experiment_settings.situation,'dogwalking_no_leash'));
+                            % grab the rcnn boxes for this particular image
+                            faster_rcnn_data          = load_faster_rcnn_data(cur_fname_im);
+                            [~,linear_scaling_factor] = imresize_px( imread(cur_fname_im), cur_experiment_parameters.image_redim_px );
+                            faster_rcnn_data.boxes_xywh = linear_scaling_factor * double( faster_rcnn_data.boxes_xywh );
+                            learned_stuff.faster_rcnn_data = faster_rcnn_data;
+                        end
+
+                        tic;
+                        [ ~, run_data_cur, visualizer_status_string ] = situate_sketch( cur_fname_im, cur_experiment_parameters, learned_stuff );
+                        
+                        if ~experiment_settings.use_gui
+                            %run_data{experiment_ind,cur_image_ind}         = run_data_cur;
+                            workspaces_final{cur_image_ind} = run_data_cur.workspace_final;
+                            agent_records{cur_image_ind}    = run_data_cur.agent_record;
+                        end
+
+                        num_iterations_run = sum(cellfun(@(x) ~isempty(x),{run_data_cur.agent_record.interest}));
+                        progress_string = [cur_experiment_parameters.description ', ' num2str(num_iterations_run), ' steps, ' num2str(toc) 's'];
+                        progress(cur_image_ind,length(fnames_im_test),progress_string);
+
                     % deal with GUI responses
-                    if experiment_settings.use_gui
+                        if experiment_settings.use_gui
 
-                        switch visualizer_status_string
-                            case 'restart'
-                                % cur_image_ind = cur_image_ind;
-                                % keep_going = true;
-                                % no op
-                            case 'next_image'
-                                cur_image_ind = cur_image_ind + 1;
-                                % keep_going = true;
-                            case 'stop'
+                            switch visualizer_status_string
+                                case 'restart'
+                                    % cur_image_ind = cur_image_ind;
+                                    % keep_going = true;
+                                    % no op
+                                case 'next_image'
+                                    cur_image_ind = cur_image_ind + 1;
+                                    % keep_going = true;
+                                case 'stop'
+                                    keep_going = false;
+                                otherwise
+                                    keep_going = false;
+                                    % because we probably killed it with a window close
+                            end
+
+                            if cur_image_ind > experiment_settings.testing_data_max
                                 keep_going = false;
-                            otherwise
-                                keep_going = false;
-                                % because we probably killed it with a window close
-                        end
+                                msgbox('out of testing images');
+                            end
 
-                        if cur_image_ind > experiment_settings.testing_data_max
-                            keep_going = false;
-                            msgbox('out of testing images');
-                        end
+                            if ~keep_going
+                                break
+                            end
 
-                        if ~keep_going
-                            break
+                        else % we're not using the GUI, so move on to the next image
+                            cur_image_ind = cur_image_ind + 1;
+                            if cur_image_ind > length(fnames_im_test), keep_going = false; end
                         end
-
-                    else % we're not using the GUI, so move on to the next image
-                        cur_image_ind = cur_image_ind + 1;
-                        if cur_image_ind > length(fnames_im_test), keep_going = false; end
-                    end
 
                 end
 
@@ -278,46 +290,58 @@ function [] = situate_experiment_helper(experiment_settings, p_conditions, situa
                     % bail after the first experimental setup if we're using the GUI
                     break;
                 end
-
-            end
-
-        if experiment_settings.use_gui
-            % bail after the first fold if we're using the GUI
-            break; 
-        else
-            p_conditions_descriptions = {p_conditions.description};
-            if experiment_settings.perform_situate_run_on_training_data
-                save_fname = fullfile(experiment_settings.results_directory, [experiment_settings.title '_training_data_run' '_split_' num2str(fold_ind,'%02d') '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
-            else
-                save_fname = fullfile(experiment_settings.results_directory, [experiment_settings.title '_split_' num2str(fold_ind,'%02d') '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
-            end
-            save(save_fname, ...
-                'p_conditions', ...
-                'workspaces_final', ...
-                'agent_records', ...
-                'fnames_im_train', ...
-                'fnames_im_test',...
-                'fnames_lb_train', ...
-                'fnames_lb_test',...
-                'run_data');
-            
-                %'p_conditions_descriptions', ...
                 
-            display(['saved to ' save_fname]);
-        end
-        
-    end
-    
-    
+                
+                % save off results from the 
+                %   current fold and 
+                %   experimental condition
+                    if experiment_settings.use_gui
+                        % bail after the first fold if we're using the GUI
+                        break; 
+                    else
+                        p_condition = cur_experiment_parameters;
+                        p_condition_description = p_condition.description;
+                        if experiment_settings.perform_situate_run_on_training_data
+                            save_fname = fullfile(experiment_settings.results_directory, [experiment_settings.title '_training_data_run' '_split_' num2str(fold_ind,'%02d') '_condition_' num2str(experiment_ind) '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
+                        else
+                            save_fname = fullfile(experiment_settings.results_directory, [experiment_settings.title '_split_' num2str(fold_ind,'%02d') '_condition_' num2str(experiment_ind) '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
+                        end
+%                         save(save_fname, '-v7.3', ...
+%                             'p_conditions', ...
+%                             'workspaces_final', ...
+%                             'agent_records', ...
+%                             'fnames_im_train', ...
+%                             'fnames_im_test',...
+%                             'fnames_lb_train', ...
+%                             'fnames_lb_test',...
+%                             'run_data');
+                            save(save_fname, '-v7.3', ...
+                            'p_condition', ...
+                            'p_condition_description',...
+                            'workspaces_final', ...
+                            'agent_records', ...
+                            'fnames_im_train', ...
+                            'fnames_im_test',...
+                            'fnames_lb_train', ...
+                            'fnames_lb_test' );
 
+                        display(['saved to ' save_fname]);
+                        
+                    end
+
+            end
+
+    end
+
+    
+    
 end
 
 
 
 function learned_stuff = load_or_build_models( cur_experiment_parameters, fnames_lb_train, learned_stuff )
 
-    % if either cnn or box_adjust are being used, check to see that 
-    % matconvnet is working properly
+    % if either cnn or box_adjust are being used, check to see that matconvnet is working properly
         if any(strcmp([ cur_experiment_parameters.classification_method ],'CNN-SVM')) ...
                 || any([ cur_experiment_parameters.use_box_adjust ]) ...
                 || (isfield(cur_experiment_parameters, 'save_CNN_score') && cur_experiment_parameters.save_CNN_score)
@@ -345,15 +369,12 @@ function learned_stuff = load_or_build_models( cur_experiment_parameters, fnames
             end
         end
 
-    % conditional distribution models
-    if strncmp( 'mvn_conditional', cur_experiment_parameters.location_method_after_conditioning, length('mvn_conditional') ) ...
-    || strncmp( 'conditional_mvn', cur_experiment_parameters.box_method_after_conditioning,      length('conditional_mvn') )
-        learned_stuff.conditional_models_structure = situate_build_conditional_distribution_structure( fnames_lb_train, cur_experiment_parameters );
-        % hack to make the current 4 object version work with 3 objects again
-        if length(cur_experiment_parameters.situation_objects) == 3
-            none_index_for_three_objects = 4;
-            learned_stuff.conditional_models_structure.models = learned_stuff.conditional_models_structure.models(:,:,:,none_index_for_three_objects);
-        end
+    % some methods that use the conditional models aren't in here, and
+    % they're cheap to build, so just build them
+    learned_stuff.conditional_models_structure = situate_build_conditional_distribution_structure( fnames_lb_train, cur_experiment_parameters );
+    if length(cur_experiment_parameters.situation_objects) == 3
+        none_index_for_three_objects = 4;
+        learned_stuff.conditional_models_structure.models = learned_stuff.conditional_models_structure.models(:,:,:,none_index_for_three_objects);
     end
     
     % hog svm models

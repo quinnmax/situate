@@ -31,6 +31,11 @@ function data = situate_image_data( label_file_name )
             data = cellfun( @situate_image_data, label_file_name );
             return
         end
+        
+    % if it's a jpeg, look for the labl file matching it
+        if strcmp('jpg',label_file_name(end-2:end))
+            label_file_name = [label_file_name(1:end-3) 'labl'];
+        end
     
     % get label information
         fid = fopen( label_file_name );

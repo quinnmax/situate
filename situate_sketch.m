@@ -25,7 +25,7 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
         % passed around.
         workspace = workspace_initialize(p);
         
-    % initialize distributions for object type, box size, box shape, object location
+    % initialize distributions for object type, box sizeaq, box shape, object location
         for di = 1:length(p.situation_objects)
             d_prior(di) = situate_distribution_struct_initialize( p.situation_objects{di}, p, im, learned_models ); 
         end
@@ -80,10 +80,14 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
             agent_index        = sample_1d( [agent_pool.urgency], 1 );
             
             % pick a distribution to use based on temperature
-            if rand() < workspace.temperature.distribution_selection_function(workspace.temperature.value)
-                d = d_conditioned;
+            if p.use_temperature
+                if rand() < workspace.temperature.distribution_selection_function(workspace.temperature.value)
+                    d = d_conditioned;
+                else
+                    d = d_prior;
+                end
             else
-                d = d_prior;
+                d = d_conditioned;
             end
             
             [agent_pool,d_temp,workspace] = agent_evaluate( agent_pool, agent_index, im, label, d, p, workspace );
@@ -103,25 +107,31 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
             end
                 
             % update temperature
-            
-            workspace.situation_support = sum(workspace.total_support) / length(p.situation_objects);
-            % workspace.temperature.value = workspace.temperature.value - (p.temperature.initial_value / p.num_iterations );
-            workspace.temperature.value = 100 * ( 1 - workspace.situation_support );
-            
-            % update temperature based visualization
+            if p.use_temperature
+                workspace.situation_support = sum(workspace.total_support) / length(p.situation_objects);
+                % workspace.temperature.value = workspace.temperature.value - (p.temperature.initial_value / p.num_iterations );
+                workspace.temperature.value = 100 * ( 1 - workspace.situation_support );
+            end
+                
+            % update temperature based distribution maps
             for di = 1:length(d_prior)
                 if p.show_visualization_on_iteration
-                    alpha = workspace.temperature.distribution_selection_function(workspace.temperature.value);
+                    if p.use_temperature && isfield(workspace, 'temperature' )
+                        alpha = workspace.temperature.distribution_selection_function(workspace.temperature.value);
+                    else
+                        alpha = 1;
+                    end
                     % not an accurate representation, but easier to
                     % interpret visually as it changes.
                     map_prior = d_prior(di).location_data;
                     map_conditioned = mat2gray(d_conditioned(di).location_data);
                     if abs(1-min(map_prior(:))/max(map_prior(:))) < 1e-10
-                        map_prior = ones(size(map_prior));
+                        map_prior = zeros(size(map_prior));
                     end
                     location_display = (1-alpha) * mat2gray(map_prior) + alpha * mat2gray(map_conditioned);
                     d_conditioned(di).location_display = location_display;
                     d_prior(di).location_display       = location_display;
+                    d(di).location_display             = location_display;
                 end
             end
             
@@ -158,7 +168,11 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
             if (p.show_visualization_on_iteration           && mod(iteration,p.show_visualization_on_iteration_mod)==0) ...
             || (p.show_visualization_on_workspace_change    && workspace_changed)
                 [~,fname_no_path] = fileparts(im_fname); 
-                visualization_description = {fname_no_path; [num2str(iteration) '/' num2str(p.num_iterations)]; ['temp: ' num2str(workspace.temperature.value)]};
+                if p.use_temperature
+                    visualization_description = {fname_no_path; [num2str(iteration) '/' num2str(p.num_iterations)]; ['temp: ' num2str(workspace.temperature.value)]};
+                else
+                    visualization_description = {fname_no_path; [num2str(iteration) '/' num2str(p.num_iterations)] };
+                end
                 [h, situate_visualizer_run_status] = situate_visualize( h, im, p, d, workspace, current_agent_snapshot, records.population_count, records.agent_record, visualization_description );
                 % see if an exit command came from the GUI
                 if ~ishandle(h), situate_visualizer_run_status = 'stop'; end
@@ -234,14 +248,7 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
                 end
                 
             end
-            
-            % if the pool is under size, top off with default scouts
-            while isempty(agent_pool) || sum( strcmp( 'scout', {agent_pool.type} ) ) < p.num_scouts
-                agent_pool(end+1) = agent_initialize(d_prior,p);
-            end
-            records.population_count(iteration).scout = sum( strcmp( 'scout', {agent_pool.type} ) );
-           
-       
+          
         % edit: hack adjusts interest priority values.
         %
         % There's a problem where three objects are checked in
@@ -257,6 +264,13 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
             end
             end
             end
+            
+        % if the pool is under size, top off with default scouts
+        while isempty(agent_pool) || sum( strcmp( 'scout', {agent_pool.type} ) ) < p.num_scouts
+            agent_pool(end+1) = agent_initialize(d_prior,p);
+        end
+        records.population_count(iteration).scout = sum( strcmp( 'scout', {agent_pool.type} ) );
+
             
     end % of main iteration loop
 
@@ -277,7 +291,11 @@ function [ workspace, records, situate_visualizer_return_status ] = situate_sket
         if p.show_visualization_on_end
             if ~exist('h','var'), h = []; end
             [~,fname_no_path] = fileparts(im_fname); 
-            visualization_description = {fname_no_path; [num2str(iteration) '/' num2str(p.num_iterations)]; ['temp: ' num2str(workspace.temperature.value)]; broke_for};
+            if p.use_temperature
+                visualization_description = {fname_no_path; [num2str(iteration) '/' num2str(p.num_iterations)]; ['temp: ' num2str(workspace.temperature.value)]; broke_for};
+            else
+                visualization_description = {fname_no_path; [num2str(iteration) '/' num2str(p.num_iterations)] };
+            end
             [h, situate_visualizer_run_status] = situate_visualize( h, im, p, d_prior, workspace, [], records.population_count, records.agent_record, visualization_description );
             % interpret closing the window as 'no thank you'
             if ~ishandle(h), 
@@ -499,13 +517,12 @@ function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, p, work
         internal_support_score_function = @(b_xywh) floor(internal_support_score_function_raw(b_xywh) * 100)/100; % rounding to nearest .01 for consistency between display and internal behavior
         cur_agent.support.internal = internal_support_score_function( cur_agent.box.xywh );
         
-        
         if isfield(p, 'save_CNN_score') && p.save_CNN_score
             model_ind = find(strcmp(cur_agent.interest, p.situation_objects), 1 );
             cur_agent.support.unused_classifier_value = cnn.score_subimage( im, cur_agent.box.xywh, model_ind, d, p );
         end
         
-    % see if we can improve the initial box with some tweaking
+    % see if we can improve the initial box with some tweaking (Evan stuff)
         
         if p.use_box_adjust ...
         && cur_agent.support.internal >= p.thresholds.internal_support
@@ -569,53 +586,6 @@ function [agent_pool] = agent_evaluate_reviewer( agent_pool, agent_index, p, wor
     cur_agent = agent_pool(agent_index);
     assert( isequal( cur_agent.type, 'reviewer' ) );
     
-        
-%     if isfield(p, 'use_logistic_regression') && p.use_logistic_regression
-%         obj = find(strcmp(p.situation_objects, cur_agent.interest), 1);
-%         %cur_agent.support.sample_densities;
-%         condition_on = map(workspace.labels, @(x) find(strcmp(p.situation_objects, x), 1), true);
-%         condition_on = condition_on(condition_on ~= obj);
-%         condition_on = sort(condition_on);
-%         condition_on = map(condition_on, @num2str);
-%         condition_on = [condition_on{:} ''];
-%         
-%         load default_models/logistic_regression_dogwalking.mat   % contains [reg_data]
-%         sets = {reg_data(obj, :).desc};
-%         reg_data = reg_data(obj, find(strcmp(sets, condition_on), 1));
-%         reg_data.B = -reg_data.B;
-%         if isfield(p, 'save_CNN_score') && p.save_CNN_score
-%             normalized_data = ([cur_agent.support.unused_classifier_value, cur_agent.support.sample_densities] - reg_data.means) ./ reg_data.stds;
-%         else
-%             normalized_data = ([cur_agent.support.internal, cur_agent.support.sample_densities] - reg_data.means) ./ reg_data.stds;
-%         end
-%         cur_agent.support.external = reg_data.B(1) + dot(reg_data.B(2:end), normalized_data);
-%         if isfield(p, 'save_CNN_score') && p.save_CNN_score
-%             cur_agent.support.total = cur_agent.support.internal;
-%         else
-%             cur_agent.support.total = sigmoid(cur_agent.support.external);
-%         end
-%         
-%         cur_agent.support.logistic_regression_data.coefficients = reg_data.B;
-%         cur_agent.support.logistic_regression_data.external = cur_agent.support.sample_densities;
-%         disp('Logistic regression coefficients (bias, internal, externals):');
-%         disp(reg_data.B');
-%         disp('Bias, normalized internal score, external probability densities:');
-%         disp([1, normalized_data]);
-%         disp('Total logistic regression score:');
-%         disp(cur_agent.support.external);
-%         
-%     elseif isfield(p, 'external_support_weight') && p.external_support_weight > 0
-%         obj = find(strcmp(p.situation_objects, cur_agent.interest), 1);
-%         x = d(obj).location_data(cur_agent.box.xcycwh(2), cur_agent.box.xcycwh(1));
-%         m = mean(mean(d(obj).location_data));
-%         cur_agent.support.external = .5 ^ (m / x);
-%         cur_agent.support.total = cur_agent.support.internal * (1-p.external_support_weight) ...
-%                                   + cur_agent.support.external * p.external_support_weight;
-%         
-%     else
-%         
-%     end
-    
     location_sample_density    = agent_pool(agent_index).support.sample_densities(1);
     
     % this is sorta wrong. the external support should be based on the
@@ -624,7 +594,7 @@ function [agent_pool] = agent_evaluate_reviewer( agent_pool, agent_index, p, wor
     % the distribution updates, but as it is, for it to make it to the
     % workspace, it needs to have enough total support to pass the .25
     % provisional
-    warning('initial external support calculation is based on the sample density, not the conditional distribution density, which may not match');
+%    warning('initial external support calculation is based on the sample density, not the conditional distribution density, which may not match');
     cur_agent.support.external = p.external_support_function( location_sample_density ); 
     cur_agent.support.total    = p.total_support_function( cur_agent.support.internal, cur_agent.support.external );
     
@@ -722,10 +692,6 @@ function [workspace,d,agent_pool] = agent_evaluate_builder( agent_pool, agent_in
         
         for di = 1:length(d)
             d(di) = situate_distribution_struct_update( d(di), p, workspace );
-            
-            if size(workspace.boxes_r0rfc0cf,1) > 1
-                display('boop');
-            end
             
             % update the workspace with new external support values
             wi = find(strcmp(d(di).interest,workspace.labels));
@@ -923,7 +889,5 @@ function agent_pool = spawn_local_scouts( agent_to_expand, agent_pool, d )
         end
     
 end
-
-
 
 

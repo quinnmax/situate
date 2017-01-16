@@ -15,14 +15,11 @@ function p = situate_parameters_initialize()
     % distribution that we're using (i.e. we're using 250000 pixels, so
     % each has a value of 1/250000, so make that the center of the external
     % support activation function).
-    % x = linspace(0, 10 * 1/p.image_redim_px, 100);
-    % figure(); plot(x,p.external_support_function(x));
-    p.external_support_function = @(x) sigmoid(   2 * p.image_redim_px * ( x - (2/p.image_redim_px) )     );
-%     x = linspace(0, 10 * 1/p.image_redim_px, 100);
-%     figure(); plot(x,p.external_support_function(x));
-
+    p.external_support_function = @(x) sigmoid(   2 * p.image_redim_px * ( x - (1/p.image_redim_px) )     );
+    %x = linspace(0, 10 * 1/p.image_redim_px, 100);
+    %figure(); plot(x,p.external_support_function(x));
     p.total_support_function = @(internal,external) .75 * internal + .25 * external;
-    
+        
     % temperature settings
     
         p.use_temperature = true;
@@ -55,11 +52,10 @@ function p = situate_parameters_initialize()
         p.use_box_adjust = false;                             % Evan's classifier based method for picking sequential moves
         p.spawn_nearby_scouts_on_provisional_checkin = false; % Max's agent based method for local search on provisional checkin
         
+        p.refresh_agent_pool_after_workspace_change = false;
+    
     p.salience_model = hmaxq_model_initialize();
-    
-    p.use_direct_scout_to_workspace_pipe = false;
-    p.refresh_agent_pool_after_workspace_change = false;
-    
+        
     % distribution settings
 
         p.use_distribution_tweaking = false;
@@ -103,6 +99,7 @@ function p = situate_parameters_initialize()
     
     p.location_sampling_method_options = { ...
         'sampling', ...
+        'sampling_mvn_fast',...
         'ior_sampling', ...
         'ior_peaks' };
     

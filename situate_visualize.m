@@ -20,7 +20,7 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
     % see if this is an initial drawing, 
     % see if the workspace has been updated
     
-    min_frame_time = .1; % seconds
+    min_frame_time = .01; % seconds
     
     global situate_visualizer_run_status;
     
@@ -49,7 +49,9 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
             situate_visualizer_run_status = 'running';
         end
         UserData.workspace_support_total = 0;
-        UserData.workspace_temperature = workspace.temperature.value;
+        if isfield(workspace, 'temperature')
+            UserData.workspace_temperature = workspace.temperature.value;
+        end
         tic;
         UserData.last_draw_time = toc;
     else
@@ -62,10 +64,12 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
         end
         % see if the workspace or temperature have changed since we last updated
         if sum(workspace.total_support) ~= UserData.workspace_support_total ...
-        || UserData.workspace_temperature ~= workspace.temperature.value
+        || (p.use_temperature && isfield(UserData,'workspace_temperature') && UserData.workspace_temperature ~= workspace.temperature.value)
             redraw_density_maps = true;
             UserData.workspace_support_total = sum( workspace.total_support);
-            UserData.workspace_temperature = workspace.temperature.value;
+            if p.use_temperature 
+                UserData.workspace_temperature = workspace.temperature.value;
+            end
         end
     end
     UserData.handles = [];

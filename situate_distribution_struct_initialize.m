@@ -97,7 +97,7 @@ function d = situate_distribution_struct_initialize( interest, p, im, learned_st
             case 'uniform'
                 d.location_data = ones( size(im,1), size(im,2) );
                 d.location_data = (d.location_data) / sum(d.location_data(:)); 
-                d.location_display = ones( size(im,1), size(im,2) );
+                d.location_display = zeros( size(im,1), size(im,2) );
 
             case 'noise'
                 d.location_data = rand( size(im,1), size(im,2) );

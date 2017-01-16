@@ -8,6 +8,7 @@
     cd( situate_gui_or_experiment_path );
     addpath(fullfile(situate_gui_or_experiment_path));
     addpath(genpath(fullfile(situate_gui_or_experiment_path, 'tools')));
+    
     warning('off');
 
 
@@ -110,18 +111,10 @@
         % split_arg = 1;
         % split_arg = uigetdir(pwd);
         split_arg = 'default_split/';
-        
-        if ischar(split_arg)
-            seed_train = [];
-        elseif isnumeric(split_arg)
-            seed_train = split_arg;
-        end
-
+    
     % seed test
         % seed_test = RandStream.shuffleSeed;  % generates a seed based on current time, stores it into p_structures
         seed_test = 1;
-        
-    
 
 
 
@@ -188,8 +181,12 @@
         end
     
     % add the seed values to p
+        if ischar(split_arg)
+            p.seed_train = [];
+        elseif isnumeric(split_arg)
+            p.seed_train = split_arg;
+        end
         p.seed_test  = seed_test;
-        p.seed_train = seed_train;
         
     % if running a training data collection run, 
     % tell situate to save off CNN scores, even if using IOU-oracle as the

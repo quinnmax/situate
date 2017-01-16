@@ -154,19 +154,13 @@ end
 
 function apply_changes( hObject, callbackdata, p, handles  )
 
-    %p.location_method_before_conditioning = p.location_method_options_before{ handles.location_method_before.Value };
     p.location_method_before_conditioning = p.location_method_options_before{ get(handles.location_method_before,'Value') };
-    %p.location_method_after_conditioning  = p.location_method_options_after{  handles.location_method_after.Value  };
     p.location_method_after_conditioning  = p.location_method_options_after{  get(handles.location_method_after,'Value') };
 
-    %p.location_sampling_method_before_conditioning = p.location_sampling_method_options{ handles.sampling_method_before.Value };
-    %p.location_sampling_method_after_conditioning  = p.location_sampling_method_options{ handles.sampling_method_after.Value  };
     p.location_sampling_method_before_conditioning = p.location_sampling_method_options{ get(handles.sampling_method_before,'Value') };
     p.location_sampling_method_after_conditioning  = p.location_sampling_method_options{ get(handles.sampling_method_after,'Value')  };
 
     
-    %p.box_method_before_conditioning = p.box_method_options_before{ handles.box_method_before.Value };
-    %p.box_method_after_conditioning  = p.box_method_options_after{  handles.box_method_after.Value  };
     p.box_method_before_conditioning = p.box_method_options_before{ get(handles.box_method_before,'Value') };
     p.box_method_after_conditioning  = p.box_method_options_after{  get(handles.box_method_after,'Value')  };
 
@@ -178,7 +172,6 @@ function apply_changes( hObject, callbackdata, p, handles  )
     p.num_iterations = round( get(handles.agent_iterations_slider,'Value') );
 
     p.classification_method                 = p.classification_options{ get(handles.classification_method,'Value')};
-    %p.thresholds.internal_support           = get(handles.checkin_threshold_1_slider,'Value');
     p.thresholds.total_support_provisional  = get(handles.checkin_threshold_1_slider,'Value');
     p.thresholds.total_support_final        = get(handles.checkin_threshold_2_slider,'Value');
     

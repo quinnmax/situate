@@ -47,6 +47,12 @@ function [d,box_r0rfc0cf,box_density] = situate_sample_box( d, parameters_struct
             d.location_display = d.location_data;
             rc = point(1);
             cc = point(2);
+        case 'sampling_mvn_fast'
+            point = mvnrnd( d.location_data.mu, d.location_data.Sigma );
+            box_density_location = mvnpdf( point, d.location_data.mu, d.location_data.Sigma );
+            rc = round(point(1) * sqrt(d.image_size_px) + d.image_size(1)/2);
+            cc = round(point(2) * sqrt(d.image_size_px) + d.image_size(2)/2);
+            d.location_display = d.location_data;
         case '4d'
             % just pass on through, it'll all happen in the box_method
             % section

@@ -31,9 +31,6 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     % fn{end+1} = '/Users/Max/Dropbox/Projects/situate/situate_experiment_mm_1_results2016.05.05.19.21.37.mat';
     % fn{end+1} = '/Users/Max/Dropbox/Projects/situate/situate_experiment_mm_1_results2016.05.06.10.11.53.mat';
 
-    proposals_display_limit = 1000;
-
-
 
 %% reshaping the data 
     
@@ -42,96 +39,74 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     p_conditions_descriptions_temp = {};
     agent_records_temp = {};
     workspaces_final_temp = {};  
-    fnames_test_images_temp = {};
+    fnames_test_images = {};
     % run_data_temp = {};
     
-    for fi = 1:length(fn) 
-    % file ind
+    for fi = 1:length(fn) % file ind
         temp_d = load(fn{fi});
-        p_conditions_descriptions_temp = [p_conditions_descriptions_temp temp_d.p_conditions.description];
-        for ci = 1:length(temp_d.p_conditions) 
-        % condition ind
-            % run_data_temp{end+1} = temp_d.run_data(j,:); % this is per
-            % image, so doesn't fit into this fold stuation
-            p_conditions_temp{end+1} = temp_d.p_conditions(ci);
-            agent_records_temp{end+1} = temp_d.agent_records(ci,:);
-            workspaces_final_temp{end+1} = {temp_d.workspaces_final{ci,:}};
-            fnames_test_images_temp{end+1} = temp_d.fnames_im_test;
-        end
+        p_conditions_temp{end+1} = temp_d.p_condition;
+        p_conditions_descriptions_temp{fi} = temp_d.p_condition_description;
+        agent_records_temp{end+1} = temp_d.agent_records;
+        workspaces_final_temp{end+1} = temp_d.workspaces_final;
+        fnames_test_images{end+1} = temp_d.fnames_im_test;
     end
-    [unique_descriptions, ~] = unique( p_conditions_descriptions_temp );
-    num_conditions = length(unique_descriptions);
+    clear temp_d;
     
-    description_counts = counts(p_conditions_descriptions_temp);
+    [description_counts, p_conditions_descriptions] = counts( p_conditions_descriptions_temp );
+    num_conditions = length(p_conditions_descriptions);
+    
+    % check that things seem balanced
     if ~all(eq(description_counts(1), description_counts)), error('different numbers of runs for different experimental conditions'); end
-    num_folds = max(description_counts);
-    
     images_per_run = cellfun( @length, workspaces_final_temp );
     if ~all(eq(images_per_run(1),images_per_run)), error('different numbers of images in different runs'); end
-    num_images_per_fold = max(images_per_run);
     
+    num_images = sum( cellfun( @length, workspaces_final_temp ) ) / length(p_conditions_descriptions);
     
+%% group on condition
     
-    % go from files for folds to indexing
-    % basically just get everything stored into condition,fold,image indexing
-    
-    fnames_test_images         = cell(num_conditions, num_folds, num_images_per_fold );
-    workspaces_final           = cell(num_conditions, num_folds, num_images_per_fold );
-    agent_records              = cell(num_conditions, num_folds, num_images_per_fold );
-    p_conditions_descriptions  = cell(num_conditions, num_folds, num_images_per_fold );
-    p_conditions               = cell(num_conditions, num_folds, num_images_per_fold );
+    workspaces_final           = cell(num_conditions, num_images);
+    agent_records              = cell(num_conditions, num_images);
+    p_conditions               = cell(num_conditions,1);
     
     for ci = 1:num_conditions
-        cur_condition_linear_inds_list = find(strcmp( p_conditions_descriptions_temp, unique_descriptions{ci} ));
-        cur_num_folds = length(cur_condition_linear_inds_list);
-    for fi = 1:cur_num_folds
-        cur_fold_ind = cur_condition_linear_inds_list(fi);
-        cur_num_images_in_fold = length(agent_records_temp{cur_fold_ind});
-    for ii = 1:cur_num_images_in_fold
-        
-        fnames_test_images{ci,fi,ii}         = fnames_test_images_temp{           cur_fold_ind }{ii};
-        workspaces_final{ci,fi,ii}           = workspaces_final_temp{             cur_fold_ind }{ii};
-        agent_records{ci,fi,ii}              = agent_records_temp{                cur_fold_ind }{ii};
-        p_conditions_descriptions{ci,fi,ii}  = p_conditions_descriptions_temp{    cur_fold_ind };
-        p_conditions{ci,fi,ii}               = p_conditions_temp{                 cur_fold_ind };
-        
-    end
-    end
+        cur_condition_inds = strcmp( p_conditions_descriptions{ci}, p_conditions_descriptions_temp );
+        p_conditions(ci) = p_conditions_temp(find(cur_condition_inds,1,'first'));
+        workspaces_final(ci,:)  = [workspaces_final_temp{cur_condition_inds}];
+        agent_records(ci,:)     = [agent_records_temp{cur_condition_inds}];
     end
 
-
-
-%% gather some interesting facts 
+    clear agent_records_temp;
     
-    % check for successful detections against Ground Truth IOU
+
+    
+%% check for successful detections against Ground Truth IOU
     
     iou_threshold = .5;
-    successful_completion = false( num_conditions, num_folds, num_images_per_fold );
-    for ci = 1:size(workspaces_final,1)
-    for fi = 1:size(workspaces_final,2)
-    for ii = 1:size(workspaces_final,3)
-        if isequal( sort(workspaces_final{ci,fi,ii}.labels), sort(p_conditions{ci,fi,ii}.situation_objects) )...
-        && all(workspaces_final{ci,fi,ii}.GT_IOU >= iou_threshold)
-            successful_completion(ci,fi,ii) = true;
+    successful_completion = false( num_conditions, num_images );
+    for ci = 1:num_conditions
+    for ii = 1:num_images
+        if isequal( sort(workspaces_final{ci,ii}.labels), sort(p_conditions{ci}.situation_objects) )...
+        && all(workspaces_final{ci,ii}.GT_IOU >= iou_threshold)
+            successful_completion(ci,ii) = true;
         end
     end
     end
-    end
     
-    % gather data on detection order of objects
     
-    detection_order_times  = inf(  num_conditions, num_folds, num_images_per_fold, length(p_conditions{1,1,1}.situation_objects) );
-    detection_order_labels = cell( num_conditions, num_folds, num_images_per_fold, length(p_conditions{1,1,1}.situation_objects) );
-    for ci = 1:size(agent_records,1)
-    for fi = 1:size(agent_records,2)
-    for ii = 1:size(agent_records,3)
-        situation_objects = p_conditions{ci,fi,ii}.situation_objects;
+    
+%% gather data on detection order of objects
+    
+    detection_order_times  = inf(  num_conditions, num_images, length(p_conditions{1}.situation_objects) );
+    detection_order_labels = cell( num_conditions, num_images, length(p_conditions{1}.situation_objects) );
+    for ci = 1:num_conditions
+    for ii = 1:num_images
+        situation_objects = p_conditions{ci}.situation_objects;
         temp_detection_times = inf(1,length(situation_objects));
-        cur_support_record = [agent_records{ci,fi,ii}.support];
-        for i = 1:length(cur_support_record), if isempty(cur_support_record(i).total), cur_support_record(i).total = 0; end; end % this should already be true, but there was a situation where it wasn't initialized properly. fixed now
+        cur_support_record = [agent_records{ci,ii}.support];
+        %for i = 1:length(cur_support_record), if isempty(cur_support_record(i).total), cur_support_record(i).total = 0; end; end % this should already be true, but there was a situation where it wasn't initialized properly. fixed now
         for oi = 1:length(situation_objects)
             object_label = situation_objects{oi};
-            workspace_entry_event_inds_object_type = strcmp(object_label,  {agent_records{ci,fi,ii}.interest} );
+            workspace_entry_event_inds_object_type = strcmp(object_label,  {agent_records{ci,ii}.interest} );
             workspace_entry_event_inds_over_threshold = ge( round(100*[cur_support_record.total])/100, iou_threshold );
             a = reshape(workspace_entry_event_inds_object_type,1,[]);
             b = reshape(workspace_entry_event_inds_over_threshold,1,[]);
@@ -142,59 +117,46 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
             end
         end
         [~,sort_order] = sort(temp_detection_times,'ascend');
-        detection_order_times(ci,fi,ii,:)  = temp_detection_times(sort_order);
-        detection_order_labels(ci,fi,ii,:) = situation_objects(sort_order);
+        detection_order_times(ci,ii,:)  = temp_detection_times(sort_order);
+        detection_order_labels(ci,ii,:) = situation_objects(sort_order);
     end
     end
-    end
+    
+    
     
     % reshape for detections as a function of number of proposals
     
     max_proposals = max(cellfun( @(x) x.num_iterations, p_conditions_temp));
-    detections_at_num_proposals = zeros( num_conditions, num_folds, max_proposals );    
+    detections_at_num_proposals = zeros( num_conditions, max_proposals );    
     for ci = 1:num_conditions
-    for fi = 1:num_folds
-    for ii = 1:num_images_per_fold
-        cur_detection = detection_order_times(ci,fi,ii,end);
-        if ~isinf(cur_detection) && successful_completion(ci,fi,ii)
-            detections_at_num_proposals(ci,fi,cur_detection:end) = detections_at_num_proposals(ci,fi,cur_detection:end) + 1;
+    for ii = 1:num_images
+        cur_detection = detection_order_times(ci,ii,end);
+        if ~isinf(cur_detection) && successful_completion(ci,ii)
+            detections_at_num_proposals(ci,cur_detection:end) = detections_at_num_proposals(ci,cur_detection:end) + 1;
         end
     end
     end
-    end
     
-    % get detections as function of proposals, grouped over folds
-    
-    max_proposals = max(cellfun( @(x) x.num_iterations, p_conditions_temp));
-    detections_at_num_proposals_mu    = zeros( num_conditions, max_proposals );
-    detections_at_num_proposals_sigma = zeros( num_conditions, max_proposals );
-    for ci = 1:num_conditions
-        detections_at_num_proposals_mu(ci,:)    = mean( detections_at_num_proposals(ci,:,:) );
-        detections_at_num_proposals_sigma(ci,:) = std(  detections_at_num_proposals(ci,:,:) );
-    end
-    
-    detections_at_num_proposals_total = squeeze( sum(detections_at_num_proposals,2) );
-    
-    if num_conditions == 1
-        detections_at_num_proposals_total = reshape( detections_at_num_proposals_total, 1, [] );
-    end
-
 
 
 %% define conditions to include, color and line specifications 
 
-    include_conditions = find(true(1,length(unique_descriptions)));
+    proposals_display_limit = max_proposals;
+    % proposals_display_limit = 1000;
+
+    include_conditions = find(true(1,length(p_conditions_descriptions)));
     %include_conditions = find([1 1 0, 0 0 1, 0 0 0, 1 1 1, 1]);
     
     % define color space
-    colors = cool(length(include_conditions));
-    %colors = color_fade([1 0 1; 0 0 0; 0 .75 0], length(include_conditions ) );
+    % colors = cool(length(include_conditions));
+    % colors = color_fade([1 0 1; 0 0 0; 0 .75 0], length(include_conditions ) );
+    colors = zeros( 5,3);
     colors = sqrt(colors);
 
-    linespec = {'-','--','-.'};
+    linespec = {'-','--','-.',':'};
     linespec = repmat(linespec,1,ceil(length(include_conditions)/length(linespec)));
 
-    [~,sort_order] = sort(sum(detections_at_num_proposals_total(:,1:min(proposals_display_limit,size(detections_at_num_proposals_total,2))),2), 'descend');
+    [~,sort_order] = sort(sum(detections_at_num_proposals(:,1:min(proposals_display_limit,size(detections_at_num_proposals,2))),2), 'descend');
 
     display_order = [];
     for ci = 1:length(sort_order)
@@ -213,12 +175,13 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     
     for i = 1:length(display_order);
         ci = display_order(i);
-        plot( detections_at_num_proposals_total(ci,:), 'Color', colors(i,:), 'LineWidth', 1.25, 'LineStyle', linespec{i} );
+        %plot( detections_at_num_proposals_total(ci,:), 'Color', colors(i,:), 'LineWidth', 1.25, 'LineStyle', linespec{i} );
+        plot( detections_at_num_proposals(ci,:), 'Color', colors(i,:), 'LineWidth', 1.25, 'LineStyle', linespec{i} );
     end
     hold off;
     
     hold on;
-        plot([0 max_proposals], [num_images_per_fold * num_folds, num_images_per_fold * num_folds], '--black')
+        plot([0 max_proposals], [num_images, num_images], '--black')
     hold off;
     
     box(h2.CurrentAxes,'on');
@@ -228,11 +191,11 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
  
     xlim([0 max_proposals]);
     xlim([0 proposals_display_limit])  
-    ylim([0 1.1*num_images_per_fold*num_folds]);
+    ylim([0 1.1*num_images]);
     
     % legend(unique_descriptions(sort_order),'Location','Northeast');
-    title_string = 'location prior, box prior, conditioning';
-    h_temp = legend(unique_descriptions(display_order),'Location','eastoutside','FontName','FixedWidth');
+    title_string = 'Situation recognition method';
+    h_temp = legend(p_conditions_descriptions(display_order),'Location','eastoutside','FontName','FixedWidth');
     h_temp.FontSize = 8;
     try % works in matlab2016a, not 2015 versions apparently
         h_temp.Title.String = title_string;
@@ -249,9 +212,9 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     fprintf('Median time to first detection\n')
     fprintf('  location: box shape; conditioning \n');
     for ci = display_order
-        temp_a = reshape(detection_order_times(ci,:,:,1),1,[]);
+        temp_a = reshape(detection_order_times(ci,:,1),1,[]);
         temp_b = prctile(temp_a,50);
-        fprintf( '  %-50s  ', unique_descriptions{ci} );
+        fprintf( '  %-50s  ', p_conditions_descriptions{ci} );
         fprintf( '%*.1f\n',10, temp_b );
     end
     fprintf('\n\n');
@@ -260,9 +223,9 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     fprintf('Median time to second detection \n')
     fprintf('  location: box shape; conditioning \n');
     for ci = display_order
-        temp_a = reshape(detection_order_times(ci,:,:,2),1,[]);
+        temp_a = reshape(detection_order_times(ci,:,2),1,[]);
         temp_b = prctile( temp_a, 50 );
-        fprintf( '  %-50s  ', unique_descriptions{ci} );
+        fprintf( '  %-50s  ', p_conditions_descriptions{ci} );
         fprintf( '%*.1f\n',10, temp_b );
     end
     fprintf('\n\n');
@@ -272,9 +235,9 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
         fprintf('Median time to third detection \n')
         fprintf('  location: box shape; conditioning \n');
         for mi = display_order
-            temp_a = reshape(detection_order_times(mi,:,:,3),1,[]);
+            temp_a = reshape(detection_order_times(mi,:,3),1,[]);
             temp_b = prctile( temp_a, 50 );
-            fprintf( '  %-50s  ', unique_descriptions{mi} );
+            fprintf( '  %-50s  ', p_conditions_descriptions{mi} );
             fprintf( '%*.1f\n',10, temp_b );
         end
         fprintf('\n\n');
@@ -284,12 +247,12 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     fprintf('Median time from first to second detection \n')
     fprintf('  location: box shape; conditioning \n');
     for ci = display_order
-        temp_a = reshape(detection_order_times(ci,:,:,1),1,[]);
-        temp_b = reshape(detection_order_times(ci,:,:,2),1,[]);
+        temp_a = reshape(detection_order_times(ci,:,1),1,[]);
+        temp_b = reshape(detection_order_times(ci,:,2),1,[]);
         rem_NaNs = temp_b - temp_a;
         rem_NaNs(isnan(rem_NaNs)) = inf;
         temp_c = prctile( rem_NaNs, 50 );
-        fprintf( '  %-50s  ', unique_descriptions{ci} );
+        fprintf( '  %-50s  ', p_conditions_descriptions{ci} );
         fprintf( '%*.1f\n',10, temp_c );
     end
     fprintf('\n\n');
@@ -299,12 +262,12 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
         fprintf('Median time from second to third detection \n')
         fprintf('  location: box shape; conditioning \n');
         for mi = display_order
-            temp_a = reshape(detection_order_times(mi,:,:,2),1,[]);
-            temp_b = reshape(detection_order_times(mi,:,:,3),1,[]);
+            temp_a = reshape(detection_order_times(mi,:,2),1,[]);
+            temp_b = reshape(detection_order_times(mi,:,3),1,[]);
             rem_NaNs = temp_b - temp_a;
             rem_NaNs(isnan(rem_NaNs)) = inf;
             temp_c = prctile( temp_b - temp_a, 50 );
-            fprintf( '  %-50s  ', unique_descriptions{mi} );
+            fprintf( '  %-50s  ', p_conditions_descriptions{mi} );
             fprintf( '%*.1f\n',10, temp_c );
         end
         fprintf('\n\n');
@@ -314,10 +277,10 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     fprintf('Number of failed detections \n')
     fprintf('  location: box shape; conditioning \n');
     for ci = display_order
-        temp_a = sum( reshape(successful_completion(ci,:,:),1,[]) );
-        temp_b = numel( successful_completion(ci,:,:) );
+        temp_a = sum( reshape(successful_completion(ci,:),1,[]) );
+        temp_b = numel( successful_completion(ci,:) );
         temp_c = temp_b - temp_a;
-        fprintf( '  %-50s  ', unique_descriptions{ci} );
+        fprintf( '  %-50s  ', p_conditions_descriptions{ci} );
         fprintf( '%*d\n',10, temp_c );
     end
     fprintf('\n\n');
@@ -334,21 +297,20 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
         for ci = 1:size(successful_completion,1)
             figure();
             cur_display_counter = 1;
-            for fi = 1:size(successful_completion,2)
-            for ii = 1:size(successful_completion,3)
-                if ~successful_completion(ci,fi,ii)
+            for ii = 1:size(successful_completion,2)
+                if ~successful_completion(ci,ii)
                     subplot(num_rows,num_cols,cur_display_counter);
-                    situate_draw_workspace(fnames_test_images{ci,fi,ii},p_conditions{ci,fi,ii},workspaces_final{ci,fi,ii} );
+                    situate_draw_workspace(fnames_test_images{ci}{ii},p_conditions{ci},workspaces_final{ci,ii} );
                     if cur_display_counter == 1
-                        title(p_conditions{ci,fi,ii}.description);
+                        title(p_conditions{ci}.description);
                     end
                     cur_display_counter = cur_display_counter + 1;
                     if mod(cur_display_counter,num_rows*num_cols) == 1
-                        figure();
-                        cur_display_counter = 1;
+                        %figure();
+                        %cur_display_counter = 1;
+                        break;
                     end   
                 end
-            end
             end
         end
         
