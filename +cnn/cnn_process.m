@@ -1,11 +1,18 @@
-function data = cnn_process( image, image_size )
+function data = cnn_process( image, image_size, layer_in )
+% data = cnn_process( image, image_size, layer_in )
+% image
 %CNN_PROCESS Uses a pre-trained CNN to extract features from an image. 
     persistent net layer;
-    if ~exist('net', 'var') || isa(net, 'double')
+    if ~exist('net', 'var') || isa(net, 'double') || (exist('layer','var') && exist('layer_in','var') && ~isequal(layer_in,layer))
         % Must be called for MatConvNet to work
-        run matconvnet/matlab/vl_setupnn
+        % run matconvnet/matlab/vl_setupnn
+        run vl_setupnn % matconvnet/matlab is in path. local path was messing it up for other scripts
         net = vl_simplenn_tidy(load('+cnn/imagenet-vgg-f.mat'));
-        layer = 18;
+        if exist('layer_in','var') && ~isempty(layer_in)
+            layer = layer_in;
+        else
+            layer = 18;
+        end
         net.layers = net.layers(1:layer);
         try
             net = vl_simplenn_move(net, 'gpu');
@@ -17,7 +24,7 @@ function data = cnn_process( image, image_size )
 %         layer = 502;
     end
     
-    if nargin < 2
+    if ~exist('image_size','var') || isempty(image_size)
         image_size = net.meta.normalization.imageSize(1:2);
     end
     image = imresize(single(image), image_size);

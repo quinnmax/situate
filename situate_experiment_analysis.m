@@ -300,7 +300,7 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
             for ii = 1:size(successful_completion,2)
                 if ~successful_completion(ci,ii)
                     subplot(num_rows,num_cols,cur_display_counter);
-                    situate_draw_workspace(fnames_test_images{ci}{ii},p_conditions{ci},workspaces_final{ci,ii} );
+                    situate.draw_workspace(fnames_test_images{ci}{ii},p_conditions{ci},workspaces_final{ci,ii} );
                     if cur_display_counter == 1
                         title(p_conditions{ci}.description);
                     end
