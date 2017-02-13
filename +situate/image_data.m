@@ -26,10 +26,19 @@ function data = image_data( label_file_name )
     %     data.fname_lb = label_file_name;
 
     
+    % if it's a directory, get data from each label in the directory
+        if ischar(label_file_name) && isdir(label_file_name)
+            data_path = label_file_name;
+            dir_data = dir([data_path '*.labl']);
+            path_and_fnames = cellfun( @(x) fullfile( data_path, x ), {dir_data.name}, 'UniformOutput', false );
+            data = situate.image_data(path_and_fnames);
+            return;
+        end
+    
     % if it's a cell, recursively apply to each entry
         if iscell(label_file_name)
             data = cellfun( @situate.image_data, label_file_name );
-            return
+            return;
         end
         
     % if it's a jpeg, look for the labl file matching it

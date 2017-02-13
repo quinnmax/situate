@@ -1,18 +1,18 @@
 
 
 
-function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, cur_agent, population_count, scout_record, visualization_description )
-% [h, return_status_string] = situate_visualize( h, im, p, d,
+function [h, return_status_string] = visualize( h, im, p, d, workspace, cur_agent, population_count, scout_record, visualization_description )
+% [h, return_status_string] = visualize( h, im, p, d,
 %        workspace, cur_agent, population_count, scout_record, visualization_description ); 
 %
 % to initialize
-%   [h, return_status_string] = situate_visualize( [], im, p, d, workspace, cur_agent, population_count, scout_record, visualization_description )
+%   [h, return_status_string] = situate.visualize( [], im, p, d, workspace, cur_agent, population_count, scout_record, visualization_description )
 %
 % to update
-%   [h, return_status_string] = situate_visualize( h, im, p, d, workspace, cur_agent, population_count, scout_record, visualization_description )
+%   [h, return_status_string] = situate.visualize( h, im, p, d, workspace, cur_agent, population_count, scout_record, visualization_description )
 %
 % to draw a final visualization
-%   [h, return_status_string] = situate_visualize( h, im, p, d, workspace, [], population_count, scout_record, visualization_description )
+%   [h, return_status_string] = situate.visualize( h, im, p, d, workspace, [], population_count, scout_record, visualization_description )
 
     
 
@@ -336,7 +336,7 @@ function [h, return_status_string] = situate_visualize( h, im, p, d, workspace, 
         subplot2(3,sp_cols,1,1,2,3); 
         
         % draw workspace boxes onto main image
-        temp_h = situate_draw_workspace( gcf, p, workspace );
+        temp_h = situate.draw_workspace( gcf, p, workspace );
         UserData.handles(end+1:end+length(temp_h)) = temp_h;
 
         % draw workspace stats onto distributions that generated them

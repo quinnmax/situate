@@ -21,7 +21,7 @@
     experiment_settings = [];
     experiment_settings.use_gui = false;
     
-    experiment_settings.title               = 'local search test';
+    experiment_settings.title               = 'local search test smaller larger';
     experiment_settings.situations_struct   = situate.situation_definitions();
     experiment_settings.situation           = 'dogwalking'; 
     
@@ -31,7 +31,7 @@
     %   as possible will be used, given the available data and the number
     %   of folds.
     experiment_settings.num_folds           = 1;  
-    experiment_settings.testing_data_max    = 25;  % per fold
+    experiment_settings.testing_data_max    = 50;  % per fold
     experiment_settings.training_data_max   = []; 
     % total testing images is num_folds * testing_data_max
     
@@ -152,8 +152,8 @@
         
     % support and check-in
         p.external_support_function = @(x) sigmoid(   2 * p.image_redim_px * ( x - (1/p.image_redim_px) )     );
-        % p.total_support_function = @(internal,external) .75 * internal + .25 * external;
         p.total_support_function = @(internal,external) .5 * internal + .5 * external;
+        % p.total_support_function = @(internal,external) .75 * internal + .25 * external;
         
         p.thresholds.internal_support                   = .50; % scout -> reviewer threshold
         p.thresholds.total_support_provisional          = .50; % workspace entry, provisional (search continues)
@@ -166,7 +166,8 @@
     % tweaking
         p.local_search_activation_logic = @(cur_agent) cur_agent.support.total > p.thresholds.total_support_provisional;
         % p.local_search_function = [];
-        p.local_search_function = @spawn_local_scouts;
+        p.local_search_function = @spawn_local_scouts_small;
+        p.local_search_function = @spawn_local_scouts_large;
         
         
     % set up visualization parameters
@@ -291,7 +292,7 @@
 %    
     
     
-    description = 'Situate, use local search';
+    description = 'Situate, use local search random step size';
     temp = p;
     temp.location_method_before_conditioning            = 'uniform';
     temp.location_method_after_conditioning             = 'mvn_conditional';
@@ -303,22 +304,12 @@
     temp.description = description;
     temp.total_support_function = @(internal,external) .5 * internal + .5 * external;
 temp.local_search_activation_logic = @(cur_agent) cur_agent.support.total > p.thresholds.total_support_provisional;
+temp.local_search_function = @spawn_local_scouts_random;
     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
     
-    description = 'Situate, no local search';
-    temp = p;
-    temp.location_method_before_conditioning            = 'uniform';
-    temp.location_method_after_conditioning             = 'mvn_conditional';
-    temp.box_method_before_conditioning                 = 'independent_normals_log_aa';
-    temp.box_method_after_conditioning                  = 'conditional_mvn_log_aa';
-    temp.location_sampling_method_before_conditioning   = 'sampling';
-    temp.location_sampling_method_after_conditioning    = 'sampling';
-    temp.use_temperature                                = false;
-    temp.description = description;
-    temp.total_support_function = @(internal,external) .5 * internal + .5 * external;
-temp.local_search_activation_logic = @(cur_agent) false;
-    if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+  
     
+   
     % validate the options before we start running with them
     %    this just checks that methods_before and method_after type stuff is
     %    set to something present in the method_options arrays. just to

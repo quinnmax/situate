@@ -96,6 +96,7 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     
 %% gather data on detection order of objects
     
+    iou_threshold = .5
     detection_order_times  = inf(  num_conditions, num_images, length(p_conditions{1}.situation_objects) );
     detection_order_labels = cell( num_conditions, num_images, length(p_conditions{1}.situation_objects) );
     for ci = 1:num_conditions
@@ -122,8 +123,6 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     end
     end
     
-    
-    
     % reshape for detections as a function of number of proposals
     
     max_proposals = max(cellfun( @(x) x.num_iterations, p_conditions_temp));
@@ -147,12 +146,6 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     include_conditions = find(true(1,length(p_conditions_descriptions)));
     %include_conditions = find([1 1 0, 0 0 1, 0 0 0, 1 1 1, 1]);
     
-    % define color space
-    % colors = cool(length(include_conditions));
-    % colors = color_fade([1 0 1; 0 0 0; 0 .75 0], length(include_conditions ) );
-    colors = zeros( 5,3);
-    colors = sqrt(colors);
-
     linespec = {'-','--','-.',':'};
     linespec = repmat(linespec,1,ceil(length(include_conditions)/length(linespec)));
 
@@ -164,6 +157,12 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
             display_order = [display_order sort_order(ci)];
         end
     end
+    
+    % define color space
+    % colors = cool(length(include_conditions));
+    % colors = color_fade([1 0 1; 0 0 0; 0 .75 0], length(include_conditions ) );
+    colors = zeros( length(include_conditions),3);
+    colors = sqrt(colors);
 
 
 
@@ -285,7 +284,88 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     end
     fprintf('\n\n');
 
+    
+%% check for object detections against Ground Truth IOU at various thresholds
+    
 
+
+    final_ious = cell(1,num_conditions);
+    for ci = 1:num_conditions, final_ious{ci }= zeros( num_images, length(situation_objects)  ); end
+    
+    for ci = 1:num_conditions
+    for ii = 1:num_images
+        for oi = 1:length( p_conditions{ci}.situation_objects )
+            w_ind = find( strcmp( workspaces_final{ci,ii}.labels, situation_objects{oi} ),1);
+            if ~isempty(w_ind), final_ious{ci}(ii,oi) = workspaces_final{ci,ii}.GT_IOU(w_ind); 
+            else final_ious{ci}(ii,oi) = 0;
+            end
+        end
+    end
+    end
+    
+    iou_thresholds = (0:10)./10;
+    detections_at_iou = zeros( num_conditions, length(iou_thresholds), length( situation_objects ));
+    
+    for ci = 1:num_conditions
+    for ti = 1:length(iou_thresholds)
+        detections_at_iou(ci,ti,:) = sum(ge( final_ious{ci}, iou_thresholds(ti) ));
+    end
+    end
+    
+    h3 = figure;
+    for oi = 1:length(situation_objects)
+        subplot(1,length(situation_objects),oi);
+        plot(iou_thresholds,detections_at_iou(:,:,oi));
+        xlabel('IOU threshold');
+        ylabel('detections');
+        title([situation_objects{oi} ' detections']);
+        ylim([0 num_images]);
+        legend(p_conditions_descriptions);
+    end
+    
+    print(h3,fullfile(results_directory,'object_detections_vs_iou_threshold'),'-r300', '-dpdf' );
+    
+    
+    
+%% display IOU for each object type and each image
+
+    final_ious = cell(1,num_conditions);
+    iou_threshold = .5
+    for ci = 1:num_conditions
+        final_ious{ci} = zeros(num_images, length(p_conditions{ci}.situation_objects) );
+        for ii = 1:num_images
+            for oi = 1:length(p_conditions{ci}.situation_objects)
+                oi_workspace_ind = find(strcmp(p_conditions{ci}.situation_objects{oi}, workspaces_final{ci,ii}.labels),1);
+                if ~isempty(oi_workspace_ind)
+                    final_ious{ci}(ii,oi) = workspaces_final{ci,ii}.GT_IOU(oi_workspace_ind);
+                else
+                    final_ious{ci}(ii,oi) = 0; % no op
+                end
+            end
+            
+            if isequal( sort(workspaces_final{ci,ii}.labels), sort(p_conditions{ci}.situation_objects) )...
+            && all(workspaces_final{ci,ii}.GT_IOU >= iou_threshold)
+                successful_completion(ci,ii) = true;
+            end
+        end
+    end
+    
+    for ci = 1:num_conditions
+        display(p_conditions_descriptions{ci});
+        
+        fprintf('  sorted by total IOU support\n');
+        display(p_conditions{ci}.situation_objects);
+        [~,sort_i] = sort(sum(final_ious{1},2),'descend');
+        display( final_ious{1}(sort_i,:) )
+
+        fprintf('  sorted by minimum IOU\n');
+        display(p_conditions{ci}.situation_objects);
+        [~,sort_i] = sort(min(final_ious{1},[],2),'descend');
+        display( final_ious{1}(sort_i,:) )
+    end
+
+    
+    
 
 %% report: failed detections, final workspace 
 
@@ -295,7 +375,7 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
         num_cols = 3;
         
         for ci = 1:size(successful_completion,1)
-            figure();
+            h_temp = figure();
             cur_display_counter = 1;
             for ii = 1:size(successful_completion,2)
                 if ~successful_completion(ci,ii)
@@ -312,49 +392,17 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
                     end   
                 end
             end
+            
+            print(h_temp,fullfile(results_directory,['failures_' p_conditions{ci}.description ]),'-r300', '-dpdf' );
+            
         end
         
     end
 
-
+display('bloop');
 
 end
 
 
-
-function output = color_fade(colors, n )
-
-    % output = color_fade( n );
-    % output = color_fade(colors, n );
-    %
-    % with one arg, colors will be magenta to green
-
-    
-    if nargin < 2
-        n = colors;
-        colors = [];
-        colors(1,:) = [1 0 1];
-        colors(3,:) = [0 0 0];
-        colors(4,:) = [0 1 0];
-    end
-    
-    
-    ns = round(linspace(1,n,size(colors,1)));
-    
-    
-    
-    output = [];
-    for ci = 1:(size(colors,1)-1)
-        
-        cur_steps = ns(ci+1)-ns(ci) + 1;
-        color_temp = [ ...
-            linspace(colors(ci,1),colors(ci+1,1),cur_steps)', ...
-            linspace(colors(ci,2),colors(ci+1,2),cur_steps)', ...
-            linspace(colors(ci,3),colors(ci+1,3),cur_steps)'  ];
-        output = [output; color_temp(1:end-1,:)];
-        
-    end 
-    output = [output; colors(end,:)];
-end
 
 

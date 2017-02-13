@@ -3,7 +3,10 @@ function data = cnn_process( image, image_size, layer_in )
 % image
 %CNN_PROCESS Uses a pre-trained CNN to extract features from an image. 
     persistent net layer;
-    if ~exist('net', 'var') || isa(net, 'double') || (exist('layer','var') && exist('layer_in','var') && ~isequal(layer_in,layer))
+    if ~exist('net', 'var') ...
+    || isa(net, 'double') ...
+    || (exist('layer','var') && exist('layer_in','var') && ~isequal(layer_in,layer)) ...
+    || (exist('layer','var') && ~exist('layer_in','var') && layer~=18 )
         % Must be called for MatConvNet to work
         % run matconvnet/matlab/vl_setupnn
         run vl_setupnn % matconvnet/matlab is in path. local path was messing it up for other scripts

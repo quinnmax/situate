@@ -1,5 +1,9 @@
 function [im,im_data] = load_image_and_data( fname_in, p )
 
+    % [im,im_data] = load_image_and_data( fname_in, p );
+    % [~,im_data] = load_image_and_data( fname_in, p );
+    %   just loads the image data
+
     [path,file,ext] = fileparts(fname_in);
     switch ext
         case '.jpg'
@@ -10,8 +14,10 @@ function [im,im_data] = load_image_and_data( fname_in, p )
             im_fname = fullfile(path, [file '.jpg']);  
     end
     
-    im_in = double(imread(im_fname))/255;
-    im = imresize_px(im_in, p.image_redim_px);
+    if nargout >= 2
+        im_in = double(imread(im_fname))/255;
+        im = imresize_px(im_in, p.image_redim_px);
+    end
     
     im_data_a = situate.image_data(lb_fname);
     im_data_b = situate.image_data_label_adjust( im_data_a, p);
