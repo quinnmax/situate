@@ -6,10 +6,9 @@
 
     script_directory = fileparts(which('situate_experiment_script'));
     cd( script_directory );
-    addpath( genpath( [script_directory 'matconvnet'] ) );
-    addpath( genpath( [script_directory 'tools'] ) );
-    addpath( genpath( [script_directory 'situation_models'] ) );
-    
+    addpath( genpath( fullfile(script_directory, 'matconvnet') ) );
+    addpath( genpath( fullfile(script_directory, 'tools') ) );
+    addpath( genpath( fullfile(script_directory, 'situation_models') ) );
     
     % clear out any persistent variables that might be floating around
     Vars=whos;

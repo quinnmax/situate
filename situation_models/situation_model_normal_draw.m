@@ -109,8 +109,8 @@ function h = situation_model_normal_draw( d, object_string, what_to_draw, box_r0
                 y_vals = normpdf( x_vals, mu_bar, sigma_bar );
                 plot(x_vals,y_vals,'-b');
                 xlim([-2,2]);
-                xticks([ log(.25)  log(.5) log(1) log(2) log(4) ]);
-                xticklabels({ '1:4' '1:2' '1:1' '2:1' '4:1'});
+                %xticks([ log(.25)  log(.5) log(1) log(2) log(4) ]);
+                %xticklabels({ '1:4' '1:2' '1:1' '2:1' '4:1'});
                 xlabel('shape (W:H)');
                    
                 if exist('box_r0rfc0cf','var') && ~isempty(box_r0rfc0cf)
@@ -150,8 +150,8 @@ function h = situation_model_normal_draw( d, object_string, what_to_draw, box_r0
                 y_vals = normpdf( x_vals, mu_bar, sigma_bar );
                 plot(x_vals,y_vals,'-b');
                 xlim([-7,0.5]);
-                xticks([log(.001) log(.01) log(.05)   log(.5) log(1) ]);
-                xticklabels({'.001' '.01' '.05'   '.5' '1'});
+                %xticks([log(.001) log(.01) log(.05)   log(.5) log(1) ]);
+                %xticklabels({'.001' '.01' '.05'   '.5' '1'});
                 xlabel('area (box/image)');
 
                 if exist('box_r0rfc0cf','var') && ~isempty(box_r0rfc0cf)
