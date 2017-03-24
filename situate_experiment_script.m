@@ -6,8 +6,7 @@
 
     script_directory = fileparts(which('situate_experiment_script'));
     cd( script_directory );
-    addpath(fullfile(script_directory));
-    addpath(genpath(fullfile(script_directory, 'tools')));
+    addpath( genpath(script_directory) );
     
     % clear out any persistent variables that might be floating around
     Vars=whos;
@@ -24,7 +23,7 @@
 % results, and how many images for training and testing.
 
     experiment_settings = [];
-    experiment_settings.use_gui = false;
+    experiment_settings.use_gui = true;
     
     experiment_settings.title               = 'local search, noisy oracle';
     experiment_settings.situations_struct   = situate.situation_definitions();
