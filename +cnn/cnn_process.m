@@ -1,6 +1,10 @@
 function data = cnn_process( image, image_size, layer_in )
 % data = cnn_process( image, image_size, layer_in )
 % image
+%
+% layer 18 is the last layer before classification
+% layer 15 is the last layer where there's still a spatial layout
+%
 %CNN_PROCESS Uses a pre-trained CNN to extract features from an image. 
     persistent net layer;
     if ~exist('net', 'var') ...

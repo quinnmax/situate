@@ -13,12 +13,16 @@ function [output, ratio] = imresize_px( input, pixels, args )
     rows = size(input,1);
     cols = size(input,2);
     
+    % doing this so we know for sure what the rows and cols will be, rather
+    % than deferring to imresize logic
     ratio = sqrt( pixels / (rows*cols) );
+    new_rows = round( rows * ratio );
+    new_cols = round( cols * ratio );
     
     if nargin < 3
-        output = imresize( input, ratio );
+        output = imresize( input, [new_rows new_cols] );
     else
-        output = imresize( input, ratio, args );
+        output = imresize( input, [new_rows new_cols], args );
     end
         
 end

@@ -1,118 +1,69 @@
 
     
-function [] = experiment_helper(experiment_settings, p_conditions, data_path, split_arg)
+function [] = experiment_helper(experiment_settings, parameterization_conditions, data_path, split_arg)
 % experiment_helper(experiment_settings, p_conditions, data_path, split_arg)
 
 
+ 
+  
+%% training and testing sets
+  
+    % process the split arg
 
-%% deal with split_arg data
-
-    if exist('split_arg','var') && ~isempty(split_arg)
-        if isnumeric(split_arg)
-            % we'll interpret it as a seed value
-            rng(split_arg);
-        elseif ischar(split_arg) && isdir(split_arg)
-            % then it's a directory, we'll look for split_files to use
-            split_file_directory = split_arg;
+        if exist('split_arg','var') && ~isempty(split_arg)
+            if isnumeric(split_arg)
+                % we'll interpret it as a seed value
+                rng(split_arg);
+            elseif ischar(split_arg) && isdir(split_arg)
+                % then it's a directory, we'll look for split_files to use
+                split_file_directory = split_arg;
+            else
+                % don't rightly know
+                error('don''t know what to do with that split_arg');
+            end
         else
-            % don't rightly know
-            error('don''t know what to do with that split_arg');
+            warning('split_arg_was empty, using current time as rng seed for testing');
+            rng(now);
         end
-    else
-        warning('split_arg_was empty, using current time as rng seed for testing');
-        rng(now);
-    end
-
     
-  
-%% set training and testing sets
-  
-    fname_blacklist = {}; 
-    % fname_blacklist should be used if there's some saved off model that 
-    % we want to mess with. 
-    % Everything in the fname_blacklist will be excluded from both the
-    % training and testing images that are used for learning the
-    % conditional model stuff
-    
-    if exist('split_file_directory','var') && isdir(split_file_directory)
-        
-        % Load the splits rather than generating new ones
-        % edit: currently looks for the existing experiment name in the
-        % title of the split file. not sure that that should be necessary.
-        % something to think about and adjust in the future
-        
-        fnames_splits_train = dir(fullfile(split_file_directory, '*_fnames_split_*_train.txt'));
-        fnames_splits_test  = dir(fullfile(split_file_directory, '*_fnames_split_*_test.txt' ));
-        fnames_splits_train = cellfun( @(x) fullfile(split_file_directory, x), {fnames_splits_train.name}, 'UniformOutput', false );
-        fnames_splits_test  = cellfun( @(x) fullfile(split_file_directory, x), {fnames_splits_test.name},  'UniformOutput', false );
-        assert( length(fnames_splits_train) > 0 );
-        assert( length(fnames_splits_train) == length(fnames_splits_test) );
-        fprintf('using training splits from:\n');
-        fprintf('\t%s\n',fnames_splits_train{:});
-        fprintf('using testing splits from:\n');
-        fprintf('\t%s\n',fnames_splits_test{:});
-        temp = [];
-        temp.fnames_lb_train = cellfun( @(x) importdata(x, '\n'), fnames_splits_train, 'UniformOutput', false );
-        temp.fnames_lb_test  = cellfun( @(x) importdata(x, '\n'), fnames_splits_test,  'UniformOutput', false );
-        data_folds = [];
-        for i = 1:length(temp.fnames_lb_train)
-            data_folds(i).fnames_lb_train = temp.fnames_lb_train{i};
-            data_folds(i).fnames_lb_test  = temp.fnames_lb_test{i};
-            data_folds(i).fnames_im_train = cellfun( @(x) [x(1:end-4) 'jpg'], temp.fnames_lb_train{1}, 'UniformOutput', false );
-            data_folds(i).fnames_im_test  = cellfun( @(x) [x(1:end-4) 'jpg'], temp.fnames_lb_test{1},  'UniformOutput', false );
-        end
-           
-    else % generate splits based on data_path, experiment_settings.training_data_max, experiment_settings.testing_data_max
-        
-        % generate new splits, and save the files to the split-file directory.
-        
-            % get the label files
-            dir_data = dir(fullfile(data_path, '*.labl'));
-            fnames_lb = {dir_data.name};
-            assert(~isempty(fnames_lb));
-            % get the associated image files
-            is_missing_image_file = false(1,length(fnames_lb));
-            for fi = 1:length(fnames_lb)
-                is_missing_image_file(fi) = ~exist( fullfile(data_path, [fnames_lb{fi}(1:end-5) '.jpg' ]),'file');
-            end
-            fnames_lb(is_missing_image_file) = [];
-            fnames_im = cellfun( @(x) [x(1:end-5) '.jpg'], fnames_lb, 'UniformOutput', false );
-            % remove anything that's on the blacklist
-            [~,inds_remove_lb] = intersect(fnames_lb,fname_blacklist);
-            [~,inds_remove_im] = intersect(fnames_im,fname_blacklist);
-            fnames_lb([inds_remove_lb inds_remove_im]) = [];
-            fnames_im([inds_remove_lb inds_remove_im]) = [];
-            % shuffle
-            rp = randperm( length(fnames_lb) );
-            fnames_lb = fnames_lb(rp);
-            fnames_im = fnames_im(rp);
 
-        % generate training/testing splits for cross validation
 
-            n = length(fnames_lb);
-            step = floor( n / experiment_settings.num_folds );
-            fold_inds_start = (0:step:n-step)+1;
-            fold_inds_end   = fold_inds_start + step - 1;
-            if ~isempty(experiment_settings.testing_data_max) && step > experiment_settings.testing_data_max
-                fold_inds_end = fold_inds_start + experiment_settings.testing_data_max - 1;
-                warning('situate.experiment_helper:using subset of available data');
-            end
+    % load or generate splits
+    %   if the split_arg was a directory, load splits from them
+    %   if it was numeric, make up new training/testing splits
 
+        if exist('split_file_directory','var') && isdir(split_file_directory)
+
+            % Load the folds rather than generating new ones
+
+            fnames_splits_train = dir(fullfile(split_file_directory, '*_fnames_split_*_train.txt'));
+            fnames_splits_test  = dir(fullfile(split_file_directory, '*_fnames_split_*_test.txt' ));
+            fnames_splits_train = cellfun( @(x) fullfile(split_file_directory, x), {fnames_splits_train.name}, 'UniformOutput', false );
+            fnames_splits_test  = cellfun( @(x) fullfile(split_file_directory, x), {fnames_splits_test.name},  'UniformOutput', false );
+
+            assert( length(fnames_splits_train) > 0 );
+            assert( length(fnames_splits_train) == length(fnames_splits_test) );
+
+            fprintf('using training splits from: \t%s\n', fnames_splits_train{:});
+            fprintf('using testing  splits from: \t%s\n', fnames_splits_test{:} );
+
+            temp = [];
+            temp.fnames_lb_train = cellfun( @(x) importdata(x, '\n'), fnames_splits_train, 'UniformOutput', false );
+            temp.fnames_lb_test  = cellfun( @(x) importdata(x, '\n'), fnames_splits_test,  'UniformOutput', false );
             data_folds = [];
-            data_folds.fnames_im_train = [];
-            data_folds.fnames_im_test  = [];
-            data_folds.fnames_lb_train = [];
-            data_folds.fnames_lb_test  = [];
-            data_folds = repmat(data_folds,1,experiment_settings.num_folds);
-            for i = 1:experiment_settings.num_folds
-                data_folds(i).fnames_lb_test  = fnames_lb( fold_inds_start(i):fold_inds_end(i) );
-                data_folds(i).fnames_lb_train = setdiff( fnames_lb, data_folds(i).fnames_lb_test );
-                data_folds(i).fnames_im_test  = cellfun( @(x) [x(1:end-5) '.jpg'], data_folds(i).fnames_lb_test,  'UniformOutput', false );
-                data_folds(i).fnames_im_train = cellfun( @(x) [x(1:end-5) '.jpg'], data_folds(i).fnames_lb_train, 'UniformOutput', false );
+            for i = 1:length(temp.fnames_lb_train)
+                data_folds(i).fnames_lb_train = temp.fnames_lb_train{i};
+                data_folds(i).fnames_lb_test  = temp.fnames_lb_test{i};
+                data_folds(i).fnames_im_train = cellfun( @(x) [x(1:end-4) 'jpg'], temp.fnames_lb_train{i}, 'UniformOutput', false );
+                data_folds(i).fnames_im_test  = cellfun( @(x) [x(1:end-4) 'jpg'], temp.fnames_lb_test{i},  'UniformOutput', false );
             end
 
-        % save splits to files (if not use gui)
-            if ~experiment_settings.use_gui
+        else 
+
+            % genterate folds
+                data_folds = generate_data_folds( data_path, experiment_settings.num_folds, experiment_settings.testing_data_max );
+
+             % save the splits to files
                 if ~isdir(experiment_settings.results_directory), mkdir(experiment_settings.results_directory); end
                 for i = 1:length(data_folds)
                     fname_train_out = fullfile(experiment_settings.results_directory, [experiment_settings.title '_fnames_split_' num2str(i,'%02d') '_train.txt']);
@@ -125,124 +76,121 @@ function [] = experiment_helper(experiment_settings, p_conditions, data_path, sp
                     fprintf(fid_test, '%s\n',data_folds(i).fnames_lb_test{:} );
                     fclose(fid_test);
                 end
+
+        end 
+    
+    % apply limits to training/testing set sizes
+    %   if there was a limit on the number of testing images (which is interpretted as per-fold),
+    %   or on the number of training images,
+    %   adjust the data_folds struct to reflect that
+
+        if ~isempty(experiment_settings.testing_data_max) && experiment_settings.testing_data_max < length(data_folds(i).fnames_lb_test)
+            for i = 1:length(data_folds)
+                data_folds(i).fnames_lb_test = data_folds(i).fnames_lb_test(1:experiment_settings.testing_data_max);
+                data_folds(i).fnames_im_test = data_folds(i).fnames_im_test(1:experiment_settings.testing_data_max);
             end
-           
-    end 
-    
-    if ~isempty(experiment_settings.testing_data_max) && experiment_settings.testing_data_max < length(data_folds(i).fnames_lb_test)
-        for i = 1:length(data_folds)
-            data_folds(i).fnames_lb_test = data_folds(i).fnames_lb_test(1:experiment_settings.testing_data_max);
-            data_folds(i).fnames_im_test = data_folds(i).fnames_im_test(1:experiment_settings.testing_data_max);
         end
-    end
 
-    if isfield(experiment_settings,'training_data_max') && ~isempty(experiment_settings.training_data_max) && experiment_settings.training_data_max > 0
-        for i = 1:length(data_folds)
-            data_folds(i).fnames_lb_train = data_folds(i).fnames_lb_train(1:experiment_settings.training_data_max);
-            data_folds(i).fnames_im_train = data_folds(i).fnames_im_train(1:experiment_settings.training_data_max);
+        if isfield(experiment_settings,'training_data_max') && ~isempty(experiment_settings.training_data_max) && experiment_settings.training_data_max > 0
+            for i = 1:length(data_folds)
+                data_folds(i).fnames_lb_train = data_folds(i).fnames_lb_train(1:experiment_settings.training_data_max);
+                data_folds(i).fnames_im_train = data_folds(i).fnames_im_train(1:experiment_settings.training_data_max);
+            end
         end
-    end
-    
-    if experiment_settings.perform_situate_run_on_training_data
-        for fold_ind = 1:length(data_folds)
-            data_folds(fold_ind).fnames_lb_test = data_folds(fold_ind).fnames_lb_train;
-            data_folds(fold_ind).fnames_im_test = data_folds(fold_ind).fnames_im_train;
-        end
-    end
 
-    
-    
+        
+        
 %% run the main experiment loop (experimental conditions, images) 
 
     for fold_ind = 1:experiment_settings.num_folds
         
-        learned_stuff = []; % contains everything we gather from training data, so is reset at the start of each fold
+        learned_models = []; % contains everything we gather from training data, so is reset at the start of each fold
         
-        % get current training and testing file names
-        
-            fnames_lb_test  = cellfun( @(x) fullfile(data_path, x), data_folds(fold_ind).fnames_lb_test,  'UniformOutput', false );
+        % get training and testing file names for the current fold (and validate)
+        %   (although not used, these are saved into results that are saved off)
+            fnames_im_train = cellfun( @(x) fullfile(data_path, x), data_folds(fold_ind).fnames_im_train, 'UniformOutput', false );
             fnames_im_test  = cellfun( @(x) fullfile(data_path, x), data_folds(fold_ind).fnames_im_test,  'UniformOutput', false );
             fnames_lb_train = cellfun( @(x) fullfile(data_path, x), data_folds(fold_ind).fnames_lb_train, 'UniformOutput', false );
-            fnames_im_train = cellfun( @(x) fullfile(data_path, x), data_folds(fold_ind).fnames_im_train, 'UniformOutput', false );
-            [fnames_lb_train_pass, fnames_lb_train_fail, exceptions, failed_inds] = situate.validate_training_data( fnames_lb_train, p_conditions(1) );
+            fnames_lb_test  = cellfun( @(x) fullfile(data_path, x), data_folds(fold_ind).fnames_lb_test,  'UniformOutput', false );
+
+            [~,~,~,failed_inds] = situate.validate_training_data( fnames_lb_train, parameterization_conditions(1) );
             if any(failed_inds)
                 display('the following training images failed validation');
                 display(fnames_lb_train(failed_inds));
                 error('training label files failed validation');
             end
             fnames_lb_train(failed_inds) = [];
-            fnames_im_train(failed_inds) = [];
             
-        % run through experimental settings
+        % loop through experimental settings
         
-            workspaces_final    = cell(1,length(fnames_im_test));
-            agent_records       = cell(1,length(fnames_im_test));
-            %run_data            = cell(length(p_conditions),length(fnames_im_test));
-            
-            for experiment_ind = 1:length(p_conditions)
+            for parameters_ind = 1:length(parameterization_conditions)
 
-                cur_experiment_parameters = p_conditions(experiment_ind);
+                cur_parameterization = parameterization_conditions(parameters_ind);
+                rng( cur_parameterization.seed_test );
 
-                rng( cur_experiment_parameters.seed_test );
+                progress( 0, length(fnames_im_test),cur_parameterization.description); 
 
-                progress( 0, length(fnames_im_test),cur_experiment_parameters.description); 
-
+                % loop through images
+                workspaces_final    = cell(1,length(fnames_im_test));
+                agent_records       = cell(1,length(fnames_im_test));
+                
                 cur_image_ind  = 1;
                 keep_going = true;
                 while keep_going
 
-                    if experiment_settings.use_gui
-                    % get changes to the running parameters using the
-                    % parameters GUI
-                        h = situate.parameters_adjust_gui(cur_experiment_parameters);
-                        uiwait(h);
-                        if exist('temp_situate_parameters_struct.mat','file')
-                            % edit: the saddest hack. there's some security layer that
-                            % prevents information from the gui from being brought
-                            % back into the calling script. I'm sure there's a way to
-                            % do this properly, but until then, it's dumping out a 
-                            % little struct file with the changed parameters.
-                            cur_experiment_parameters = load('temp_situate_parameters_struct.mat');
-                            delete('temp_situate_parameters_struct.mat');
-                            % exited properly, so feel free to keep going
-                        else
-                            % the file wasn't there, so we didn't exit properly, so don't
-                            % keep going at all.
-                            break;
-                        end
-                    end
+%                     % let the user change to the running parameters using the parameters GUI
+%                     if experiment_settings.use_gui
+%                         h = situate.parameters_adjust_gui(cur_parameterization);
+%                         uiwait(h);
+%                         if exist('temp_situate_parameters_struct.mat','file')
+%                             % edit: the saddest hack. there's some security layer that
+%                             % prevents information from the gui from being brought
+%                             % back into the calling script. I'm sure there's a way to
+%                             % do this properly, but until then, it's dumping out a 
+%                             % little struct file with the changed parameters.
+%                             cur_parameterization = load('temp_situate_parameters_struct.mat');
+%                             delete('temp_situate_parameters_struct.mat');
+%                             % the file being there means we exited
+%                             % properly, so we can carry on with the
+%                             % experiment
+%                         else
+%                             % the file wasn't there, so the parameter gui was closed without being completed.
+%                             % we interpret that as an attept to abort
+%                             break;
+%                         end
+%                     end
 
-                    % this is here, in the image loop, because users can adjust parameters in the gui after each image. 
-                    % you might need to load up new models...
-                    learned_stuff = load_or_build_models( cur_experiment_parameters, fnames_lb_train, learned_stuff );             
+                    % learn the situation model unless it's already present
+                    if ~isfield(learned_models, 'situation_model')
+                        learned_models.situation_model.joint = cur_parameterization.situation_model_fit( cur_parameterization, fnames_lb_train );
+                    end
+                    
+                    % load or learn the classification models
+                    if ~isfield(learned_models, 'classifier_model')
+                        learned_models.classifier_model = ...
+                            cur_parameterization.classifier_load_or_train( ...
+                                cur_parameterization, ...
+                                fnames_lb_train, ...
+                                cur_parameterization.classifier_saved_models_directory);
+                    end
                     
                     % run on the current image
                         cur_fname_im = fnames_im_test{cur_image_ind};
 
-                        if cur_experiment_parameters.rcnn_boxes
-                            assert( isequal(experiment_settings.situation,'dogwalking')...
-                                || isequal(experiment_settings.situation,'dogwalking_no_leash'));
-                            % grab the rcnn boxes for this particular image
-                            faster_rcnn_data          = load_faster_rcnn_data(cur_fname_im);
-                            [~,linear_scaling_factor] = imresize_px( imread(cur_fname_im), cur_experiment_parameters.image_redim_px );
-                            faster_rcnn_data.boxes_xywh = linear_scaling_factor * double( faster_rcnn_data.boxes_xywh );
-                            learned_stuff.faster_rcnn_data = faster_rcnn_data;
-                        end
-
                         tic;
-                        [ ~, run_data_cur, visualizer_status_string ] = situate.main_loop( cur_fname_im, cur_experiment_parameters, learned_stuff );
+                        [ ~, run_data_cur, visualizer_status_string ] = situate.main_loop( cur_fname_im, cur_parameterization, learned_models );
                         
-                        if ~experiment_settings.use_gui
-                            %run_data{experiment_ind,cur_image_ind}         = run_data_cur;
-                            workspaces_final{cur_image_ind} = run_data_cur.workspace_final;
-                            agent_records{cur_image_ind}    = run_data_cur.agent_record;
-                        end
-
+                        % store results
+                        workspaces_final{cur_image_ind} = run_data_cur.workspace_final;
+                        agent_records{cur_image_ind}    = run_data_cur.agent_record;
+                        
+                        % display an update in the console
                         num_iterations_run = sum(cellfun(@(x) ~isempty(x),{run_data_cur.agent_record.interest}));
-                        progress_string = [cur_experiment_parameters.description ', ' num2str(num_iterations_run), ' steps, ' num2str(toc) 's'];
+                        IOUs_of_last_run   = num2str(run_data_cur.workspace_final.GT_IOU);
+                        progress_string    = [cur_parameterization.description ', ' num2str(num_iterations_run), ' steps, ' num2str(toc) 's,', ' IOUs: [' IOUs_of_last_run ']'];
                         progress(cur_image_ind,length(fnames_im_test),progress_string);
 
-                    % deal with GUI responses
+                    % handle GUI responses and decide if we're done
                         if experiment_settings.use_gui
 
                             switch visualizer_status_string
@@ -281,44 +229,25 @@ function [] = experiment_helper(experiment_settings, p_conditions, data_path, sp
                     break;
                 end
                 
-                
-                % save off results from the 
+                % save off results every condition and fold
                 %   current fold and 
                 %   experimental condition
-                    if experiment_settings.use_gui
-                        % bail after the first fold if we're using the GUI
-                        break; 
-                    else
-                        p_condition = cur_experiment_parameters;
-                        p_condition_description = p_condition.description;
-                        if experiment_settings.perform_situate_run_on_training_data
-                            save_fname = fullfile(experiment_settings.results_directory, [experiment_settings.title '_training_data_run' '_split_' num2str(fold_ind,'%02d') '_condition_' num2str(experiment_ind) '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
-                        else
-                            save_fname = fullfile(experiment_settings.results_directory, [experiment_settings.title '_split_' num2str(fold_ind,'%02d') '_condition_' num2str(experiment_ind) '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
-                        end
-%                         save(save_fname, '-v7.3', ...
-%                             'p_conditions', ...
-%                             'workspaces_final', ...
-%                             'agent_records', ...
-%                             'fnames_im_train', ...
-%                             'fnames_im_test',...
-%                             'fnames_lb_train', ...
-%                             'fnames_lb_test',...
-%                             'run_data');
-                            save(save_fname, '-v7.3', ...
-                            'p_condition', ...
-                            'p_condition_description',...
-                            'workspaces_final', ...
-                            'agent_records', ...
-                            'fnames_im_train', ...
-                            'fnames_im_test',...
-                            'fnames_lb_train', ...
-                            'fnames_lb_test' );
+                save_fname = fullfile(experiment_settings.results_directory, [experiment_settings.title '_split_' num2str(fold_ind,'%02d') '_condition_' num2str(parameters_ind) '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
+                
+                p_condition = cur_parameterization;
+                p_condition_description = p_condition.description;
+                
+                save(save_fname, '-v7', ...
+                'p_condition', ...
+                'workspaces_final', ...
+                'agent_records', ...
+                'fnames_im_train', ...
+                'fnames_im_test',...
+                'fnames_lb_train', ...
+                'fnames_lb_test' );
 
-                        display(['saved to ' save_fname]);
-                        
-                    end
-
+                display(['saved to ' save_fname]);
+                    
             end
 
     end
@@ -328,146 +257,53 @@ function [] = experiment_helper(experiment_settings, p_conditions, data_path, sp
 end
 
 
+function data_folds = generate_data_folds( data_path, num_folds, testing_data_max )
 
-function learned_stuff = load_or_build_models( cur_experiment_parameters, fnames_lb_train, learned_stuff )
+    % get the file names
+        
+        % get the label files
+        dir_data = dir(fullfile(data_path, '*.labl'));
+        fnames_lb = {dir_data.name};
+        assert(~isempty(fnames_lb));
+        
+        % get the associated image files
+        is_missing_image_file = false(1,length(fnames_lb));
+        for fi = 1:length(fnames_lb)
+            is_missing_image_file(fi) = ~exist( fullfile(data_path, [fnames_lb{fi}(1:end-5) '.jpg' ]),'file');
+        end
+        fnames_lb(is_missing_image_file) = [];
+        
+        % shuffle
+        rp = randperm( length(fnames_lb) );
+        fnames_lb = fnames_lb(rp);
+        
+    % generate training/testing splits for cross validation
 
-    % if either cnn or box_adjust are being used, check to see that matconvnet is working properly
-        try 
-            test_image = imread('cameraman.tif');
-            test_image(:,:,2) = test_image(end:-1:1,:,1);
-            test_image(:,:,3) = test_image(:,end:-1:1,1);
-            dummy_data = cnn.cnn_process( test_image );
-        catch
-            original_dir = pwd;
-            cd matconvnet;
-            addpath matlab;
-            vl_compilenn;
-            run matlab/vl_setupnn;
-            cd(original_dir);
-
-            test_image = imread('cameraman.tif');
-            test_image(:,:,2) = test_image(end:-1:1,:,1);
-            test_image(:,:,3) = test_image(:,end:-1:1,1);
-            dummy_data = cnn.cnn_process( test_image );
-
-            % if it bonks again, you'll have to try something else
+        n = length(fnames_lb);
+        step = floor( n / num_folds );
+        fold_inds_start = (0:step:n-step)+1;
+        fold_inds_end   = fold_inds_start + step - 1;
+        
+        if ~isempty(testing_data_max) && step > testing_data_max
+            fold_inds_end = fold_inds_start + testing_data_max - 1;
+            warning('situate.experiment_helper:using subset of available data');
         end
 
-    % some methods that use the conditional models aren't in here, and
-    % they're cheap to build, so just build them
-    learned_stuff.conditional_models_structure = situate.build_conditional_distribution_structure( fnames_lb_train, cur_experiment_parameters );
-    if length(cur_experiment_parameters.situation_objects) == 3
-        none_index_for_three_objects = 4;
-        learned_stuff.conditional_models_structure.models = learned_stuff.conditional_models_structure.models(:,:,:,none_index_for_three_objects);
-    end
-    
-    % hog svm models
-    if strcmp( 'HOG-SVM', cur_experiment_parameters.classification_method )
-        if isfield(learned_stuff, 'hog_svm_models'), 
-            % do nothing, it's already been dtrained with this data set
-        else
-            possible_paths = {...
-                'default_models/',...
-                '+hog_svm/'};
-            existing_model_path_ind = find(cellfun(@(x) exist(x,'dir'),possible_paths), 1, 'first' );
-            existing_model_path     = possible_paths{ existing_model_path_ind };
-            existing_model_fname    = situate.check_for_existing_model( existing_model_path, fnames_lb_train );
-            if ~isempty(existing_model_fname)
-                learned_stuff.hog_svm_models = load(existing_model_fname);
-                display('loaded hog-svm models');
-            else % train the thing
-                display('building hog-svm models');
-                hog_svm_models = hog_svm.hog_svm_train(fnames_lb_train, cur_experiment_parameters);
-                hog_svm_models.fnames_lb_train = fnames_lb_train;
-                saved_model_fname = fullfile(existing_model_path, ['hog_svm_models_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
-                save( saved_model_fname, '-struct', 'hog_svm_models' );
-                learned_stuff.hog_svm_models = hog_svm_models;
-            end
+        data_folds = [];
+        data_folds.fnames_im_train = [];
+        data_folds.fnames_im_test  = [];
+        data_folds.fnames_lb_train = [];
+        data_folds.fnames_lb_test  = [];
+        data_folds = repmat(data_folds,1,num_folds);
+        for i = 1:num_folds
+            data_folds(i).fnames_lb_test  = fnames_lb( fold_inds_start(i):fold_inds_end(i) );
+            data_folds(i).fnames_lb_train = setdiff( fnames_lb, data_folds(i).fnames_lb_test );
+            data_folds(i).fnames_im_test  = cellfun( @(x) [x(1:end-5) '.jpg'], data_folds(i).fnames_lb_test,  'UniformOutput', false );
+            data_folds(i).fnames_im_train = cellfun( @(x) [x(1:end-5) '.jpg'], data_folds(i).fnames_lb_train, 'UniformOutput', false );
         end
-    end
-    
-    % cnn models
-    if strcmp( 'CNN-SVM', cur_experiment_parameters.classification_method ) ...
-                || (isfield(cur_experiment_parameters, 'save_CNN_score') && cur_experiment_parameters.save_CNN_score)
-        if isfield(learned_stuff, 'cnn_svm_models'), 
-            % do nothing, it's already been trained with this data set
-        else
-            possible_paths = {...
-                'default_models/', ...
-                '+cnn/'};
-            existing_model_path_ind = find(cellfun(@(x) exist(x,'dir'),possible_paths), 1, 'first' );
-            existing_model_path     = possible_paths{ existing_model_path_ind };
-            existing_model_fname    = situate.check_for_existing_model( existing_model_path, fnames_lb_train );
-            if ~isempty(existing_model_fname)
-                learned_stuff.cnn_svm_models = load(existing_model_fname);
-                display('loaded cnn-svm models');
-            else
-                display('building cnn-svm models');
-                cnn_svm_models.models          = cnn.create_cnn_svm_models_iterative(fnames_lb_train, cur_experiment_parameters);
-                cnn_svm_models.fnames_lb_train = fnames_lb_train;
-                saved_model_fname = fullfile(existing_model_path, ['cnn_svm_models_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
-                save( saved_model_fname, '-struct', 'cnn_svm_models' );
-                learned_stuff.cnn_svm_models = cnn_svm_models;
-            end
-        end
-    end
-    
-    % finetuned cnn models
-    if strcmp( 'Finetuned-CNN', cur_experiment_parameters.classification_method )
-        if ~isfield(learned_stuff, 'finetuned_cnn_models'), 
-            learned_stuff.finetuned_cnn_models = cnn.load_finetuned_cnn_models(cur_experiment_parameters);
-        end
-    end
-    
-%     % box adjust models
-%     if cur_experiment_parameters.use_box_adjust
-%         if isfield(learned_stuff, 'box_adjust_models'), 
-%             % do nothing, it's already been dtrained with this data set
-%         else
-%             possible_paths = {...
-%                 'default_models/', ...
-%                 '+box_adjust/'};
-%             existing_model_path_ind = find(cellfun(@(x) exist(x,'dir'),possible_paths), 1, 'first' );
-%             existing_model_path     = possible_paths{ existing_model_path_ind };
-%             existing_model_fname    = situate.check_for_existing_model( existing_model_path, fnames_lb_train );
-%             if ~isempty(existing_model_fname)
-%                 learned_stuff.box_adjust_models = load(existing_model_fname);
-%                 display('loaded box-adjust models');
-%             else % train the thing
-%                 display('building box-adjust models');
-%                 box_adjust_models = box_adjust.build_box_adjust_models_mq( fnames_lb_train, cur_experiment_parameters );
-%                 box_adjust_models.fnames_lb_train = fnames_lb_train;
-%                 saved_model_fname = fullfile(existing_model_path, ['box_adjust_models_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
-%                 save( saved_model_fname, '-struct', 'box_adjust_models' );
-%                 learned_stuff.box_adjust_models = box_adjust_models;
-%             end
-%         end
-%     end
-    
+            
 end
 
-
-
-function faster_rcnn_data_for_image = load_faster_rcnn_data(cur_fname_im)
-
-    possible_files = { ...
-        '/Users/Max/Dropbox/situate_snapshot_current/saved_models_rcnn_scores/faster_rcnn_boxes.mat', ...
-        '/home/rsoiffer/Desktop/Dropbox/situate_snapshot_current/saved_models_rcnn_scores/faster_rcnn_boxes.mat'...
-    };
-    
-    faster_rcnn_data_raw_ind = find( cellfun( @(x) exist(x,'file'), possible_files ), 1, 'first');
-    faster_rcnn_data_filename = possible_files{faster_rcnn_data_raw_ind};
-    
-    [~,file,ext] = fileparts(cur_fname_im);
-    cur_fname_im_no_path = [file ext];
-    faster_rcnn_data_raw = load(faster_rcnn_data_filename);
-    last = @(x) x(end);
-    faster_rcnn_fnames_im  = cellfun( @(x) x( last(strfind(x,filesep()))+1 : end ), faster_rcnn_data_raw.im_names, 'UniformOutput', false );
-    ind_keep = find(strcmp( faster_rcnn_fnames_im, cur_fname_im_no_path ));
-    faster_rcnn_data_for_image = [];
-    faster_rcnn_data_for_image.boxes_xywh = cell2mat(cellfun( @(x) x(:,1:4), faster_rcnn_data_raw.output(2,ind_keep)', 'UniformOutput', false));
-    faster_rcnn_data_for_image.box_scores = cell2mat(cellfun( @(x) x(:,5),   faster_rcnn_data_raw.output(2,ind_keep)', 'UniformOutput', false));
-    faster_rcnn_data_for_image.fnames_im  = faster_rcnn_fnames_im(ind_keep);
-end
-
+       
+           
 

@@ -39,18 +39,17 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     p_conditions_descriptions_temp = {};
     agent_records_temp = {};
     workspaces_final_temp = {};  
-    fnames_test_images = {};
+    fnames_test_images_temp = {};
     % run_data_temp = {};
     
     for fi = 1:length(fn) % file ind
         temp_d = load(fn{fi});
-        p_conditions_temp{end+1} = temp_d.p_condition;
-        p_conditions_descriptions_temp{fi} = temp_d.p_condition_description;
-        agent_records_temp{end+1} = temp_d.agent_records;
-        workspaces_final_temp{end+1} = temp_d.workspaces_final;
-        fnames_test_images{end+1} = temp_d.fnames_im_test;
+        p_conditions_temp{end+1}           = temp_d.p_condition;
+        p_conditions_descriptions_temp{fi} = temp_d.p_condition.description;
+        agent_records_temp{end+1}          = temp_d.agent_records;
+        workspaces_final_temp{end+1}       = temp_d.workspaces_final;
+        fnames_test_images_temp{end+1}     = temp_d.fnames_im_test;
     end
-    clear temp_d;
     
     [description_counts, p_conditions_descriptions] = counts( p_conditions_descriptions_temp );
     num_conditions = length(p_conditions_descriptions);
@@ -64,17 +63,21 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     
 %% group on condition
     
-    workspaces_final           = cell(num_conditions, num_images);
-    agent_records              = cell(num_conditions, num_images);
-    p_conditions               = cell(num_conditions,1);
+    workspaces_final           = cell( num_conditions, num_images );
+    agent_records              = cell( num_conditions, num_images );
+    p_conditions               = cell( num_conditions, 1 );
+    fnames_test_images         = cell( num_conditions, 1 );
     
     for ci = 1:num_conditions
         cur_condition_inds = strcmp( p_conditions_descriptions{ci}, p_conditions_descriptions_temp );
         p_conditions(ci) = p_conditions_temp(find(cur_condition_inds,1,'first'));
         workspaces_final(ci,:)  = [workspaces_final_temp{cur_condition_inds}];
         agent_records(ci,:)     = [agent_records_temp{cur_condition_inds}];
+        fnames_test_images{ci}  = reshape([fnames_test_images_temp{cur_condition_inds}],[],1);
     end
 
+    %%
+    clear temp_d
     clear agent_records_temp;
     
 
@@ -96,7 +99,7 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     
 %% gather data on detection order of objects
     
-    iou_threshold = .5
+    iou_threshold = .5;
     detection_order_times  = inf(  num_conditions, num_images, length(p_conditions{1}.situation_objects) );
     detection_order_labels = cell( num_conditions, num_images, length(p_conditions{1}.situation_objects) );
     for ci = 1:num_conditions
@@ -104,10 +107,8 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
         situation_objects = p_conditions{ci}.situation_objects;
         temp_detection_times = inf(1,length(situation_objects));
         cur_support_record = [agent_records{ci,ii}.support];
-        %for i = 1:length(cur_support_record), if isempty(cur_support_record(i).total), cur_support_record(i).total = 0; end; end % this should already be true, but there was a situation where it wasn't initialized properly. fixed now
         for oi = 1:length(situation_objects)
-            object_label = situation_objects{oi};
-            workspace_entry_event_inds_object_type = strcmp(object_label,  {agent_records{ci,ii}.interest} );
+            workspace_entry_event_inds_object_type = oi == [agent_records{ci,ii}.interest];
             workspace_entry_event_inds_over_threshold = ge( round(100*[cur_support_record.total])/100, iou_threshold );
             a = reshape(workspace_entry_event_inds_object_type,1,[]);
             b = reshape(workspace_entry_event_inds_over_threshold,1,[]);
@@ -172,7 +173,7 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     h2.Color = [1 1 1];
     hold on;
     
-    for i = 1:length(display_order);
+    for i = 1:length(display_order)
         ci = display_order(i);
         %plot( detections_at_num_proposals_total(ci,:), 'Color', colors(i,:), 'LineWidth', 1.25, 'LineStyle', linespec{i} );
         plot( detections_at_num_proposals(ci,:), 'Color', colors(i,:), 'LineWidth', 1.25, 'LineStyle', linespec{i} );
@@ -330,7 +331,7 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
 %% display IOU for each object type and each image
 
     final_ious = cell(1,num_conditions);
-    iou_threshold = .5
+    iou_threshold = .5;
     for ci = 1:num_conditions
         final_ious{ci} = zeros(num_images, length(p_conditions{ci}.situation_objects) );
         for ii = 1:num_images
@@ -399,7 +400,7 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
         
     end
 
-display('bloop');
+display('fin');
 
 end
 

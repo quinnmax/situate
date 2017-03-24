@@ -1,7 +1,5 @@
 
-function [d,box_r0rfc0cf,box_density] = situate_sample_box( d, parameters_struct )
-
-
+function [d,box_r0rfc0cf,box_density] = sample_box( d, parameters_struct )
 
 %   function [d,box_r0rfc0cf,box_score] = situate_sample_box( d, parameters_struct );
 % 
@@ -14,22 +12,6 @@ function [d,box_r0rfc0cf,box_density] = situate_sample_box( d, parameters_struct
 %   the box is in [r0 rf c0 cf] format
 
     box_density = [];
-
-    if isfield(parameters_struct,'rcnn_boxes') && parameters_struct.rcnn_boxes
-        % pick a box using the saved rcnn box scores
-        box_ind = sample_1d( d.learned_stuff.faster_rcnn_data.box_scores );
-        box_xywh = double(d.learned_stuff.faster_rcnn_data.boxes_xywh(box_ind,:));
-        c0 = box_xywh(1);
-        r0 = box_xywh(2);
-        w  = box_xywh(3);
-        h  = box_xywh(4);
-        rf = r0 + h - 1;
-        cf = c0 + w - 1;
-        box_r0rfc0cf = [r0 rf c0 cf];
-        return
-    end
-       
-    
 
     switch d.location_sampling_method
         case 'ior_peaks'

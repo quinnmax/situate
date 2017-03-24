@@ -1,6 +1,6 @@
-function d = situate_distribution_struct_initialize( interest, p, im, learned_stuff )
+function d = distribution_struct_initialize( interest, p, im, learned_stuff )
 
-    % d = situate_distribution_struct_initialize( interest, p, im, models_structure )
+    % d = situate.distribution_struct_initialize( interest, p, im, models_structure )
     %
     % interest should be in {'dog','person','leash'}
     % im should be an image matrix
@@ -28,7 +28,7 @@ function d = situate_distribution_struct_initialize( interest, p, im, learned_st
         d.interest = interest;
         d.interest_priority = p.situation_objects_urgency_pre.(interest);
         d.conditioning_objects = setsub( p.situation_objects, d.interest );
-
+        
         d.image_size = [size(im,1) size(im,2) size(im,3)];
         d.image_size_px = size(im,1) * size(im,2);
         

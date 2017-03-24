@@ -36,6 +36,11 @@ function h = draw_box(box, box_format, arg)
             cf = box(:,2);
             r0 = box(:,3);
             rf = box(:,4);
+        case 'c0r0cfrf'
+            c0 = box(:,1);
+            r0 = box(:,2);
+            cf = box(:,3);
+            rf = box(:,4);
         otherwise
             error('unrecogonized box_format');
     end
@@ -47,8 +52,10 @@ function h = draw_box(box, box_format, arg)
 
         if ~exist('arg','var') || isempty(arg)
             h = plot(cs, rs);
-        else
+        elseif ischar(arg)
             h = plot(cs, rs, arg);
+        elseif isnumeric(arg) && length(arg) == 3
+            h = plot(cs, rs, 'Color', arg);
         end
         
     end

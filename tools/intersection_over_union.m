@@ -29,7 +29,7 @@ function iou = intersection_over_union(A,B,format_A,format_B)
     
     % then we must have B, so make sure it has a format
     if ~exist('format_B','var') || isempty(format_B)
-        format_B = 'xywh';
+        format_B = format_A;
     end
     
     % if there are multiple boxes in A and/or B, run each against each

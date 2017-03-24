@@ -43,7 +43,6 @@ function [mu_bar Sigma_bar] = mvn_conditional( mu, Sigma, known_dimensions, know
         a = reshape( known_values( known_dimensions ), [], 1 );
     end
     
-    
     mu_1 = mu(~known_dimensions)';
     mu_2 = mu( known_dimensions)';
     
@@ -60,7 +59,7 @@ function [mu_bar Sigma_bar] = mvn_conditional( mu, Sigma, known_dimensions, know
     Sigma_12 = reshape( Sigma( Sigma_12_inds ), q, N-q );
     Sigma_21 = reshape( Sigma( Sigma_21_inds ), N-q, q );
     
-    mu_bar    = mu_1 + Sigma_12 / Sigma_22 * (a - mu_2);
+    mu_bar    = (mu_1 + Sigma_12 / Sigma_22 * (a - mu_2))';
     Sigma_bar = Sigma_11 - Sigma_12 / Sigma_22 * Sigma_21;
     
 end

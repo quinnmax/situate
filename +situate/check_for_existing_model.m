@@ -1,41 +1,56 @@
 
-function selected_model_fname = situate_check_for_existing_model( model_directory, fnames_train_in )
+function selected_model_fname = check_for_existing_model( possible_paths, fnames_in, model_description )
+% selected_model_fname = check_for_existing_model( model_directory,fnames_train_in, [model_description] );
+%
+% model description is currently unused, but would be a good place for
+% something like 'cnnsvm' to specify the model that we're looking for.
 
-    selected_model_fname = '';
-
-    % get the input training fnames, no path, sorted
-    fnames_train = cell(size(fnames_train_in));
-    for fi = 1:length(fnames_train)
-        [~,fname_no_path] = fileparts( fnames_train_in{fi} );
-        fnames_train{fi} = fname_no_path;
+    if ~exist('model_description','var') || isempty(model_description)
+        model_description = '';
     end
-    fnames_train = sort(fnames_train);
 
-
-    % for each model in the directory
-    model_files = dir(fullfile(model_directory, '*.mat'));
-    for mi = 1:length(model_files)
-
-        % get the training fnames, no path, sorted
-        temp = load(fullfile(model_directory, model_files(mi).name), 'fnames_lb_train');
-        if isfield(temp,'fnames_lb_train')
-            model_fnames_train = temp.fnames_lb_train;
-            for fi = 1:length(model_fnames_train)
-                [~,fname_no_path] = fileparts( model_fnames_train{fi} );
-                model_fnames_train{fi} = fname_no_path;
-            end
-            model_fnames_train = sort(model_fnames_train);
-
-            if isequal(fnames_train, model_fnames_train )
-                % we have a good model, return it somehow. maybe just its file name
-                selected_model_fname = fullfile(model_directory, model_files(mi).name);
-            end
+    % get pathless versions of input filenames
+        fnames_in_pathless = cell(size(fnames_in));
+        for fi = 1:length(fnames_in)
+            [~,name,ext] = fileparts(fnames_in{fi});
+            fnames_in_pathless{fi} = [name ext];
         end
-    end
-
-    % if we got to here, we didn't find a good model, just going to return
-    % the empty return_val
-    
+        
+    % check for existing models that might have the same training data
+        
+        % possible mat files in specified directories
+            mat_files = {};
+            for pi = 1:length(possible_paths)
+                if isdir(possible_paths{pi})
+                    temp = dirfiles( possible_paths{pi}, '.mat' );
+                    mat_files = [mat_files temp];
+                end
+            end
+            
+        % compare training images in mat files to input training images
+            training_data_match = false(1,length(mat_files));
+            for mi = 1:length(mat_files)
+                matobj = matfile( mat_files{mi} );
+                try
+                    fnames_file = matobj.fnames_lb_train;
+                    fnames_file_pathless = cell(size(fnames_file));
+                    for fi = 1:length(fnames_file_pathless)
+                        [~,name,ext] = fileparts(fnames_file{fi});
+                        fnames_file_pathless{fi} = [name ext];
+                    end
+                    if isequal( sort(fnames_file_pathless), sort(fnames_in_pathless) )
+                        training_data_match(mi) = true;
+                    end
+                end
+            end
+            
+        % if there's a match, return the fname
+            if any(training_data_match)
+                selected_model_fname = mat_files{ find(training_data_match,1,'first') };
+            else
+                selected_model_fname = '';
+            end
+        
 end
     
     

@@ -7,6 +7,7 @@ function h = draw_workspace( input, p, workspace )
     %   h is the handle to the output figure, specifically the image
     %   input can be an image fname, an image matrix, 
     %       or a handle to an exisiting image
+    %       if empty, just draws into current axes
     %   p is a situate parameters structure
     %   workspace is the situate workspace to draw
    
@@ -17,23 +18,27 @@ function h = draw_workspace( input, p, workspace )
     
     %% figure out what the input was 
     %   might be an image fname, an image matrix, or a handle to an existing figure
-        switch class(input)
-            case 'char'
-                x = imresize_px( imread(input), p.image_redim_px );
-                h(1) = imshow( x, [] );
-            case 'double'
-                if all(ishandle(input))
-                    axes(input);
-                else
-                    x = imresize_px( input, p.image_redim_px );
+    %   if empty, then just draws into current axes without trying to switch anything around
+        
+        if ~isempty(input)
+            switch class(input)
+                case 'char'
+                    x = imresize_px( imread(input), p.image_redim_px );
                     h(1) = imshow( x, [] );
-                end
-            case 'matlab.graphics.axis.Axes'
-                axes(input);
-            case 'matlab.ui.Figure'
-                axes(input.CurrentAxes);
-            otherwise
-                error('situate_draw_workspace doesn''t recognize the input provided');
+                case 'double'
+                    if all(ishandle(input))
+                        axes(input);
+                    else
+                        x = imresize_px( input, p.image_redim_px );
+                        h(1) = imshow( x, [] );
+                    end
+                case 'matlab.graphics.axis.Axes'
+                    axes(input);
+                case 'matlab.ui.Figure'
+                    axes(input.CurrentAxes);
+                otherwise
+                    error('situate_draw_workspace doesn''t recognize the input provided');
+            end
         end
 
         

@@ -1,4 +1,4 @@
-function d = situate_distribution_struct_update( d, p, workspace )
+function d = distribution_struct_update( d, p, workspace )
 
 
 
@@ -17,17 +17,6 @@ function d = situate_distribution_struct_update( d, p, workspace )
     switch p.location_sampling_method_after_conditioning
         case {'ior_peaks','ior_sampling'}
             use_reinhibition = true;
-    end
-    
-    if p.use_distribution_tweaking
-    
-        % we should use tweaking now. 
-        % we do this by adding a lot of attention to the region around
-        % which this object was found, both in terms of location and in
-        % terms of shape and size. 
-        
-        error('situate_distribution_struct_update:distribution tweaking not implemented yet');
-        
     end
     
 
