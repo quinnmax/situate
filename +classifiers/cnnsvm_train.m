@@ -4,10 +4,7 @@ function classifier_model = cnnsvm_train( p, fnames_in, saved_models_directory )
 
     model_description = 'cnnsvm';
     
-    possible_paths = {...
-        saved_models_directory, ...
-        'default_models/', ...
-        '+cnn/'};
+    possible_paths = { saved_models_directory };
     
     % look for an existing model (one with training images that match the
     % provided training images exactly (sans path))
@@ -17,6 +14,7 @@ function classifier_model = cnnsvm_train( p, fnames_in, saved_models_directory )
     if ~isempty(selected_model_fname)
        loaded_data = load( selected_model_fname );
        models = loaded_data.models;
+       display(['loaded cnnsvm model from: ' selected_model_fname ]);
        warning('cnnsvm_train: loading a classifier model without using model description');
     else
         models = cnn.create_cnn_svm_models_iterative( fnames_in, p );

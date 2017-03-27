@@ -1,9 +1,11 @@
 
-function model = situation_model_normal_fit( p, data_in )
+function model = normal_fit( p, data_in )
 
-% model = situation_joint_normal( p, data_in );
+% model = normal_fit( p, data_in );
 %   p should be a Situate parameters struct
 %   data_in can be a cell array of file paths and names of label files, or a directory containing label files
+
+    clear situation_models.normal_draw; % clears out peristent variables used in the drawing function
 
     if ~exist('p','var') || isempty(p)
         p = situate.parameters_initialize();

@@ -170,12 +170,13 @@ function [h, return_status_string] = visualize( h, im, p, d, workspace, cur_agen
         case 'interest_iterations'
             [value_counts] = counts( {scout_record.interest}, p.situation_objects );
             temp_h = bar( 1:length(p.situation_objects), value_counts );
-            set( get(temp_h,'Parent'), 'XTickLabel', p.situation_objects );
+            set( get( temp_h, 'Parent' ), 'XTickLabel', p.situation_objects );
             if ~isempty(value_counts), ylim([0 max(value_counts) + 2]); else ylim([0 1]); end
             xlabel('category');
             ylabel('number of samples');
             yrange = max(value_counts) + 2;
             set( get( get( temp_h, 'Parent' ), 'Xlabel' ), 'Position',  [2 -.2 * yrange, -1] );
+            
     end
     
     
@@ -209,7 +210,7 @@ function [h, return_status_string] = visualize( h, im, p, d, workspace, cur_agen
         end
         
         subplot2(3,sp_cols,1,4+oi-1); 
-        temp_h = p.situation_model_draw( d, p.situation_objects{oi}, 'xy',    boxes_represented, boxes_represented_formatting_box );
+        temp_h = p.situation_model_draw( d, p.situation_objects{oi}, 'xy',    boxes_represented, boxes_represented_formatting_box, initial_figure_generation );
         title([d(oi).interest ' location']);
         UserData.handles(end+1:end+length(temp_h)) = temp_h;
     

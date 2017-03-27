@@ -5,8 +5,7 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
 % situate_experiment_analysis( results_directory, show_failure_examples );
 
 
-
-%% set data source 
+%% data source 
 
     if ~exist('show_failure_examples','var') || isempty(show_failure_examples)
         show_failure_examples = true;
@@ -60,6 +59,7 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     if ~all(eq(images_per_run(1),images_per_run)), error('different numbers of images in different runs'); end
     
     num_images = sum( cellfun( @length, workspaces_final_temp ) ) / length(p_conditions_descriptions);
+ 
     
 %% group on condition
     
@@ -76,10 +76,8 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
         fnames_test_images{ci}  = reshape([fnames_test_images_temp{cur_condition_inds}],[],1);
     end
 
-    %%
     clear temp_d
     clear agent_records_temp;
-    
 
     
 %% check for successful detections against Ground Truth IOU
@@ -94,7 +92,6 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
         end
     end
     end
-    
     
     
 %% gather data on detection order of objects
@@ -138,7 +135,6 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     end
     
 
-
 %% define conditions to include, color and line specifications 
 
     proposals_display_limit = max_proposals;
@@ -164,7 +160,6 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     % colors = color_fade([1 0 1; 0 0 0; 0 .75 0], length(include_conditions ) );
     colors = zeros( length(include_conditions),3);
     colors = sqrt(colors);
-
 
 
 %% figure: completed detections as a function of iterations 
@@ -203,7 +198,6 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     
     h2.Position = [440 537 560 220];
     print(h2,fullfile(results_directory,'situate_experiment_figure'),'-r300', '-dpdf' );
-
 
 
 %% table: medians over conditions 
@@ -327,7 +321,6 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     print(h3,fullfile(results_directory,'object_detections_vs_iou_threshold'),'-r300', '-dpdf' );
     
     
-    
 %% display IOU for each object type and each image
 
     final_ious = cell(1,num_conditions);
@@ -366,8 +359,6 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     end
 
     
-    
-
 %% report: failed detections, final workspace 
 
     if show_failure_examples
@@ -401,6 +392,7 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     end
 
 display('fin');
+
 
 end
 

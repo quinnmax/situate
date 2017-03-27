@@ -1,77 +1,16 @@
 
 
 
-%% try to get path in order 
-% check a little that sub directories are included
+%% get path in order 
 
     script_directory = fileparts(which('situate_experiment_script'));
     cd( script_directory );
-    addpath( genpath( fullfile(script_directory, 'matconvnet') ) );
+    run( fullfile(script_directory, 'matconvnet', 'matlab', 'vl_setupnn.m' ) );
     addpath( genpath( fullfile(script_directory, 'tools') ) );
-    addpath( genpath( fullfile(script_directory, 'situation_models') ) );
+   
     
-    % clear out any persistent variables that might be floating around
-    Vars=whos;
-    PersistentVars=Vars([Vars.global]);
-    PersistentVarNames={PersistentVars.name};
-    clear(PersistentVarNames{:});
-
     
-
-%% define experiment settings 
-%
-% These are some basic settings for the experimental run, relating to
-% whether or not you want to use the GUI, where to save the experiment
-% results, and how many images for training and testing.
-
-    experiment_settings = [];
-    experiment_settings.use_gui = true;
-    
-    experiment_settings.title               = 'local search, noisy oracle';
-    experiment_settings.situations_struct   = situate.situation_definitions();
-    experiment_settings.situation           = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
-    
-    % note: when doing a GUI run, the following won't happen
-    %   run_analysis_after_completion,
-    %   saving off results
-    %   using more than the first experimental condition
-    %   using more than the first data fold
-    
-    % note: use [] if you want to use all available data
-    experiment_settings.num_folds           = 2;  
-    experiment_settings.testing_data_max    = 3;  % per fold
-    experiment_settings.training_data_max   = []; 
-    % total testing images is num_folds * testing_data_max
-    
-    experiment_settings.run_analysis_after_completion = true;
-    
-    experiment_settings.results_directory = fullfile('/Users/',char(java.lang.System.getProperty('user.name')),'/Desktop/', [experiment_settings.title '_' datestr(now,'yyyy.mm.dd.HH.MM.SS')]);
-    if ~exist(experiment_settings.results_directory,'dir') && ~experiment_settings.use_gui, mkdir(experiment_settings.results_directory); display(['made results directory ' experiment_settings.results_directory]); end
-
-
-
-%% set the data directory 
-%
-% situate_data_path should point to a directory containing the images and label 
-% files for your experiment. 
-%
-% situate.situation_definitions contains the default paths that situate
-% will search. if it doesn't find anything, it'll ask in a popup
-
-    try
-        possible_path_ind = find(cellfun( @(x) exist(x,'dir'), experiment_settings.situations_struct.(experiment_settings.situation).possible_paths ),1,'first');
-        data_path = experiment_settings.situations_struct.(experiment_settings.situation).possible_paths{ possible_path_ind };
-    catch
-        while ~exist('data_path','var') || isempty(data_path) || ~isdir(data_path)
-            h = msgbox( ['Select directory containing images of ' experiment_settings.situation] );
-            uiwait(h);
-            data_path = uigetdir(pwd); 
-        end
-    end
-
-
-
-%% define your training testing splits 
+%% training testing splits ( existing or random ) 
 %
 % This defines how we get our training/testing splits will be generated.
 % The split arg can take on a few different values for differing behaviors.
@@ -102,38 +41,84 @@
     % seed test
         % seed_test = RandStream.shuffleSeed;  % generates a seed based on current time, stores it into p_structures
         seed_test = 1;
-        
     
 
-%% define situate parameters: shared 
+        
+%% experiment settings ( title, viz, num images,folds ) 
+%
+% These are some basic settings for the experimental run, relating to
+% whether or not you want to use the GUI, where to save the experiment
+% results, and how many images for training and testing.
+
+    experiment_settings = [];
+    
+    experiment_settings.title               = 'local search, cnn svm';
+    experiment_settings.situations_struct   = situate.situation_definitions();
+    experiment_settings.situation           = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
+    
+    experiment_settings.use_gui = false;
+    % note: when doing a GUI run, the following won't happen
+    %   run_analysis_after_completion,
+    %   saving off results
+    %   using more than the first experimental condition
+    %   using more than the first data fold
+    
+    % note: use [] if you want to use all available data
+    experiment_settings.num_folds           = 1;  
+    experiment_settings.testing_data_max    = 6;  % per fold
+    experiment_settings.training_data_max   = []; 
+    
+    experiment_settings.run_analysis_after_completion = true;
+    
+    experiment_settings.results_directory = fullfile('/Users/',char(java.lang.System.getProperty('user.name')),'/Desktop/', [experiment_settings.title '_' datestr(now,'yyyy.mm.dd.HH.MM.SS')]);
+    if ~exist(experiment_settings.results_directory,'dir') && ~experiment_settings.use_gui, mkdir(experiment_settings.results_directory); display(['made results directory ' experiment_settings.results_directory]); end
+
+    
+
+%% Situate parameters, shared 1 ( situation model, classifier, num iterations )
 %
 % These are the shared settings across the different experimental
 % condtions. They can be modified in the next section to compare different
 % running conditions, but in general, these are the things that we haven't
 % been changing very much within an experimental run
     
-    p = situate.parameters_initialize();
+        p = situate.parameters_initialize();
+
+        p.num_iterations = 2000;         
     
     % situation model
     
-        situation_model_description = 'normal';
+        situation_model_description = 'uniform then normal';
         
         switch situation_model_description
             case 'normal'
-                p.situation_model_fit          = @situation_model_normal_fit;        
+                p.situation_model_fit          = @situation_models.normal_fit;        
                     % should take p, cellstr of training images; return model object
 
-                p.situation_model_update       = @situation_model_normal_condition; 
+                p.situation_model_update       = @situation_models.normal_condition; 
                     % should take model object, workspace; return model object
 
-                p.situation_model_sample_box   = @situation_model_normal_aa_sample;  
+                p.situation_model_sample_box   = @situation_models.normal_sample;  
                     % should take model object, object type str; return sampled box r0rfc0cf
-                %p.situation_model_sample_box   = @situation_model_normal_rc_sample;  
-                    % should take model object, object type str; return sampled box r0rfc0cf
-
-                p.situation_model_draw         = @situation_model_normal_draw;
+               
+                p.situation_model_draw         = @situation_models.normal_draw;
                     % should take situation_model, object_string, what_to_draw_string
                     % what_to_draw can be 'xy', 'shape', 'size'
+            
+            case 'uniform then normal'
+                p.situation_model_fit          = @situation_models.uniform_then_normal_fit;        
+                    % should take p, cellstr of training images; return model object
+
+                p.situation_model_update       = @situation_models.uniform_then_normal_condition; 
+                    % should take model object, workspace; return model object
+
+                p.situation_model_sample_box   = @situation_models.uniform_then_normal_sample;  
+                    % should take model object, object type str; return sampled box r0rfc0cf
+                
+                p.situation_model_draw         = @situation_models.uniform_then_normal_draw;
+                    % should take situation_model, object_string, what_to_draw_string
+                    % what_to_draw can be 'xy', 'shape', 'size'
+                    
             case 'salience'
                 assert(0==1);
             case 'none'
@@ -144,7 +129,6 @@
         
     % pipeline
     
-        p.num_iterations                                 = 2000;         
         p.use_direct_scout_to_workspace_pipe             = true; % hides stochastic agent stuff a bit, more comparable to other methods     
         p.agent_pool_cleanup.on_workspace_change         = true;
         p.agent_pool_cleanup.on_object_of_interest_found = true;
@@ -153,8 +137,25 @@
     
         p.stopping_condition = @situate.stopping_condition_null; % use all iterations, don't stop on detection
         %p.stopping_condition = @stopping_condition_situation_found; % go until all situation objects are checked-in over p.thresholds.total_support_final
-            
+        
     % classifier
+        
+        classifier_description = 'cnn svm';
+        
+        switch classifier_description
+            case 'noisy oracle'
+                p.classifier_load_or_train = @classifiers.oracle_train; 
+                p.classifier_apply = @classifiers.oracle_apply;
+                p.classifier_saved_models_directory = 'default_models/';
+            case 'cnn svm'
+                p.classifier_load_or_train = @classifiers.cnnsvm_train; 
+                p.classifier_apply = @classifiers.cnnsvm_apply;
+                p.classifier_saved_models_directory = 'default_models/';
+            otherwise
+                assert(1==0);
+        end
+        
+         % classifier requirements
     
             % [classifier_model] = classifier_load_or_train( p, fnames_in, saved_models_directory )
             % inputs
@@ -187,28 +188,23 @@
             %   classifier_score in the range [0,1]
             %   the ground truth IOU ( also in [0,1] ) is only available if
             %   the label structure was provided
-            
         
-        classifier_description = 'noisy oracle';
         
-        switch classifier_description
-            case 'noisy oracle'
-                p.classifier_load_or_train = @classifiers.oracle_train; 
-                p.classifier_apply = @classifiers.oracle_apply;
-                p.classifier_saved_models_directory = 'default_models/';
-            case 'cnn svm'
-                p.classifier_load_or_train = @classifiers.cnnsvm_train; 
-                p.classifier_apply = @classifiers.cnnsvm_apply;
-                p.classifier_saved_models_directory = 'default_models/';
-            otherwise
-                assert(1==0);
-        end
+        
+%% Situate parameters, shared 2 ( support functions, thresholds )
+%
+% These are the shared settings across the different experimental
+% condtions. They can be modified in the next section to compare different
+% running conditions, but in general, these are the things that we haven't
+% been changing very much within an experimental run
+        
         
     % support functions 
     
         external_support_function = 'logistic_normalized_dist';
         
-        total_support_function = 'logreg_exp';
+        total_support_function = 'even';
+        %total_support_function = 'product';
         
         switch external_support_function
             case 'logistic_normalized_dist'
@@ -228,7 +224,9 @@
                 p.total_support_function    = @(internal,external) 1 * internal;
             case 'even'
                 p.total_support_function    = @(internal,external) .5 * internal + .5 * external;
-            case 'logreg_exp'
+            case 'product'
+                p.total_support_function    = @(internal,external) internal * external;
+            case 'logreg_experiment'
                 % version learned from logistic regression experiment
                 p.total_support_function    = {};
                 p.total_support_function{1} = @(internal,external) -4.05 + 3.01 * external + 2.00 * internal + -0.01 * internal*external;
@@ -247,7 +245,7 @@
                 p.thresholds.internal_support          = .25; % scout -> reviewer threshold
                 p.thresholds.total_support_provisional = .25; % workspace entry, provisional (search continues)
                 p.thresholds.total_support_final       = .50; % workspace entry, final (search (maybe) ends) depends on p.situation_objects_urgency_post
-            case 'logreg_exp'
+            case 'logreg_experiment'
                 p.thresholds.internal_support          = .15; % scout -> reviewer threshold
                 p.thresholds.total_support_provisional = .15; % workspace entry, provisional (search continues)
                 p.thresholds.total_support_final       = .35; % workspace entry, final (search (maybe) ends) depends on p.situation_objects_urgency_post
@@ -327,7 +325,7 @@
         
         
         
-%% temperature stuff
+%% Situate parameters, shared 3 ( temperature stuff (nothing yet) ) 
 
     p.temperature = [];
     p.temperature.initial = 100;
@@ -335,7 +333,7 @@
         
     
     
-%% define siutate parameters: experimental conditions 
+%% Situate parameters, experimental conditions 
 %
 % These are modifications to the shared situate parameters defined above.
 % Anything not modified here will use those settings.
@@ -346,22 +344,53 @@
     p_conditions = [];
     p_conditions_descriptions = {};
   
-    description = 'Situate, local search, random step size';
+    description = 'Situate, local search, random step size, total support:even';
     temp = p;
     temp.description = description;
     temp.local_search_activation_logic = @(cur_agent) cur_agent.support.total > p.thresholds.total_support_provisional;
     range = [.01 .4];
     temp.local_search_function = @(x,y,z) spawn_local_scouts( x,y,z, (( max(range) - min(range) ) * rand() + min(range))  );
+    p.total_support_function    = @(internal,external) .5*internal + .5*external;
     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
     
-    description = 'Situate, no local search';
-    temp = p;
-    temp.description = description;
-    temp.local_search_activation_logic = @(cur_agent) false;
-    temp.local_search_function         = @(x) assert( 1 == 0 );
-    if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+%     description = 'Situate, local search, random step size, total support:product';
+%     temp = p;
+%     temp.description = description;
+%     temp.local_search_activation_logic = @(cur_agent) cur_agent.support.total > p.thresholds.total_support_provisional;
+%     range = [.01 .4];
+%     temp.local_search_function = @(x,y,z) spawn_local_scouts( x,y,z, (( max(range) - min(range) ) * rand() + min(range))  );
+%     p.total_support_function    = @(internal,external) internal * external;
+%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+    
+%     description = 'Situate, no local search';
+%     temp = p;
+%     temp.description = description;
+%     temp.local_search_activation_logic = @(cur_agent) false;
+%     temp.local_search_function         = @(x) assert( 1 == 0 );
+%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+ 
     
 
+%% data directory 
+%
+% situate_data_path should point to a directory containing the images and label 
+% files for your experiment. 
+%
+% situate.situation_definitions contains the default paths that situate
+% will search. if it doesn't find anything, it'll ask in a popup
+
+    try
+        possible_path_ind = find(cellfun( @(x) exist(x,'dir'), experiment_settings.situations_struct.(experiment_settings.situation).possible_paths ),1,'first');
+        data_path = experiment_settings.situations_struct.(experiment_settings.situation).possible_paths{ possible_path_ind };
+    catch
+        while ~exist('data_path','var') || isempty(data_path) || ~isdir(data_path)
+            h = msgbox( ['Select directory containing images of ' experiment_settings.situation] );
+            uiwait(h);
+            data_path = uigetdir(pwd); 
+        end
+    end
+
+    
 
 %% run the experiment 
 

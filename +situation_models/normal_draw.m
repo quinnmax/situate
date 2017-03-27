@@ -1,5 +1,5 @@
-function h = situation_model_normal_draw( d, object_string, what_to_draw, box_r0rfc0cf, box_format_arg  )
-% h = situation_model_normal_draw( d, object_string, what_to_draw, format_arg, [box_r0rfc0cf], [box_format_arg] );
+function h = normal_draw( d, object_string, what_to_draw, box_r0rfc0cf, box_format_arg, initial_draw  )
+% h = normal_draw( d, object_string, what_to_draw, format_arg, [box_r0rfc0cf], [box_format_arg], [initial_draw] );
 %
 %   what to draw can be 'xy', 'shape', or 'size'
 %       xy will be a heat map the shape of the image
@@ -10,6 +10,10 @@ function h = situation_model_normal_draw( d, object_string, what_to_draw, box_r0
 %   if box_r0rfc0cf and format_arg are included, the figure will also
 %   include a point (or box) indicating the location of that box in the
 %   figure
+
+    if ~exist('initial_draw') || isempty(initial_draw)
+        initial_draw = false;
+    end
 
         i = find(strcmp( {d.interest}, object_string ));
         im_c = d(i).image_size(1);
@@ -48,7 +52,7 @@ function h = situation_model_normal_draw( d, object_string, what_to_draw, box_r0
 
             case 'xy'
                 
-                if ~isempty(prev_distribution_xy) && isequal(d,prev_distribution_xy) && any( i == up_to_date_inds_xy )
+                if ~initial_draw && ~isempty(prev_distribution_xy) && isequal(d,prev_distribution_xy) && any( i == up_to_date_inds_xy )
                     % no need to redraw
                 else
                     rc_ind = strcmp( d(i).distribution.parameters_description, 'rc' );
@@ -111,6 +115,9 @@ function h = situation_model_normal_draw( d, object_string, what_to_draw, box_r0
                 xlim([-2,2]);
                 %xticks([ log(.25)  log(.5) log(1) log(2) log(4) ]);
                 %xticklabels({ '1:4' '1:2' '1:1' '2:1' '4:1'});
+                h_temp = gca;
+                h_temp.XTick = [ log(.25)  log(.5) log(1) log(2) log(4) ];
+                h_temp.XTickLabel = { '1:4' '1:2' '1:1' '2:1' '4:1'};
                 xlabel('shape (W:H)');
                    
                 if exist('box_r0rfc0cf','var') && ~isempty(box_r0rfc0cf)
@@ -150,8 +157,11 @@ function h = situation_model_normal_draw( d, object_string, what_to_draw, box_r0
                 y_vals = normpdf( x_vals, mu_bar, sigma_bar );
                 plot(x_vals,y_vals,'-b');
                 xlim([-7,0.5]);
-                %xticks([log(.001) log(.01) log(.05)   log(.5) log(1) ]);
+                %xticks([ log(.001) log(.01) log(.05)   log(.5) log(1) ]);
                 %xticklabels({'.001' '.01' '.05'   '.5' '1'});
+                h_temp = gca;
+                h_temp.XTick = [ log(.001) log(.01) log(.05)   log(.5) log(1) ];
+                h_temp.XTickLabel = {'.001' '.01' '.05'   '.5' '1'};
                 xlabel('area (box/image)');
 
                 if exist('box_r0rfc0cf','var') && ~isempty(box_r0rfc0cf)

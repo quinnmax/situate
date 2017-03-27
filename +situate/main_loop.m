@@ -94,8 +94,12 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
             workspace_snapshot = workspace;
             agent_index        = sample_1d( [agent_pool.urgency], 1 );
         
+            
+            
             [agent_pool,d_temp,workspace] = agent_evaluate( agent_pool, agent_index, im, label, d, p, workspace, learned_models );
             current_agent_snapshot        = agent_pool(agent_index);
+            
+            
             
             workspace_changed = false;
             if ~isequal(workspace,workspace_snapshot)

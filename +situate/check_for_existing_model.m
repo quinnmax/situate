@@ -29,6 +29,7 @@ function selected_model_fname = check_for_existing_model( possible_paths, fnames
             
         % compare training images in mat files to input training images
             training_data_match = false(1,length(mat_files));
+            selected_model_fname = '';
             for mi = 1:length(mat_files)
                 matobj = matfile( mat_files{mi} );
                 try
@@ -39,18 +40,14 @@ function selected_model_fname = check_for_existing_model( possible_paths, fnames
                         fnames_file_pathless{fi} = [name ext];
                     end
                     if isequal( sort(fnames_file_pathless), sort(fnames_in_pathless) )
+                        % great, return this file
                         training_data_match(mi) = true;
+                        selected_model_fname = mat_files{mi};
+                        break;
                     end
                 end
             end
             
-        % if there's a match, return the fname
-            if any(training_data_match)
-                selected_model_fname = mat_files{ find(training_data_match,1,'first') };
-            else
-                selected_model_fname = '';
-            end
-        
 end
     
     

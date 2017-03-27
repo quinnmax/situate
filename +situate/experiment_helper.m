@@ -4,7 +4,6 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
 % experiment_helper(experiment_settings, p_conditions, data_path, split_arg)
 
 
- 
   
 %% training and testing sets
   
@@ -25,8 +24,6 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
             warning('split_arg_was empty, using current time as rng seed for testing');
             rng(now);
         end
-    
-
 
     % load or generate splits
     %   if the split_arg was a directory, load splits from them
@@ -180,19 +177,8 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
                         tic;
                         [ ~, run_data_cur, visualizer_status_string ] = situate.main_loop( cur_fname_im, cur_parameterization, learned_models );
                         
-                        % store results
-                        workspaces_final{cur_image_ind} = run_data_cur.workspace_final;
-                        agent_records{cur_image_ind}    = run_data_cur.agent_record;
-                        
-                        % display an update in the console
-                        num_iterations_run = sum(cellfun(@(x) ~isempty(x),{run_data_cur.agent_record.interest}));
-                        IOUs_of_last_run   = num2str(run_data_cur.workspace_final.GT_IOU);
-                        progress_string    = [cur_parameterization.description ', ' num2str(num_iterations_run), ' steps, ' num2str(toc) 's,', ' IOUs: [' IOUs_of_last_run ']'];
-                        progress(cur_image_ind,length(fnames_im_test),progress_string);
-
-                    % handle GUI responses and decide if we're done
-                        if experiment_settings.use_gui
-
+                        if experiment_settings.use_gui % handle visualizer status
+                     
                             switch visualizer_status_string
                                 case 'restart'
                                     % cur_image_ind = cur_image_ind;
@@ -207,19 +193,34 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
                                     keep_going = false;
                                     % because we probably killed it with a window close
                             end
+ 
+                        else
+                            
+                           % store results
+                            workspaces_final{cur_image_ind} = run_data_cur.workspace_final;
+                            agent_records{cur_image_ind}    = run_data_cur.agent_record;
 
-                            if cur_image_ind > experiment_settings.testing_data_max
-                                keep_going = false;
-                                msgbox('out of testing images');
-                            end
-
-                            if ~keep_going
-                                break
-                            end
-
-                        else % we're not using the GUI, so move on to the next image
+                            % display an update in the console
+                            num_iterations_run = sum(cellfun(@(x) ~isempty(x),{run_data_cur.agent_record.interest}));
+                            IOUs_of_last_run   = num2str(run_data_cur.workspace_final.GT_IOU);
+                            progress_string    = [cur_parameterization.description ', ' num2str(num_iterations_run), ' steps, ' num2str(toc) 's,', ' IOUs: [' IOUs_of_last_run ']'];
+                            progress(cur_image_ind,length(fnames_im_test),progress_string);
+                            
+                            % move on to the next image
                             cur_image_ind = cur_image_ind + 1;
                             if cur_image_ind > length(fnames_im_test), keep_going = false; end
+                            
+                        end
+                        
+                        if cur_image_ind > experiment_settings.testing_data_max
+                            keep_going = false;
+                            if experiment_settings.use_gui
+                                msgbox('out of testing images');
+                            end
+                        end
+
+                        if ~keep_going
+                            break;
                         end
 
                 end
@@ -248,6 +249,11 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
 
                 display(['saved to ' save_fname]);
                     
+            end
+            
+            if experiment_settings.use_gui
+                % bail after the first fold if we're using the GUI
+                break;
             end
 
     end
