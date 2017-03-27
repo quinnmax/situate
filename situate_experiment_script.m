@@ -52,11 +52,11 @@
 
     experiment_settings = [];
     
-    experiment_settings.title               = 'local search, cnn svm';
+    experiment_settings.title               = 'dogwalking, cnn svm, local search';
     experiment_settings.situations_struct   = situate.situation_definitions();
     experiment_settings.situation           = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
     
-    experiment_settings.use_gui = false;
+    experiment_settings.use_gui = true;
     % note: when doing a GUI run, the following won't happen
     %   run_analysis_after_completion,
     %   saving off results
