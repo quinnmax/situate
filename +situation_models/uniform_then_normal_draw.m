@@ -51,11 +51,11 @@ function h = uniform_then_normal_draw( d, object_string, what_to_draw, box_r0rfc
                         data_have = [];
                         [mu_bar, Sigma_bar] = mvn_marginalize_and_condition( mu, Sigma, inds_want, inds_have, data_have );
                         lsf = sqrt( 1 / (im_r * im_c ) );
-                        x_vals = linspace( im_r * lsf * -.5, im_r * lsf * .5, im_r );
-                        y_vals = linspace( im_c * lsf * -.5, im_c * lsf * .5, im_c );
-                        [X Y] = meshgrid( x_vals, y_vals );
+                        x_vals = linspace( im_c * lsf * -.5, im_c * lsf * .5, im_c );
+                        y_vals = linspace( im_r * lsf * -.5, im_r * lsf * .5, im_r );
+                        [X, Y] = meshgrid( x_vals, y_vals );
                         Z_flat = mvnpdf( [Y(:) X(:)], mu_bar, Sigma_bar );
-                        Z = reshape( Z_flat,im_c, im_r );
+                        Z = reshape( Z_flat,im_r, im_c );
                         imshow(Z,[]);
                     else
                         % just draw a representation of a uniform prior

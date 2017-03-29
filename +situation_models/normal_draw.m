@@ -11,13 +11,13 @@ function h = normal_draw( d, object_string, what_to_draw, box_r0rfc0cf, box_form
 %   include a point (or box) indicating the location of that box in the
 %   figure
 
-    if ~exist('initial_draw') || isempty(initial_draw)
+    if ~exist('initial_draw','var') || isempty(initial_draw)
         initial_draw = false;
     end
 
         i = find(strcmp( {d.interest}, object_string ));
-        im_c = d(i).image_size(1);
-        im_r = d(i).image_size(2);
+        im_r = d(i).image_size(1);
+        im_c = d(i).image_size(2);
         
         h = [];
         
@@ -62,11 +62,11 @@ function h = normal_draw( d, object_string, what_to_draw, box_r0rfc0cf, box_form
                     data_have = [];
                     [mu_bar, Sigma_bar] = mvn_marginalize_and_condition( mu, Sigma, inds_want, inds_have, data_have );
                     lsf = sqrt( 1 / (im_r * im_c ) );
-                    x_vals = linspace( im_r * lsf * -.5, im_r * lsf * .5, im_r );
-                    y_vals = linspace( im_c * lsf * -.5, im_c * lsf * .5, im_c );
-                    [X Y] = meshgrid( x_vals, y_vals );
+                    x_vals = linspace( im_c * lsf * -.5, im_c * lsf * .5, im_c );
+                    y_vals = linspace( im_r * lsf * -.5, im_r * lsf * .5, im_r );
+                    [X, Y] = meshgrid( x_vals, y_vals );
                     Z_flat = mvnpdf( [Y(:) X(:)], mu_bar, Sigma_bar );
-                    Z = reshape( Z_flat,im_c, im_r );
+                    Z = reshape( Z_flat,im_r, im_c );
                     imshow(Z,[]);
                     
                     if ~isequal(prev_distribution_xy,d)

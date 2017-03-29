@@ -39,8 +39,8 @@
         %       The file names in the split file are line separated and contain no path
 
     % seed test
-        % seed_test = RandStream.shuffleSeed;  % generates a seed based on current time, stores it into p_structures
-        seed_test = 1;
+        seed_test = RandStream.shuffleSeed;  % generates a seed based on current time, stores it into p_structures
+        %seed_test = 1;
     
       
         
@@ -50,7 +50,7 @@
 % whether or not you want to use the GUI, where to save the experiment
 % results, and how many images for training and testing.
 
-    experiment_settings.title               = 'dogwalking, noisy oracle, local search';
+    experiment_settings.title               = 'dogwalking, default configuration';
     experiment_settings.situations_struct   = situate.situation_definitions();
     experiment_settings.situation           = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
     
@@ -59,7 +59,7 @@
     experiment_settings.testing_data_max    = 3;  % per fold
     experiment_settings.training_data_max   = []; 
     
-    experiment_settings.use_gui = false;
+    experiment_settings.use_gui = true;
     % note: when doing a GUI run, the following won't happen
     %   run_analysis_after_completion,
     %   saving off results
@@ -89,15 +89,12 @@
 
     
     
-%% Situate parameters, shared 1 ( situation model, classifier, num iterations )
+%% Situate parameters, shared 1 ( situation model, classifier )
 %
 % These are the shared settings across the different experimental
 % condtions. They can be modified in the next section to compare different
 % running conditions, but in general, these are the things that we haven't
 % been changing very much within an experimental run
-    
-      
-      p.num_iterations = 2000;         
     
     % situation model
     
@@ -139,18 +136,7 @@
             otherwise
                 assert(0==1);
         end
-        
-    % pipeline
-    
-        p.use_direct_scout_to_workspace_pipe             = true; % hides stochastic agent stuff a bit, more comparable to other methods     
-        p.agent_pool_cleanup.on_workspace_change         = true;
-        p.agent_pool_cleanup.on_object_of_interest_found = true;
-        
-    % stopping conditions
-    
-        %p.stopping_condition = @situate.stopping_condition_null; % use all iterations, don't stop on detection
-        p.stopping_condition = @situate.stopping_condition_situation_found; % go until all situation objects are checked-in over p.thresholds.total_support_final
-        
+  
     % classifier
         
         classifier_description = 'noisy oracle';
@@ -204,19 +190,31 @@
         
         
         
-%% Situate parameters, shared 2 ( support functions, thresholds )
+%% Situate parameters, shared 2 ( itterations, pipeline, local search, support functions, thresholds )
 %
 % These are the shared settings across the different experimental
 % condtions. They can be modified in the next section to compare different
 % running conditions, but in general, these are the things that we haven't
 % been changing very much within an experimental run
         
+    p.num_iterations = 2000;         
+
+    % pipeline
+    
+        p.use_direct_scout_to_workspace_pipe             = true; % hides stochastic agent stuff a bit, more comparable to other methods     
+        p.agent_pool_cleanup.on_workspace_change         = true;
+        p.agent_pool_cleanup.on_object_of_interest_found = true;
+        
+    % stopping conditions
+    
+        %p.stopping_condition = @situate.stopping_condition_null; % use all iterations, don't stop on detection
+        p.stopping_condition = @situate.stopping_condition_situation_found; % go until all situation objects are checked-in over p.thresholds.total_support_final
         
     % support functions 
     
-        external_support_function = 'logistic_normalized_dist';
+        external_support_function = 'logistic_normalized_dist'; % from sample density to a 0,1 range
         
-        total_support_function = 'even';
+        total_support_function = 'even'; % mean of internal and external support
         %total_support_function = 'product';
         
         switch external_support_function
@@ -251,7 +249,7 @@
            
     % support check-in thresholds
     
-        check_in_thresholds = 'IOU';
+        check_in_thresholds = 'IOU'; % .25 provisional, .5 final
         
         switch check_in_thresholds
             case 'IOU'
@@ -268,7 +266,7 @@
         
     % local agent search
     
-        local_search_description = 'local agent search';
+        local_search_description = 'none';
     
         switch local_search_description
             case 'local agent search'
@@ -315,7 +313,7 @@
                 p.situation_objects_urgency_post    = experiment_settings.situations_struct.(experiment_settings.situation).object_urgency_post;
         end
     
-    % seed values to p
+    % seed values get saved in p
     
         p.seed_test  = seed_test;
         p.seed_train = seed_train;
@@ -341,33 +339,43 @@
     p_conditions = [];
     p_conditions_descriptions = {};
   
-    description = 'Situate, local search, random step size, total support:even';
+    
+    description = 'Situate, default condition';
     temp = p;
     temp.description = description;
-    temp.local_search_activation_logic = @(cur_agent) cur_agent.support.total > p.thresholds.total_support_provisional;
-    range = [.01 .4];
-    temp.local_search_function = @(x,y,z) spawn_local_scouts( x,y,z, (( max(range) - min(range) ) * rand() + min(range))  );
-    p.total_support_function   = @(internal,external) .5*internal + .5*external;
-    if isempty( p_conditions ), p_conditions = temp; else, p_conditions(end+1) = temp; end
+    if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
     
-%     description = 'Situate, local search, random step size, total support:product';
+    
+%     description = 'Situate, total support:even';
+%     temp = p;
+%     temp.description = description;
+%     p.total_support_function   = @(internal,external) .5*internal + .5*external;
+%     if isempty( p_conditions ), p_conditions = temp; else, p_conditions(end+1) = temp; end
+%     
+%     description = 'Situate, total support:product';
+%     temp = p;
+%     temp.description = description;
+%     p.total_support_function    = @(internal,external) internal * external;
+%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+    
+    
+%     description = 'Situate, local search, random step size';
 %     temp = p;
 %     temp.description = description;
 %     temp.local_search_activation_logic = @(cur_agent) cur_agent.support.total > p.thresholds.total_support_provisional;
 %     range = [.01 .4];
 %     temp.local_search_function = @(x,y,z) spawn_local_scouts( x,y,z, (( max(range) - min(range) ) * rand() + min(range))  );
-%     p.total_support_function    = @(internal,external) internal * external;
 %     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
-    
-%     description = 'Situate, no local search';
+%     
+%     description = 'Situate, local search, fixed step size';
 %     temp = p;
 %     temp.description = description;
-%     temp.local_search_activation_logic = @(cur_agent) false;
-%     temp.local_search_function         = @(x) assert( 1 == 0 );
+%     temp.local_search_activation_logic = @(cur_agent) cur_agent.support.total > p.thresholds.total_support_provisional;
+%     temp.local_search_function = @(x,y,z) spawn_local_scouts( x,y,z, .2  );
 %     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
- 
     
-
+    
+    
 %% data directory 
 %
 % situate_data_path should point to a directory containing the images and label 
