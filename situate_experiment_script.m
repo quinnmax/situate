@@ -1,31 +1,16 @@
 
 
 
-%% get path in order 
+%% initial setup (path, how to define splits, rng seed values )
 
     script_directory = fileparts(which('situate_experiment_script'));
     cd( script_directory );
     run( fullfile(script_directory, 'matconvnet', 'matlab', 'vl_setupnn.m' ) );
     addpath( genpath( fullfile(script_directory, 'tools') ) );
-   
     
+    p = situate.parameters_initialize();
+    experiment_settings = [];
     
-%% training testing splits ( existing or random ) 
-%
-% This defines how we get our training/testing splits will be generated.
-% The split arg can take on a few different values for differing behaviors.
-%
-% numeric: will be the seed value in generating a random split
-%
-% directory string: will look in the directory for some files that define
-%   some specific, pre-existing splits. this is useful if you want to use
-%   an already trained classifier and want to remain consistent with its
-%   training set. The naming convention for the files in this directory
-%   are:
-%       *_split_01_test.txt, *_split_01_train.txt
-%       *_split_02_test.txt, *_split_02_train.txt ...
-%   The file names in the split file are line separated and contain no path
-
     % seed train
         % split_arg = now;
         % split_arg = 1;
@@ -37,12 +22,27 @@
         elseif isnumeric(split_arg)
             seed_train = split_arg;
         end
+        
+        % re: split_arg
+        %   This defines how we get our training/testing splits will be generated.
+        %   The split arg can take on a few different values for differing behaviors.
+        %
+        %   numeric: will be the seed value in generating a random split
+        %
+        %   directory string: will look in the directory for some files that define
+        %       some specific, pre-existing splits. this is useful if you want to use
+        %       an already trained classifier and want to remain consistent with its
+        %       training set. The naming convention for the files in this directory
+        %       are:
+        %           *_split_01_test.txt, *_split_01_train.txt
+        %           *_split_02_test.txt, *_split_02_train.txt ...
+        %       The file names in the split file are line separated and contain no path
 
     % seed test
         % seed_test = RandStream.shuffleSeed;  % generates a seed based on current time, stores it into p_structures
         seed_test = 1;
     
-
+      
         
 %% experiment settings ( title, viz, num images,folds ) 
 %
@@ -50,11 +50,14 @@
 % whether or not you want to use the GUI, where to save the experiment
 % results, and how many images for training and testing.
 
-    experiment_settings = [];
-    
-    experiment_settings.title               = 'dogwalking, cnn svm, local search';
+    experiment_settings.title               = 'dogwalking, noisy oracle, local search';
     experiment_settings.situations_struct   = situate.situation_definitions();
     experiment_settings.situation           = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
+    
+    % note: use [] if you want to use all available data
+    experiment_settings.num_folds           = 2;  
+    experiment_settings.testing_data_max    = 3;  % per fold
+    experiment_settings.training_data_max   = []; 
     
     experiment_settings.use_gui = true;
     % note: when doing a GUI run, the following won't happen
@@ -63,18 +66,29 @@
     %   using more than the first experimental condition
     %   using more than the first data fold
     
-    % note: use [] if you want to use all available data
-    experiment_settings.num_folds           = 1;  
-    experiment_settings.testing_data_max    = 6;  % per fold
-    experiment_settings.training_data_max   = []; 
+    % additional visualization options
     
+        if experiment_settings.use_gui
+            p.viz_options.on_iteration          = true;
+            p.viz_options.on_iteration_mod      = 1;
+            p.viz_options.on_workspace_change   = false;
+            p.viz_options.on_end                = true;
+            p.viz_options.start_paused          = true;
+        else
+            p.viz_options.on_iteration          = false;
+            p.viz_options.on_iteration_mod      = 1;
+            p.viz_options.on_workspace_change   = false;
+            p.viz_options.on_end                = false;
+            p.viz_options.start_paused          = false;
+        end
+        
     experiment_settings.run_analysis_after_completion = true;
-    
+      
     experiment_settings.results_directory = fullfile('/Users/',char(java.lang.System.getProperty('user.name')),'/Desktop/', [experiment_settings.title '_' datestr(now,'yyyy.mm.dd.HH.MM.SS')]);
     if ~exist(experiment_settings.results_directory,'dir') && ~experiment_settings.use_gui, mkdir(experiment_settings.results_directory); display(['made results directory ' experiment_settings.results_directory]); end
 
     
-
+    
 %% Situate parameters, shared 1 ( situation model, classifier, num iterations )
 %
 % These are the shared settings across the different experimental
@@ -82,9 +96,8 @@
 % running conditions, but in general, these are the things that we haven't
 % been changing very much within an experimental run
     
-        p = situate.parameters_initialize();
-
-        p.num_iterations = 2000;         
+      
+      p.num_iterations = 2000;         
     
     % situation model
     
@@ -140,7 +153,7 @@
         
     % classifier
         
-        classifier_description = 'cnn svm';
+        classifier_description = 'noisy oracle';
         
         switch classifier_description
             case 'noisy oracle'
@@ -301,22 +314,6 @@
                 p.situation_objects_urgency_pre     = experiment_settings.situations_struct.(experiment_settings.situation).object_urgency_pre;
                 p.situation_objects_urgency_post    = experiment_settings.situations_struct.(experiment_settings.situation).object_urgency_post;
         end
-        
-    % visualization parameters
-    
-        if experiment_settings.use_gui
-            p.viz_options.on_iteration          = true;
-            p.viz_options.on_iteration_mod      = 5;
-            p.viz_options.on_workspace_change   = false;
-            p.viz_options.on_end                = true;
-            p.viz_options.start_paused          = true;
-        else
-            p.viz_options.on_iteration          = false;
-            p.viz_options.on_iteration_mod      = 1;
-            p.viz_options.on_workspace_change   = false;
-            p.viz_options.on_end                = false;
-            p.viz_options.start_paused          = false;
-        end
     
     % seed values to p
     
@@ -350,8 +347,8 @@
     temp.local_search_activation_logic = @(cur_agent) cur_agent.support.total > p.thresholds.total_support_provisional;
     range = [.01 .4];
     temp.local_search_function = @(x,y,z) spawn_local_scouts( x,y,z, (( max(range) - min(range) ) * rand() + min(range))  );
-    p.total_support_function    = @(internal,external) .5*internal + .5*external;
-    if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+    p.total_support_function   = @(internal,external) .5*internal + .5*external;
+    if isempty( p_conditions ), p_conditions = temp; else, p_conditions(end+1) = temp; end
     
 %     description = 'Situate, local search, random step size, total support:product';
 %     temp = p;

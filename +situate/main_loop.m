@@ -31,8 +31,8 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
             d(dist_index).interest          = p.situation_objects{dist_index};
             d(dist_index).interest_priority = p.situation_objects_urgency_pre.(p.situation_objects{dist_index});
             d(dist_index).distribution      = learned_models.situation_model.joint;
-            d(dist_index).image_size    = [size(im,1)   size(im,2)];
-            d(dist_index).image_size_px =  size(im,1) * size(im,2);
+            d(dist_index).image_size        = [size(im,1)   size(im,2)];
+            d(dist_index).image_size_px     =  size(im,1) * size(im,2);
         end
         joint_dist_index = length(d) + 1;
         d(joint_dist_index).interest = 'joint';
@@ -44,7 +44,7 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
     % initialize the agent pool
         agent_pool = repmat( agent_initialize(), 1, p.num_scouts );
         for ai = 1:length(agent_pool)
-            agent_pool(ai) = agent_initialize(d,p);
+            agent_pool(ai) = agent_initialize(p);
         end
         agent_types = {'scout','reviewer','builder'};
         
@@ -52,8 +52,8 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
         records = []; % store information about the run. includes workspace entry event history, scout record, and whatever else you'd like to pass back out
         records.agent_types = agent_types;
         current_agent_snapshot_lean = [];
-            current_agent_snapshot_lean.type = uint8( 1 );
-            current_agent_snapshot_lean.interest = uint8( 1 );
+            current_agent_snapshot_lean.type = uint8( 0 );
+            current_agent_snapshot_lean.interest = uint8( 0 );
             current_agent_snapshot_lean.box.r0rfc0cf = [0 0 0 0];
             current_agent_snapshot_lean.support = [];
         records.agent_record = repmat( current_agent_snapshot_lean, p.num_iterations, 1 );
@@ -237,7 +237,7 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
             
         % if the pool is under size, top off with default scouts
         while isempty(agent_pool) || sum( strcmp( 'scout', {agent_pool.type} ) ) < p.num_scouts
-            agent_pool(end+1) = agent_initialize(d,p);
+            agent_pool(end+1) = agent_initialize(p);
             records.population_count(iteration,:) = records.population_count(iteration,:) + strcmp('scout',agent_types);
         end
             
@@ -304,7 +304,7 @@ function workspace = workspace_initialize(p,im_size)
     
 end
 
-function agent = agent_initialize(d,p)
+function agent = agent_initialize(p)
 
     persistent agent_base;
     persistent p_old;
@@ -338,9 +338,9 @@ function agent = agent_initialize(d,p)
         p_old = p;
     end
     
-    if exist('d','var')
-        agent_base.interest = d( sample_1d( [d.interest_priority] ) ).interest;
-    end
+%     if exist('d','var')
+%         agent_base.interest = d( sample_1d( [d.interest_priority] ) ).interest;
+%     end
     
     agent = agent_base;
     
@@ -355,7 +355,7 @@ function [agent_pool, d, workspace] = agent_evaluate( agent_pool, agent_index, i
     switch( agent_pool(agent_index).type )
         case 'scout'
             % sampling from d may change it, so we include it as an output
-            [agent_pool, d] = agent_evaluate_scout( agent_pool, agent_index, p, workspace, d, im, label, learned_models );
+            [agent_pool, d] = agent_evaluate_scout( agent_pool, agent_index, p, d, im, label, learned_models );
         case 'reviewer'
             % reviewers do not modify the distributions
             [agent_pool] = agent_evaluate_reviewer( agent_pool, agent_index, p, workspace, d );
@@ -365,7 +365,7 @@ function [agent_pool, d, workspace] = agent_evaluate( agent_pool, agent_index, i
             % those that have been found to be reasonable so far.
             [workspace,d,agent_pool] = agent_evaluate_builder( agent_pool, agent_index, workspace, d, p  );
         otherwise
-            error('situate.main_loop:agent_evaluate:agentTypeUnknown','agent does not have a known type field'); 
+            error('situate:main_loop:agent_evaluate:agentTypeUnknown','agent does not have a known type field'); 
     end
     
     % implementing the direct scout -> reviewer -> builder pipeline
@@ -401,10 +401,15 @@ end
 
 %% eval scout 
 
-function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, p, workspace, d, im, label, learned_models ) 
+function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, p, d, im, label, learned_models ) 
 
+    if isempty(agent_pool(agent_index).interest)
+        agent_pool(agent_index).interest = p.situation_objects{ sample_1d( [d.interest_priority], 1 ) };
+    end
+    
+    assert( isequal( agent_pool(agent_index).type, 'scout' ) );
+    
     cur_agent = agent_pool(agent_index);
-    assert( isequal( cur_agent.type, 'scout' ) );
     
     % pick a box for our scout (if it doesn't already have one)
     
@@ -448,8 +453,6 @@ function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, p, work
         else
             % This means the scout was spawned with a location in mind,
             % probably for local search.
-            
-            %display('using scout''s existing  box spec');
             
             % Just update the sample density of the box with respect to the distribution as it exists 
             % now. When it was generated, it just had the sample density of its template agent.
@@ -562,14 +565,6 @@ function [workspace,d,agent_pool] = agent_evaluate_builder( agent_pool, agent_in
     
     matching_workspace_object_index = find(strcmp( workspace.labels, agent_pool(agent_index).interest) );
     
-    % this prevents 2 objects with the same label from existing in the same
-    % place
-    overlap_iou_limit = .5;
-    if ~isempty(workspace.boxes_r0rfc0cf)
-        workspace_object_overlap_iou = intersection_over_union( cur_agent.box.r0rfc0cf, workspace.boxes_r0rfc0cf, 'r0rfc0cf' );
-        if any(workspace_object_overlap_iou > overlap_iou_limit ), return; end
-    end
-
     switch length(matching_workspace_object_index)
         
         case 0 % no matching objects yet, so add it
@@ -610,7 +605,7 @@ function [workspace,d,agent_pool] = agent_evaluate_builder( agent_pool, agent_in
                 
             else
                 
-                % it wasn't an improvement, so do nothing
+                % nothing changed, so just bail
                 return;
                 
             end

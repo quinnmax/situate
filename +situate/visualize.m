@@ -168,7 +168,12 @@ function [h, return_status_string] = visualize( h, im, p, d, workspace, cur_agen
             ylabel('population'); 
             legend({'scouts','reviewers','builders'},'Location','NorthEast');
         case 'interest_iterations'
-            [value_counts] = counts( {scout_record.interest}, p.situation_objects );
+            
+            value_counts = zeros(1,length(p.situation_objects));
+            for oi = 1:length(p.situation_objects)
+                value_counts(oi) = sum( eq( oi, [scout_record.interest] ) );
+            end
+            %[value_counts] = counts( {scout_record.interest}, p.situation_objects );
             temp_h = bar( 1:length(p.situation_objects), value_counts );
             set( get( temp_h, 'Parent' ), 'XTickLabel', p.situation_objects );
             if ~isempty(value_counts), ylim([0 max(value_counts) + 2]); else ylim([0 1]); end
