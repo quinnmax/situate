@@ -105,8 +105,11 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
         temp_detection_times = inf(1,length(situation_objects));
         cur_support_record = [agent_records{ci,ii}.support];
         for oi = 1:length(situation_objects)
-            workspace_entry_event_inds_object_type = oi == [agent_records{ci,ii}.interest];
             workspace_entry_event_inds_over_threshold = ge( round(100*[cur_support_record.total])/100, iou_threshold );
+            interest_records = [agent_records{ci,ii}.interest];
+            interest_records(length(workspace_entry_event_inds_over_threshold)+1:end) = [];
+            workspace_entry_event_inds_object_type = oi == interest_records;
+            
             a = reshape(workspace_entry_event_inds_object_type,1,[]);
             b = reshape(workspace_entry_event_inds_over_threshold,1,[]);
             c = and(a,b);

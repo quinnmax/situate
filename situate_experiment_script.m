@@ -59,7 +59,7 @@
     experiment_settings.testing_data_max    = 3;  % per fold
     experiment_settings.training_data_max   = []; 
     
-    experiment_settings.use_gui = true;
+    experiment_settings.use_gui = false;
     % note: when doing a GUI run, the following won't happen
     %   run_analysis_after_completion,
     %   saving off results
@@ -148,8 +148,8 @@
         
     % stopping conditions
     
-        p.stopping_condition = @situate.stopping_condition_null; % use all iterations, don't stop on detection
-        %p.stopping_condition = @stopping_condition_situation_found; % go until all situation objects are checked-in over p.thresholds.total_support_final
+        %p.stopping_condition = @situate.stopping_condition_null; % use all iterations, don't stop on detection
+        p.stopping_condition = @situate.stopping_condition_situation_found; % go until all situation objects are checked-in over p.thresholds.total_support_final
         
     % classifier
         
