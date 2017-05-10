@@ -1,11 +1,35 @@
 function [im_data,im] = load_image_and_data( fname_in, p, use_resize )
 
     % [im_data,im] = load_image_and_data( fname_in, p, use_resize );
-    % [~,im_data] = load_image_and_data( fname_in, p, use_resize );
+    % [im_data] = load_image_and_data( fname_in, p, use_resize );
     %   just loads the image data
     %
     % if use_resize, resizes to p.image_redim_px
 
+    persistent prev_fname_in;
+    persistent prev_p;
+    persistent prev_use_resize;
+    persistent prev_im_data;
+    persistent prev_im;
+    
+    % see if we can get away with returning last times stuff
+    if isequal(prev_fname_in, fname_in) ...
+    && isequal(prev_p,p) ...
+    && isequal( prev_use_resize, use_resize )
+        if nargout == 1 ...
+        && ~isempty(prev_im_data)
+            im_data = prev_im_data; 
+            return; 
+        end
+        
+        if nargout > 1 ...
+        && ~isempty(prev_im_data) ...
+        && ~isempty(prev_im)
+            im_data = prev_im_data; 
+            im = prev_im; 
+            return; 
+        end    
+    end
     
     
     % if it's a cell, just call on each entry
@@ -43,7 +67,8 @@ function [im_data,im] = load_image_and_data( fname_in, p, use_resize )
     
     % do we load the image?
     if nargout >= 2
-        im_in = double(imread(im_fname))/255;
+        im_in = imread(im_fname);
+        im_in = im_in;
         if use_resize
             im = imresize_px(im_in, p.image_redim_px);
         else
@@ -68,6 +93,15 @@ function [im_data,im] = load_image_and_data( fname_in, p, use_resize )
         im_data   = situate.image_data_rescale( im_data_b, new_rows, new_cols );
     else
         im_data = im_data_b;
+    end
+    
+    % hang on to the last call's info
+    prev_fname_in = fname_in;
+    prev_p = p;
+    prev_use_resize = use_resize;
+    prev_im_data = im_data;
+    if exist('im','var')
+        prev_im = im;
     end
        
 end

@@ -59,7 +59,7 @@
     experiment_settings.testing_data_max    = 3;  % per fold
     experiment_settings.training_data_max   = []; 
     
-    experiment_settings.use_gui = true;
+    experiment_settings.use_gui = false;
     % note: when doing a GUI run, the following won't happen
     %   run_analysis_after_completion,
     %   saving off results
@@ -101,36 +101,67 @@
         situation_model_description = 'uniform then normal';
         
         switch situation_model_description
+            
             case 'normal'
-                p.situation_model_fit          = @situation_models.normal_fit;        
-                    % should take p, cellstr of training images; return model object
+                p.situation_model.learn = @situation_models.normal_fit;        
+                    % takes: p, cellstr of training images 
+                    % returns: model object
 
-                p.situation_model_update       = @situation_models.normal_condition; 
-                    % should take model object, workspace; return model object
+                p.situation_model.update = @situation_models.normal_condition; 
+                    % takes: model object, workspace 
+                    % returns: model object
 
-                p.situation_model_sample_box   = @situation_models.normal_sample;  
-                    % should take model object, object type str; return sampled box r0rfc0cf
+                p.situation_model.sample = @situation_models.normal_sample;  
+                    % takes: model object, object type str 
+                    % returns: sampled box r0rfc0cf, density of sample
+                    %   if passed a box, should just return the density of
+                    %   that box wrt the current situation model
                
-                p.situation_model_draw         = @situation_models.normal_draw;
-                    % should take situation_model, object_string, what_to_draw_string
-                    % what_to_draw can be 'xy', 'shape', 'size'
+                p.situation_model.draw = @situation_models.normal_draw;
+                    % takes: situation_model, object_string, what_to_draw_string
+                    % returns: nothing, just draws a figure
+                    %   what_to_draw can be 'xy', 'shape', 'size'
             
             case 'uniform then normal'
-                p.situation_model_fit          = @situation_models.uniform_then_normal_fit;        
-                    % should take p, cellstr of training images; return model object
+                p.situation_model.learn = @situation_models.uniform_then_normal_fit;        
+                    % takes: p, cellstr of training images 
+                    % returns: model object
 
-                p.situation_model_update       = @situation_models.uniform_then_normal_condition; 
-                    % should take model object, workspace; return model object
+                p.situation_model.update = @situation_models.uniform_then_normal_condition; 
+                    % takes: model object, workspace 
+                    % returns: model object
 
-                p.situation_model_sample_box   = @situation_models.uniform_then_normal_sample;  
-                    % should take model object, object type str; return sampled box r0rfc0cf
-                
-                p.situation_model_draw         = @situation_models.uniform_then_normal_draw;
-                    % should take situation_model, object_string, what_to_draw_string
-                    % what_to_draw can be 'xy', 'shape', 'size'
+                p.situation_model.sample = @situation_models.uniform_then_normal_sample;  
+                    % takes: model object, object type str 
+                    % returns: sampled box r0rfc0cf, density of sample
+                    %   if passed a box, should just return the density of
+                    %   that box wrt the current situation model
+               
+                p.situation_model.draw = @situation_models.uniform_then_normal_draw;
+                    % takes: situation_model, object_string, what_to_draw_string
+                    % returns: nothing, just draws a figure
+                    %   what_to_draw can be 'xy', 'shape', 'size'
                     
-            case 'salience'
-                assert(0==1);
+            case 'salience normal'
+                p.situation_model.learn = @situation_models.salience_normal_fit;        
+                    % takes: p, cellstr of training images 
+                    % returns: model object
+
+                p.situation_model.update = @situation_models.salience_normal_condition; 
+                    % takes: model object, workspace 
+                    % returns: model object
+
+                p.situation_model.sample = @situation_models.salience_normal_sample;  
+                    % takes: model object, object type str 
+                    % returns: sampled box r0rfc0cf, density of sample
+                    %   if passed a box, should just return the density of
+                    %   that box wrt the current situation model
+               
+                p.situation_model.draw = @situation_models.salience_normal_draw;
+                    % takes: situation_model, object_string, what_to_draw_string
+                    % returns: nothing, just draws a figure
+                    %   what_to_draw can be 'xy', 'shape', 'size'
+                
             case 'none'
                 assert(0==1);
             otherwise
@@ -139,7 +170,7 @@
   
     % classifier
         
-        classifier_description = 'noisy oracle';
+        classifier_description = 'cnn svm';
         
         switch classifier_description
             case 'noisy oracle'
@@ -214,8 +245,7 @@
     
         external_support_function = 'logistic_normalized_dist'; % from sample density to a 0,1 range
         
-        total_support_function = 'even'; % mean of internal and external support
-        %total_support_function = 'product';
+        total_support_function = 'mostly internal'; % mean of internal and external support
         
         switch external_support_function
             case 'logistic_normalized_dist'
@@ -235,6 +265,8 @@
                 p.total_support_function    = @(internal,external) 1 * internal;
             case 'even'
                 p.total_support_function    = @(internal,external) .5 * internal + .5 * external;
+            case 'mostly internal'
+                p.total_support_function    = @(internal,external) .75 * internal + .25 * external;
             case 'product'
                 p.total_support_function    = @(internal,external) internal * external;
             case 'logreg_experiment'

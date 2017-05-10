@@ -1,8 +1,8 @@
-function classifier_model = cnnsvm_train( p, fnames_in, saved_models_directory )
+function classifier_model = IOU_ridge_regression_train( p, fnames_in, saved_models_directory )
 
     % classifier_model = cnnsvm_train( p, fnames_in, saved_models_directory );
 
-    model_description = 'cnnsvm';
+    model_description = 'IOU ridge regression';
     possible_paths = { saved_models_directory };
     
     fnames_in_pathless = cell(size(fnames_in));
@@ -17,12 +17,12 @@ function classifier_model = cnnsvm_train( p, fnames_in, saved_models_directory )
     if model_already_existed
        loaded_data = load( selected_model_fname );
        models = loaded_data.models;
-       display(['loaded cnnsvm model from: ' selected_model_fname ]);
+       display(['loaded ' model_description ' model from: ' selected_model_fname ]);
     else
-        %models = cnn.create_cnn_svm_models_iterative( fnames_in, p );
-        display(['training cnnsvm model']);
+        %error('don''t have a training function for the IOU regressor');
+        %display(['training cnnsvm model']);
         tic
-        models = cnn.create_cnn_svm_model_pre_extracted_features( fnames_in, p );
+        models = classifiers.create_IOU_ridge_regression_model_pre_extracted_features( fnames_in, p );
         toc
     end
     

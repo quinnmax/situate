@@ -1,14 +1,9 @@
 
-function [boxes_r0rfc0cf, sample_density] = normal_sample( model, object_type, n, im_dims, existing_box_r0rfc0cf )
+function [boxes_r0rfc0cf, sample_density] = uniform_normal_mix_sample( model, object_type, n, im_dims, existing_box_r0rfc0cf )
     
-    % [boxes_r0rfc0cf, sample_density] = normal_sample( model, object_type, [n], [im_row im_col]); 
+    % [boxes_r0rfc0cf, sample_density] = uniform_normal_mix_sample( model, object_type, [n], [im_row im_col]); 
     %   if run without the existing_box var, then you get a sampled box
-    %
-    % [boxes_r0rfc0cf, sample_density] = normal_sample( model, object_type, [n], [im_row im_col], existing_box_r0rfc0cf);
-    % if you run with the existing_box var, the return box will match it,
-    %   and the density will be the density of the box with respect to the
-    %   model provided
-    
+   
     if ~exist('n','var') || isempty(n)
         n = 1;
     end
@@ -33,20 +28,50 @@ function [boxes_r0rfc0cf, sample_density] = normal_sample( model, object_type, n
         log_area_ratio   = log( w * h ); % already normed to unit area image
         box_vect = [ r0 rc rf c0 cc cf log(w) log(h) log_aspect_ratio log_area_ratio ];
 
-        if model.is_conditional
+        use_normal_sample = true;
+        if ~model.is_conditional
+            use_normal_sample = false;
+        else
+            if rand() < .5, use_normal_sample = false; end
+        end
+                
+        
+        if use_normal_sample
             sample_density = mvnpdf( box_vect, model.mu, model.Sigma );
             boxes_r0rfc0cf = existing_box_r0rfc0cf;
         else
-            num_vars_per_obj = length(model.mu)/length(model.situation_objects);
-            obj_ind          = find( strcmp( object_type, model.situation_objects ), 1, 'first' );
-            sub_ind_0        = (obj_ind-1) * num_vars_per_obj + 1;
-            sub_ind_f        = sub_ind_0 + num_vars_per_obj - 1;
-            [mu_marginalized, Sigma_marginalized] = mvn_marginalize_and_condition( model.mu, model.Sigma, sub_ind_0:sub_ind_f, [], [] );
-            sample_density = mvnpdf( box_vect, mu_marginalized, Sigma_marginalized );
-            boxes_r0rfc0cf = existing_box_r0rfc0cf;
+            % then we just want to return the density with respect to a
+            % uniform distribution over location. Because the location
+            % distribution is based on a unit square, the density with
+            % respect to location is always 1, meaning we can just
+            % marginalize out the location and return the density with
+            % respect to the shape, size, width, and heigth parameters.
+            
+            % row_description = {'r0' 'rc' 'rf' 'c0' 'cc' 'cf' 'log w' 'log h' 'log aspect ratio' 'log area ratio'};
+            
+            if ~model.is_conditional
+                num_vars_per_obj = length(model.mu)/length(model.situation_objects);
+                obj_ind          = find( strcmp( object_type, model.situation_objects ), 1, 'first' );
+                sub_ind_0        = (obj_ind-1) * num_vars_per_obj + 1;
+                inds_of_interest = sub_ind_0 - 1 + [ 7 8 9 10 ];
+                [mu_marginalized, Sigma_marginalized] = mvn_marginalize_and_condition( model.mu, model.Sigma, inds_of_interest, [], [] );
+                box_vect_limited = box_vect([7 8 9 10]);
+                sample_density = mvnpdf( box_vect_limited, mu_marginalized, Sigma_marginalized );
+                boxes_r0rfc0cf = existing_box_r0rfc0cf;
+            else
+                % is conditional, but not using it, so we need to marginalize out location info and
+                % just get the shape stuff
+                num_vars_per_obj = length(model.mu);
+                inds_of_interest = [ 7 8 9 10 ];
+                [mu_marginalized, Sigma_marginalized] = mvn_marginalize_and_condition( model.mu, model.Sigma, inds_of_interest, [], [] );
+                box_vect_limited = box_vect([7 8 9 10]);
+                sample_density = mvnpdf( box_vect_limited, mu_marginalized, Sigma_marginalized );
+                boxes_r0rfc0cf = existing_box_r0rfc0cf;
+            end
         end
         
         return;
+        
     end
     
     
@@ -61,12 +86,20 @@ function [boxes_r0rfc0cf, sample_density] = normal_sample( model, object_type, n
     if model.is_conditional
         obj_samples = raw_samples;
     else
-        % need to focus on the region of the vector that has the object of interest
+        % need to resample the location from a uniform distribution
         num_vars_per_obj = length(model.mu)/length(model.situation_objects);
         obj_ind     = find( strcmp( object_type, model.situation_objects ), 1, 'first' );
         sub_ind_0   = (obj_ind-1) * num_vars_per_obj + 1;
         sub_ind_f   = sub_ind_0 + num_vars_per_obj - 1;
         obj_samples = raw_samples(:, sub_ind_0:sub_ind_f );
+        
+        % replace column center and row center with something from a
+        % uniform distribution.
+        lsf = sqrt( 1 / (im_dims(1) * im_dims(2)) );
+        rc = lsf * ( im_dims(1) * rand() - im_dims(1)/2 );
+        cc = lsf * ( im_dims(2) * rand() - im_dims(2)/2 );
+        obj_samples(:, rc_col ) = rc;
+        obj_samples(:, cc_col ) = cc;
     end
     
     rc     = obj_samples(:,rc_col);
@@ -105,11 +138,11 @@ function [boxes_r0rfc0cf, sample_density] = normal_sample( model, object_type, n
         boxes_r0rfc0cf = [r0 rf c0 cf];
         
         % recompute density based on changes
-        [~, sample_density] = situation_models.normal_sample( model, object_type, n, im_dims, [r0 rf c0 cf] );
+        [~, sample_density] = situation_models.uniform_then_normal_sample( model, object_type, n, im_dims, [r0 rf c0 cf] );
         
         % ugh, if you've goofed this bad, just do it over
         if (r0>=rf) || (c0>=cf)
-            [boxes_r0rfc0cf, sample_density] = situation_models.normal_sample( model, object_type, n, im_dims );
+            [boxes_r0rfc0cf, sample_density] = situation_models.uniform_then_normal_sample( model, object_type, n, im_dims );
         end
         
     end

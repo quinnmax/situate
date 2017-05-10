@@ -7,32 +7,21 @@
 % this is a pretty good place to run classifier experiments and stuff that
 % shouldn't use situate's stochastic nature to pull crops.
 
-% to do, bounding box regression
-%   do in terms of x center, y center, width, height
-%   keep the 4000 entry cnn vector for this
-%   keep the fix-this-box delta value
-%   include a column for image index
-%   include a column for object type
-%
-% to do, fitting the support functions
-%   do in terms of external support without regard for objects in workspace
-%   keep sample density
-%   keep object type
-%   keep IOU
-%   keep classifier confidence
+    cd( fileparts(which('non_situate_experiment_setup') ) );
 
 
 
 %% initialize the situate structures
     
     p = situate.parameters_initialize();
-    p.situation_model_fit          = @situation_model_normal_fit;        
-    p.situation_model_update       = @situation_model_normal_condition; 
-    p.situation_model_sample_box   = @situation_model_normal_aa_sample;  
+    p.situation_model.fit          = @situation_models.normal_fit;        
+    p.situation_model.update       = @situation_models.normal_condition; 
+    p.situation_model.sample       = @situation_models.normal_sample;  
+    p.situation_model.draw         = @situation_models.normal_draw;  
     
-    p.classifier_saved_models_directory = 'default_models/';
     p.classifier_load_or_train = @classifiers.cnnsvm_train;
-    p.classifier_apply = @classifiers.cnnsvm_apply;
+    p.classifier_apply         = @classifiers.cnnsvm_apply;
+    p.classifier_saved_models_directory = 'default_models/';
     
     experiment_settings = [];
     experiment_settings.title               = 'real life classifier activation stats';
@@ -62,7 +51,7 @@
     fnames_splits_test  = dir(fullfile(split_file_directory, '*_fnames_split_*_test.txt' ));
     fnames_splits_train = cellfun( @(x) fullfile(split_file_directory, x), {fnames_splits_train.name}, 'UniformOutput', false );
     fnames_splits_test  = cellfun( @(x) fullfile(split_file_directory, x), {fnames_splits_test.name},  'UniformOutput', false );
-    assert( length(fnames_splits_train) > 0 );
+    assert( ~isempty(fnames_splits_train) );
     assert( length(fnames_splits_train) == length(fnames_splits_test) );
     fprintf('using training splits from:\n');
     fprintf('\t%s\n',fnames_splits_train{:});
@@ -79,26 +68,27 @@
         data_folds(i).fnames_im_test  = cellfun( @(x) [x(1:end-4) 'jpg'], temp.fnames_lb_test{1},  'UniformOutput', false );
     end
     
+    %% use what? just everything. manage training/testing splits outside of this
+    
     fnames_train = cellfun( @(x) fullfile( data_path, x ), data_folds(1).fnames_lb_train, 'UniformOutput', false );
     fnames_test  = cellfun( @(x) fullfile( data_path, x ), data_folds(1).fnames_lb_test,  'UniformOutput', false );
     
+    fnames = [fnames_train; fnames_test];
+    %fnames = fnames_train;
     
+%% build situation model
     
-%% load or train classifier and situation model
-    
-    classifier_model = p.classifier_load_or_train( p, fnames_train, p.classifier_saved_models_directory );
-    situation_model  = p.situation_model_fit( p, fnames_train );
+    %classifier_model = p.classifier_load_or_train( p, fnames_train, p.classifier_saved_models_directory );
+    situation_model  = p.situation_model.fit( p, fnames );
     
     demo_image = repmat( imread('cameraman.tif'),1,1,3);
-    cnn_output_size_full = length(cnn.cnn_process(demo_image));
-    cnn_output_size_partial = numel(cnn.cnn_process(demo_image,[],15));
-    
-    
+    cnn_output_full = cnn.cnn_process(demo_image);
+    cnn_output_full_size = numel(cnn_output_full);
     
 %% get stats on shape,size for each object type
 
     use_resize = true;
-    im_data = situate.load_image_and_data(fnames_train, p, use_resize );
+    im_data = situate.load_image_and_data(fnames, p, use_resize );
     
     box_shapes = nan(length(im_data),length(p.situation_objects));
     box_sizes  = nan(length(im_data),length(p.situation_objects));
@@ -135,21 +125,32 @@
     
     
 %% define box set for each image
+% this is overkill, but then we re-sample based on the IOUs to get roughly uniform
 
-    ind_0s_func = @(c, w) c + [0 -1.5*w -.5*w -.25*w -.125*w  .125*w .25*w .5*w 1.5*w] - w/2;
-    ind_fs_func = @(ind_0s,w) max(1,round(ind_0s)) + w - 1;
+%     center_func = @(c, w) c + w * [-1*sqrt(2).^(0:-1:-10) 0 sqrt(2).^(-10:0)];
+%     wh_func     = @(w)    w * exp(linspace(log(.5),log(2),11));
+    
+    center_func = @(c, w) c + w * .5 * [randn(1,11) 0];
+    wh_func     = @(w)    w * [exp(randn(1,11)/3) 1];
+    
     
 %% for each image
     
     % define the set of boxes
     
     % for each box
-    % pull crop
-    % apply cnn
-    % eval with each object model
-    % get gt iou with each object
+    % propose boxes
+    % get gt iou with target object
+    % get IOU with each object
+    % cull down to boxes we want
+    % get density info
+    % get box delta with its origin box
     
     score_per_obj = cell(1,length(p.situation_objects));
+    
+    num_bins = 20; % IOU bins between IOU 0 and 1
+    samples_per_bin = 5;
+            
     
     column_descriptions = { ...
         'image index', ...
@@ -160,33 +161,44 @@
         ...
         'box delta with source box (xc/w yc/h w_scalar h_scalar)', ...
         ...
-        'cnn features intermediate (spatial, for bb regression)', ...
-        'cnn features final (for classification)', ...
-        'classifier confidence', ...
+        'cnn features', ...
         ...
         'solo density values (in order of situation_objects)', ...
         'single conditioned density values (in order of situation_objects)', ...
         'single conditioned density values (in order of situation_objects)', ...
         'double conditioned density values (in order of situation_objects)' };
     
-    data_per_image = [];
     
-    %for imi = 1:length(fnames_train)
-    for imi = 1:10
-    %for imi = 1:2
+    % boxes and box info for this image
+    box_proposals_r0rfc0cf = zeros(0,4);
+    box_sources_r0rfc0cf   = [];
+    box_source_obj_type    = [];
+    IOUs_with_source       = [];
+    fname_source_index     = [];
+    
+    box_deltas_xywh            = zeros(0,4);
+    
+    box_density_prior             = [];
+    box_density_conditioned_1a    = [];
+    box_density_conditioned_1b    = [];
+    box_density_conditioned_2     = [];
+    
+   
+    
+    for imi = 1:length(fnames)
         
-        [~,im] = situate.load_image_and_data(im_data(imi).fname_lb, p, true );
-        if max(im(:))<2, im = uint8(fix(mat2gray(im)*255)); end
+        im_h = im_data(imi).im_h;
+        im_w = im_data(imi).im_w;
         
-        % boxes and box info for this image
-        boxes_to_eval_r0rfc0cf = [];
-        box_sources_r0rfc0cf   = [];
-        box_source_obj_type    = [];
+        linear_scaling_factor = sqrt(1 / ( im_data(imi).im_h * im_data(imi).im_w )); % for density estimation
         
         for oi = 1:length(p.situation_objects)
             
             cur_ob_ind = find(strcmp(p.situation_objects{oi},im_data(imi).labels_adjusted));
             cur_ob_box_r0rfc0cf = im_data(imi).boxes_r0rfc0cf( cur_ob_ind,:);
+            cur_obj_type = p.situation_objects{oi};
+            conditioning_objects = setsub( p.situation_objects, cur_obj_type );
+            
             r0 = cur_ob_box_r0rfc0cf(1);
             rf = cur_ob_box_r0rfc0cf(2);
             c0 = cur_ob_box_r0rfc0cf(3);
@@ -196,400 +208,225 @@
             rc = r0 + h/2;
             cc = c0 + w/2;
             
-            r0s = round( ind_0s_func( rc,  h ) ); 
-            c0s = round( ind_0s_func( cc,  w ) ); 
+            rcs = round( center_func( rc,  h ) ); 
+            ccs = round( center_func( cc,  w ) ); 
+            ws  = round( wh_func(w) );
+            hs  = round( wh_func(h) );
             
-            temp_n = length(r0s);
-            r0s = sort(repmat(r0s',length(c0s),1));
-            c0s = repmat(c0s', temp_n,1);
+            new_boxes_to_eval_r0rfc0cf_prelim = zeros(length(rcs)*length(ccs)*length(ws)*length(hs),4);
+            bi = 1;
+            for ri = 1:length(rcs)
+            for ci = 1:length(ccs)
+            for wi = 1:length(ws)
+            for hi = 1:length(hs)
+                cur_w  = ws(wi);
+                cur_r0 = round( rcs(ri) - hs(hi)/2 );
+                cur_rf = cur_r0 + hs(hi) - 1;
+                cur_c0 = round( ccs(ci) - ws(wi)/2 );
+                cur_cf = cur_c0 + ws(wi) - 1;
+                new_boxes_to_eval_r0rfc0cf_prelim(bi,:) = [cur_r0 cur_rf cur_c0 cur_cf];
+                bi = bi + 1;
+            end
+            end
+            end
+            end
             
-            rfs = round( ind_fs_func( r0s, h ) ); 
-            cfs = round( ind_fs_func( c0s, w ) );
+            % figure out IOU of each proposed box
+            new_boxes_to_eval_IOU_prelim = intersection_over_union( [r0 rf c0 cf], new_boxes_to_eval_r0rfc0cf_prelim, 'r0rfc0cf','r0rfc0cf');
             
-            ws = cfs - c0s + 1;
-            hs = rfs - r0s + 1;
+            % remove boxes that got out of the image bounds
+            boxes_to_remove = false(size(new_boxes_to_eval_IOU_prelim,1),1);
+            boxes_to_remove( new_boxes_to_eval_r0rfc0cf_prelim(:,1) < 1 )    = true;
+            boxes_to_remove( new_boxes_to_eval_r0rfc0cf_prelim(:,2) > im_h ) = true;
+            boxes_to_remove( new_boxes_to_eval_r0rfc0cf_prelim(:,3) < 1 )    = true;
+            boxes_to_remove( new_boxes_to_eval_r0rfc0cf_prelim(:,4) > im_w ) = true;
+            new_boxes_to_eval_r0rfc0cf_prelim(boxes_to_remove,:) = [];
+            new_boxes_to_eval_IOU_prelim(boxes_to_remove)        = [];
             
-            xcs = c0s + ws/2;
-            ycs = r0s + hs/2;
+            [counts, bin_bounds, input_assignments] = hist_bin_assignments( new_boxes_to_eval_IOU_prelim, num_bins );
+            new_box_proposals_r0rfc0cf = [];
+            new_boxes_to_eval_IOU      = [];
+            for bi = 1:num_bins
+                cur_bin_inds = find(eq(bi,input_assignments));
+                cur_bin_inds_rand_perm = cur_bin_inds(randperm(length(cur_bin_inds)));
+                sampled_bin_inds = cur_bin_inds_rand_perm( 1:min(samples_per_bin,length(cur_bin_inds_rand_perm) ) );
+                new_box_proposals_r0rfc0cf(end+1:end+length(sampled_bin_inds),:) = new_boxes_to_eval_r0rfc0cf_prelim(sampled_bin_inds,:);
+                new_boxes_to_eval_IOU(end+1:end+length(sampled_bin_inds)) = new_boxes_to_eval_IOU_prelim(sampled_bin_inds);
+            end
             
-            new_boxes_to_eval_r0rfc0cf = [r0s rfs c0s cfs];
-            new_boxes_to_eval_xcycwh   = [xcs ycs ws hs];
-                
-            boxes_to_eval_r0rfc0cf = [ boxes_to_eval_r0rfc0cf; new_boxes_to_eval_r0rfc0cf ];
-            box_sources_r0rfc0cf   = [ box_sources_r0rfc0cf;   repmat(cur_ob_box_r0rfc0cf,size(new_boxes_to_eval_r0rfc0cf,1),1) ];
-            box_source_obj_type    = [ box_source_obj_type;    repmat(oi,size(new_boxes_to_eval_r0rfc0cf,1),1) ];
-            
-        end
-        
-        boxes_to_remove = false(size(boxes_to_eval_r0rfc0cf,1),1);
-        boxes_to_remove( boxes_to_eval_r0rfc0cf(:,1) >= boxes_to_eval_r0rfc0cf(:,2) ) = true;
-        boxes_to_remove( boxes_to_eval_r0rfc0cf(:,3) >= boxes_to_eval_r0rfc0cf(:,4) ) = true;
-        boxes_to_remove( boxes_to_eval_r0rfc0cf(:,1) < 1 ) = true;
-        boxes_to_remove( boxes_to_eval_r0rfc0cf(:,2) > im_data(imi).im_h ) = true;
-        boxes_to_remove( boxes_to_eval_r0rfc0cf(:,3) < 1 ) = true;
-        boxes_to_remove( boxes_to_eval_r0rfc0cf(:,4) > im_data(imi).im_w ) = true;
-        
-        boxes_to_eval_r0rfc0cf(boxes_to_remove,:) = [];
-        box_sources_r0rfc0cf(boxes_to_remove,:)   = [];
-        box_source_obj_type(boxes_to_remove)      = [];
-        
-        IOUs_with_source          = nan( size(boxes_to_eval_r0rfc0cf,1), 1 );
-        delta_with_source_xywh    = nan( size(boxes_to_eval_r0rfc0cf,1), 4 );
-        cnn_features_partial      = nan( size(boxes_to_eval_r0rfc0cf,1), cnn_output_size_partial );
-        cnn_features_full         = nan( size(boxes_to_eval_r0rfc0cf,1), cnn_output_size_full );
-        classification_confidence = nan( size(boxes_to_eval_r0rfc0cf,1), 1 );
-        density_prior             = nan(size(boxes_to_eval_r0rfc0cf,1),1);
-        density_conditioned_1a    = nan(size(boxes_to_eval_r0rfc0cf,1),1);
-        density_conditioned_1b    = nan(size(boxes_to_eval_r0rfc0cf,1),1);
-        density_conditioned_2     = nan(size(boxes_to_eval_r0rfc0cf,1),1);
-           
-        linear_scaling_factor = sqrt(1 / ( im_data(imi).im_h * im_data(imi).im_w ));
-        
-        for bi = 1:size(boxes_to_eval_r0rfc0cf,1)
-        %for bi = 1:5 
-        
-            oi = box_source_obj_type(bi);
-            cur_obj_type = p.situation_objects{oi};
-            conditioning_objects = sort(p.situation_objects( setsub( 1:length(p.situation_objects), oi ) ));
-            
-        
-            if bi == 1 || ~isequal(box_source_obj_type(bi),box_source_obj_type(bi-1))
-                
-                % if it's the first box, or if the current source object
-                % is different from the last time we did this, redefine the
-                % dummy workspace that we'll use for conditioning.
-            
+          
+            % for density estimation, make dummy workspaces using the other
+            % gt objects
                 workspace_temp_1a = [];
                     workspace_temp_1a.labels = conditioning_objects(1);
                     workspace_temp_1a.boxes_r0rfc0cf = im_data(imi).boxes_normalized_r0rfc0cf( strcmp(conditioning_objects(1),im_data(imi).labels_adjusted), : );
+                    workspace_temp_1a.im_size(1) = im_h;
+                    workspace_temp_1a.im_size(2) = im_w;
                 workspace_temp_1b = [];
                     workspace_temp_1b.labels = conditioning_objects(2);
                     workspace_temp_1b.boxes_r0rfc0cf = im_data(imi).boxes_normalized_r0rfc0cf( strcmp(conditioning_objects(2),im_data(imi).labels_adjusted), : );
+                    workspace_temp_1b.im_size(1) = im_h;
+                    workspace_temp_1b.im_size(2) = im_w;
                 workspace_temp_2  = [];
                     workspace_temp_2.labels = conditioning_objects;
                     workspace_temp_2.boxes_r0rfc0cf = im_data(imi).boxes_normalized_r0rfc0cf( logical(strcmp(conditioning_objects(1),im_data(imi).labels_adjusted) + strcmp(conditioning_objects(2),im_data(imi).labels_adjusted)), : );
+                    workspace_temp_2.im_size(1) = im_h;
+                    workspace_temp_2.im_size(2) = im_w;
+                    
+            
+            
+            num_new_boxes = size(new_box_proposals_r0rfc0cf,1);
+            
+            
+            new_box_deltas_xywh               = nan( num_new_boxes, 4 );
+            
+            new_box_density_prior             = nan( num_new_boxes, 1 );
+            new_box_density_conditioned_1a    = nan( num_new_boxes, 1 );
+            new_box_density_conditioned_1b    = nan( num_new_boxes, 1 );
+            new_box_density_conditioned_2     = nan( num_new_boxes, 1 );
+            
+            for bi = 1:num_new_boxes
+                % do box related stuff
+                
+                r0 = new_box_proposals_r0rfc0cf(bi,1);
+                rf = new_box_proposals_r0rfc0cf(bi,2);
+                c0 = new_box_proposals_r0rfc0cf(bi,3);
+                cf = new_box_proposals_r0rfc0cf(bi,4);
+                
+                w  = cf - c0 + 1;
+                h  = rf - r0 + 1;
+                xc = c0 + w/2 - .5;
+                yc = r0 + h/2 - .5;
+                
+                gt_r0 = cur_ob_box_r0rfc0cf(1);
+                gt_rf = cur_ob_box_r0rfc0cf(2);
+                gt_c0 = cur_ob_box_r0rfc0cf(3);
+                gt_cf = cur_ob_box_r0rfc0cf(4);
+                gt_w  = gt_cf - gt_c0 + 1;
+                gt_h  = gt_rf - gt_r0 + 1;
+                gt_xc = gt_c0 + gt_w/2 - .5;
+                gt_yc = gt_r0 + gt_h/2 - .5;
+                
+                x_delta = (gt_xc - xc) / w;
+                y_delta = (gt_yc - yc) / h;
+                w_delta = log( gt_w / w );
+                h_delta = log( gt_h / h );
+                
+                new_box_deltas_xywh(bi,:) = [x_delta y_delta w_delta h_delta];
+                
+                % density stuff
+                r0_normed = linear_scaling_factor * (r0 - im_data(imi).im_h/2);
+                rf_normed = linear_scaling_factor * (rf - im_data(imi).im_h/2);
+                c0_normed = linear_scaling_factor * (c0 - im_data(imi).im_w/2);
+                cf_normed = linear_scaling_factor * (cf - im_data(imi).im_w/2);
+                w_normed  = linear_scaling_factor * w;
+                h_normed  = linear_scaling_factor * h;
+                rc_normed = r0_normed + h_normed/2;
+                cc_normed = c0_normed + w_normed/2;
+                log_aspect_ratio = log(w_normed / h_normed);
+                log_area_ratio = log(w_normed * h_normed);
 
-                conditioned_model_0  = p.situation_model_update( situation_model, cur_obj_type, [] );
-                conditioned_model_1a = p.situation_model_update( situation_model, cur_obj_type, workspace_temp_1a );
-                conditioned_model_1b = p.situation_model_update( situation_model, cur_obj_type, workspace_temp_1b );
-                conditioned_model_2  = p.situation_model_update( situation_model, cur_obj_type, workspace_temp_2  );
+                cur_box_long_vect = [ r0_normed rc_normed rf_normed c0_normed cc_normed cf_normed log(w_normed) log(h_normed) log_aspect_ratio log_area_ratio];
 
+                [~, new_box_density_prior(bi)]          = p.situation_model.sample( situation_model, cur_obj_type, 1, [im_h im_w] );
+                [~, new_box_density_conditioned_1a(bi)] = p.situation_model.sample( situation_model, cur_obj_type, 1, [im_h im_w] );
+                [~, new_box_density_conditioned_1b(bi)] = p.situation_model.sample( situation_model, cur_obj_type, 1, [im_h im_w] );
+                [~, new_box_density_conditioned_2(bi)]  = p.situation_model.sample( situation_model, cur_obj_type, 1, [im_h im_w] );
+            
             end
-             
-            cur_box_r0rfc0cf = boxes_to_eval_r0rfc0cf(bi,:);
-            r0 = cur_box_r0rfc0cf(1);
-            rf = cur_box_r0rfc0cf(2);
-            c0 = cur_box_r0rfc0cf(3);
-            cf = cur_box_r0rfc0cf(4);
-            cur_w = cf - c0 + 1;
-            cur_h = rf - r0 + 1;
-            cur_xc = c0 + cur_w/2 - .5;
-            cur_yc = r0 + cur_h/2 - .5;
             
-            source_box_r0rfc0cf = box_sources_r0rfc0cf(bi,:);
-            
-            gt_r0 = source_box_r0rfc0cf(1);
-            gt_rf = source_box_r0rfc0cf(2);
-            gt_c0 = source_box_r0rfc0cf(3);
-            gt_cf = source_box_r0rfc0cf(4);
-            gt_w  = gt_cf - gt_c0 + 1;
-            gt_h  = gt_rf - gt_r0 + 1;
-            gt_xc = gt_c0 + gt_w/2 + .5;
-            gt_yc = gt_r0 + gt_h/2 + .5;
-            
-            IOUs_with_source(bi) = intersection_over_union( cur_box_r0rfc0cf, source_box_r0rfc0cf, 'r0rfc0cf');
-            delta_with_source_xywh(bi,:) = [ (gt_xc - cur_xc)/cur_w, (gt_yc - cur_yc)/cur_h, gt_w/cur_w, gt_h/cur_h ];
-            
-            cur_crop = im(r0:rf,c0:cf,:);
-            cnn_features_full(bi,:) = cnn.cnn_process( cur_crop );
-            [~,classifier_conf] = classifier_model.models{ box_source_obj_type(bi) }.predict( cnn_features_full(bi,:) );
-            classification_confidence(bi) = classifier_conf(2);
-           
-            temp_features = cnn.cnn_process( cur_crop, [], 15 );
-            cnn_features_partial(bi,:) = temp_features(:);
-            
-            r0_normed = linear_scaling_factor * (r0 - im_data(imi).im_h/2);
-            rf_normed = linear_scaling_factor * (rf - im_data(imi).im_h/2);
-            c0_normed = linear_scaling_factor * (c0 - im_data(imi).im_w/2);
-            cf_normed = linear_scaling_factor * (cf - im_data(imi).im_w/2);
-            w_normed  = linear_scaling_factor * cur_w;
-            h_normed  = linear_scaling_factor * cur_h;
-            rc_normed = r0_normed + h_normed/2;
-            cc_normed = c0_normed + w_normed/2;
-            log_aspect_ratio = log(w_normed / h_normed);
-            log_area_ratio = log(w_normed * h_normed);
-            
-            cur_box_long_vect = [ r0_normed rc_normed rf_normed c0_normed cc_normed cf_normed log(w_normed) log(h_normed) log_aspect_ratio log_area_ratio];
-             
-            density_prior(bi)          = mvnpdf( cur_box_long_vect, conditioned_model_0.mu,   conditioned_model_0.Sigma  );
-            density_conditioned_1a(bi) = mvnpdf( cur_box_long_vect, conditioned_model_1a.mu', conditioned_model_1a.Sigma );
-            density_conditioned_1b(bi) = mvnpdf( cur_box_long_vect, conditioned_model_1b.mu', conditioned_model_1b.Sigma );
-            density_conditioned_2(bi)  = mvnpdf( cur_box_long_vect, conditioned_model_2.mu',  conditioned_model_2.Sigma  );
-            
-            fprintf('.');
+            box_proposals_r0rfc0cf      = [ box_proposals_r0rfc0cf; new_box_proposals_r0rfc0cf ];
+            box_sources_r0rfc0cf        = [ box_sources_r0rfc0cf;   repmat(cur_ob_box_r0rfc0cf,size(new_box_proposals_r0rfc0cf,1),1) ];
+            box_source_obj_type         = [ box_source_obj_type;    repmat(oi,size(new_box_proposals_r0rfc0cf,1),1) ];
+            IOUs_with_source            = [ IOUs_with_source;       new_boxes_to_eval_IOU' ];
+            fname_source_index          = [ fname_source_index;     repmat( imi, size(new_box_proposals_r0rfc0cf,1), 1 ) ];
+            box_deltas_xywh             = [ box_deltas_xywh;            new_box_deltas_xywh];
+            box_density_prior           = [ box_density_prior;          new_box_density_prior];
+            box_density_conditioned_1a  = [ box_density_conditioned_1a; new_box_density_conditioned_1a];
+            box_density_conditioned_1b  = [ box_density_conditioned_1b; new_box_density_conditioned_1b];
+            box_density_conditioned_2   = [ box_density_conditioned_2;  new_box_density_conditioned_2];
             
         end
         
-        if isempty(data_per_image)
-            data_per_image.box_proposals_r0rfc0cf = boxes_to_eval_r0rfc0cf;
-            data_per_image.box_sources_r0rfc0cf = box_sources_r0rfc0cf;
-            data_per_image.box_sources_obj_type = box_source_obj_type;
-            data_per_image.IOUs_with_source = IOUs_with_source;
-            data_per_image.delta_with_source_xywh = delta_with_source_xywh;
-            data_per_image.cnn_features_partial = cnn_features_partial;
-            data_per_image.cnn_features_full = cnn_features_full;
-            data_per_image.classification_confidence = classification_confidence;
-            data_per_image.density_prior = density_prior;
-            data_per_image.density_conditioned_1a = density_conditioned_1a;
-            data_per_image.density_conditioned_1b = density_conditioned_1b;
-            data_per_image.density_conditioned_2 = density_conditioned_2;
-        else
-            data_per_image(imi).box_proposals_r0rfc0cf = boxes_to_eval_r0rfc0cf;
-            data_per_image(imi).box_sources_r0rfc0cf = box_sources_r0rfc0cf;
-            data_per_image(imi).box_sources_obj_type = box_source_obj_type;
-            data_per_image(imi).IOUs_with_source = IOUs_with_source;
-            data_per_image(imi).delta_with_source_xywh = delta_with_source_xywh;
-            data_per_image(imi).cnn_features_partial = cnn_features_partial;
-            data_per_image(imi).cnn_features_full = cnn_features_full;
-            data_per_image(imi).classification_confidence = classification_confidence;
-            data_per_image(imi).density_prior = density_prior;
-            data_per_image(imi).density_conditioned_1a = density_conditioned_1a;
-            data_per_image(imi).density_conditioned_1b = density_conditioned_1b;
-            data_per_image(imi).density_conditioned_2 = density_conditioned_2;
+        progress(imi, length(fnames), 'image progress');
+        
+    end
+    
+    %% more expensive stuff
+    
+    box_proposal_cnn_features = single( nan( size(box_proposals_r0rfc0cf,1), 4096 ) );
+    box_proposal_gt_IOUs = single( -1 * ones( size(box_proposals_r0rfc0cf,1), length(p.situation_objects) ) );
+    box_proposal_thumbnail = cell( size(box_proposals_r0rfc0cf,1), 1 );
+    box_proposal_size_px = zeros( size(box_proposals_r0rfc0cf,1), 1 );
+    for bi = 1:size(box_proposal_cnn_features,1)
+        
+        [cur_im_data,im_temp] = situate.load_image_and_data( fnames(fname_source_index(bi)),p,use_resize);
+        im = im_temp{1};
+        r0 = box_proposals_r0rfc0cf(bi,1);
+        rf = box_proposals_r0rfc0cf(bi,2);
+        c0 = box_proposals_r0rfc0cf(bi,3);
+        cf = box_proposals_r0rfc0cf(bi,4);
+        
+        % get IOU with each object (in p.situation_objects order)
+        for oi = 1:length(p.situation_objects)
+            oi_label_ind = strcmp( p.situation_objects{oi},cur_im_data.labels_adjusted);
+            box_proposal_gt_IOUs(bi,oi) = ...
+                intersection_over_union( ...
+                    box_proposals_r0rfc0cf(bi,:), ...
+                    cur_im_data.boxes_r0rfc0cf(oi_label_ind,:), ...
+                    'r0rfc0cf', 'r0rfc0cf' );
         end
-     
-        fprintf('\n');
-        progress(imi,length(fnames_train),'image progress');
+        
+        % get cnn features
+        % pad box slightly (10% per side)
+        %padding_multiplier = .2; % total, divided up between top and bottom
+        w     = cf - c0 + 1;
+        h     = rf - r0 + 1;
+        %pad_w = padding_multiplier * w;
+        %pad_h = padding_multiplier * h;
+        %r0 = r0 - pad_h/2;
+        %rf = r0 + h + pad_h - 1;
+        %c0 = c0 - pad_w/2;
+        %cf = c0 + w + pad_w - 1;
+        
+        r0 = round(r0);
+        rf = round(rf);
+        c0 = round(c0);
+        cf = round(cf);
+        try
+            box_proposal_cnn_features(bi,:) = cnn.cnn_process( im(r0:rf,c0:cf,:) );
+            box_proposal_size_px(bi) = w * h;
+            %box_proposal_thumbnail{bi} = imresize_px( im(r0:rf,c0:cf,:), 10000);
+        end
+        
+        if mod(bi,1000)  == 0, progress(bi,size(box_proposal_cnn_features,1)); end
         
     end
     
-    save_name = ['pile_of_data_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat' ];
-    save( fullfile( '/Users/Max/Desktop/', save_name ) );
+    save_name = ['cnn_features_and_IOUs' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat' ];
     
-            
-            
-    %% some analysis
+    save( fullfile( '/Users/Max/Desktop/', save_name ), '-v7.3', ...
+        'fnames', ...
+        'p', ...
+        'experiment_settings',...
+        'box_proposals_r0rfc0cf',...
+        'box_sources_r0rfc0cf',...
+        'box_source_obj_type',...
+        'box_proposal_thumbnail', ...
+        'box_proposal_size_px', ...
+        'IOUs_with_source',...
+        'box_proposal_gt_IOUs',...
+        'fname_source_index',...
+        'box_proposal_cnn_features',...
+        'box_deltas_xywh',...
+        'box_density_prior',...
+        'box_density_conditioned_1a',...
+        'box_density_conditioned_1b',...
+        'box_density_conditioned_2');
     
-    object_type = [];
-    density_prior = [];
-    density_conditioned_1a = [];
-    density_conditioned_1b = [];
-    density_conditioned_2 = [];
-    IOU_with_source = [];
-    classification_confidence = [];
-    
-    
-    
-    for imi = 1:length(data_per_image)
-        object_type(end+1:end+length(data_per_image(imi).IOUs_with_source))               = data_per_image(imi).box_sources_obj_type;     
-        density_prior(end+1:end+length(data_per_image(imi).IOUs_with_source))             = data_per_image(imi).density_prior;
-        density_conditioned_1a(end+1:end+length(data_per_image(imi).IOUs_with_source))    = data_per_image(imi).density_conditioned_1a;
-        density_conditioned_1b(end+1:end+length(data_per_image(imi).IOUs_with_source))    = data_per_image(imi).density_conditioned_1b;
-        density_conditioned_2(end+1:end+length(data_per_image(imi).IOUs_with_source))     = data_per_image(imi).density_conditioned_2;
-        IOU_with_source(end+1:end+length(data_per_image(imi).IOUs_with_source))           = data_per_image(imi).IOUs_with_source;
-        classification_confidence(end+1:end+length(data_per_image(imi).IOUs_with_source)) = data_per_image(imi).classification_confidence;
-    end
+    display(['saved to ' fullfile( '/Users/Max/Desktop/', save_name )]);
     
     
-    
-    figure();
-    for oi = 1:length(p.situation_objects)
-    %for oi = 1
-        
-        cur_inds = oi == object_type;
-        
-        subplot2(length(p.situation_objects),6,oi,1);
-        hist(log(density_prior(cur_inds)),50);
-        if oi == 1, title('density prior'); end
-        ylabel( p.situation_objects{oi} );
-        
-        subplot2(length(p.situation_objects),6,oi,2);
-        hist(log(density_conditioned_1a(cur_inds)),50);
-        if oi == 1, title('density conditioned 1a'); end
-        
-        subplot2(length(p.situation_objects),6,oi,3);
-        hist(log(density_conditioned_1b(cur_inds)),50);
-        if oi == 1, title('density conditioned 1b'); end
-        
-        subplot2(length(p.situation_objects),6,oi,4);
-        hist(log(density_conditioned_2(cur_inds)),50);
-        if oi == 1, title('density conditioned 2'); end
-        
-        subplot2(length(p.situation_objects),6,oi,5);
-        hist(classification_confidence(cur_inds),50);
-        if oi == 1, title('classifier confidence'); end
-        
-        subplot2(length(p.situation_objects),6,oi,6);
-        hist(IOU_with_source(cur_inds),50);
-        if oi == 1, title('IOU'); end
-        
-    end
-    
-    
-    
-    b0  = zeros(0,4);
-    b1a = zeros(0,4);
-    b1b = zeros(0,4);
-    b2  = zeros(0,4);
-    b_combined = zeros(0,4);
-    
-    figure('name','densities with no conditioning');
-    for oi = 1:length(p.situation_objects)
-    %for oi = 1
-        
-        cur_inds = oi == object_type;
-        
-        external_support_vals = logistic( log(density_prior(cur_inds))', .1);
-        internal_support_vals = classification_confidence(cur_inds)';
-        
-        x0 = [external_support_vals  internal_support_vals external_support_vals.*(.01 + internal_support_vals) ]; 
-        
-        y = IOU_with_source(cur_inds)';
-        dist = 'binomial';
-        link = 'logit';
-        b0(oi,:) = glmfit(x0,y,dist,link);
-        y_hat = glmval(b0(oi,:)',x0,link);
-        subplot(1,length(p.situation_objects),oi);
-        plot(y,y_hat,'.');
-        xlabel('iou actual');
-        ylabel('iou predicted');
-        title(p.situation_objects{oi});
-        xlim([0 1]);
-        ylim([0 1]);
-        
-    end
-    
-    
-    
-    figure('name','densities conditioned with 1a other object');
-    for oi = 1:length(p.situation_objects)
-    %for oi = 1
-        
-        cur_inds = oi == object_type;
-       
-        external_support_vals = logistic( log(density_conditioned_1a(cur_inds))', .1);
-        internal_support_vals = classification_confidence(cur_inds)';
-        
-        x1a = [external_support_vals  internal_support_vals external_support_vals.*(.01 + internal_support_vals) ]; 
-        
-        y = IOU_with_source(cur_inds)';
-        dist = 'binomial';
-        link = 'logit';
-        b1a(oi,:) = glmfit(x1a,y,dist,link);
-        y_hat = glmval(b1a(oi,:)',x1a,link);
-        subplot(1,length(p.situation_objects),oi);
-        plot(y,y_hat,'.');
-        xlabel('iou actual');
-        ylabel('iou predicted');
-        title(p.situation_objects{oi});
-        xlim([0 1]);
-        ylim([0 1]);
-        
-    end
-
-
-    
-    figure('name','densities conditioned with 1b other object');
-    for oi = 1:length(p.situation_objects)
-    %for oi = 1
-        
-        cur_inds = oi == object_type;
-       
-        external_support_vals = logistic( log(density_conditioned_1b(cur_inds))', .1);
-        internal_support_vals = classification_confidence(cur_inds)';
-        
-        x1b = [external_support_vals  internal_support_vals external_support_vals.*(.01 + internal_support_vals) ]; 
-        
-        y = IOU_with_source(cur_inds)';
-        dist = 'binomial';
-        link = 'logit';
-        b1b(oi,:) = glmfit(x1b,y,dist,link);
-        y_hat = glmval(b1b(oi,:)',x1b,link);
-        subplot(1,length(p.situation_objects),oi);
-        plot(y,y_hat,'.');
-        xlabel('iou actual');
-        ylabel('iou predicted');
-        title(p.situation_objects{oi});
-        xlim([0 1]);
-        ylim([0 1]);
-        
-    end
-
-    
-    
-    figure('name','densities conditioned with 2 objects');
-    for oi = 1:length(p.situation_objects)
-    %for oi = 1
-        
-        cur_inds = oi == object_type;
-       
-        external_support_vals = logistic( log(density_conditioned_2(cur_inds))', .1);
-        internal_support_vals = classification_confidence(cur_inds)';
-        
-        x2 = [external_support_vals  internal_support_vals external_support_vals.*(.01 + internal_support_vals) ]; 
-        
-        y = IOU_with_source(cur_inds)';
-        dist = 'binomial';
-        link = 'logit';
-        b2(oi,:) = glmfit(x2,y,dist,link);
-        y_hat = glmval(b2(oi,:)',x2,link);
-        subplot(1,length(p.situation_objects),oi);
-        plot(y,y_hat,'.');
-        xlabel('iou actual');
-        ylabel('iou predicted');
-        title(p.situation_objects{oi});
-        xlim([0 1]);
-        ylim([0 1]);
-        
-    end
-    
-    
-    
-    figure('name','densities without respect number of conditioning objects');
-    for oi = 1:length(p.situation_objects)
-    %for oi = 1
-        
-        cur_inds = oi == object_type;
-       
-        external_support_vals = logistic( [log(density_prior(cur_inds))'; log(density_conditioned_1a(cur_inds))'; log(density_conditioned_1b(cur_inds))'; log(density_conditioned_2(cur_inds))'], .1);
-        internal_support_vals = repmat(classification_confidence(cur_inds)',4,1);
-        
-        x2 = [external_support_vals  internal_support_vals external_support_vals.*(.01 + internal_support_vals) ]; 
-        
-        y = repmat(IOU_with_source(cur_inds)',4,1);
-        
-        dist = 'binomial';
-        link = 'logit';
-        b_combined(oi,:) = glmfit(x2,y,dist,link);
-        y_hat = glmval(b_combined(oi,:)',x2,link);
-        subplot(1,length(p.situation_objects),oi);
-        plot(y,y_hat,'.');
-        xlabel('iou actual');
-        ylabel('iou predicted');
-        title(p.situation_objects{oi});
-        xlim([0 1]);
-        ylim([0 1]);
-        
-    end
-    
-    
-    
-    figure()
-    for oi = 1:length(p.situation_objects)
-        
-        cur_inds = oi == object_type;
-        densities = [log(density_prior(cur_inds))' log(density_conditioned_1a(cur_inds))' log(density_conditioned_1b(cur_inds))' log(density_conditioned_2(cur_inds))'];
-        external_support = logistic( densities(:), .1 );
-        
-        subplot(1,length(p.situation_objects),oi);
-        hist(external_support,50);
-        title(p.situation_objects{oi});
-        minmax_str = ['min:' num2str(min(external_support)) ' max:' num2str(max(external_support))];
-        xlabel(minmax_str);
-        
-    end
-
-
-
+         
 
 

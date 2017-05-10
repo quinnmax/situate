@@ -366,8 +366,8 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
 
     if show_failure_examples
         
-        num_rows = 2;
-        num_cols = 3;
+        num_rows = 3;
+        num_cols = 2;
         
         for ci = 1:size(successful_completion,1)
             h_temp = figure();

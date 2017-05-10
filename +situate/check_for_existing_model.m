@@ -1,21 +1,14 @@
 
-function selected_model_fname = check_for_existing_model( possible_paths, fnames_in, model_description )
-% selected_model_fname = check_for_existing_model( model_directory,fnames_train_in, [model_description] );
+function selected_model_fname = check_for_existing_model( possible_paths, varargin )
+% selected_model_fname = check_for_existing_model( possible_paths, field_name_1, data_it_should_match, field_name_2, data_it_should_match, ... );
 %
-% model description is currently unused, but would be a good place for
-% something like 'cnnsvm' to specify the model that we're looking for.
+%   possible_paths: 
+%       cell array of directories to search for models
+%   mat files in those directories will be checked for the provided field
+%   names, and the data should match the provided data (wrt isequal)
+%
+%   first match will be returned
 
-    if ~exist('model_description','var') || isempty(model_description)
-        model_description = '';
-    end
-
-    % get pathless versions of input filenames
-        fnames_in_pathless = cell(size(fnames_in));
-        for fi = 1:length(fnames_in)
-            [~,name,ext] = fileparts(fnames_in{fi});
-            fnames_in_pathless{fi} = [name ext];
-        end
-        
     % check for existing models that might have the same training data
         
         % possible mat files in specified directories
@@ -27,27 +20,27 @@ function selected_model_fname = check_for_existing_model( possible_paths, fnames
                 end
             end
             
-        % compare training images in mat files to input training images
-            training_data_match = false(1,length(mat_files));
+        % compare specified fields in proposed file to provided data
             selected_model_fname = '';
             for mi = 1:length(mat_files)
                 matobj = matfile( mat_files{mi} );
                 try
-                    fnames_file = matobj.fnames_lb_train;
-                    fnames_file_pathless = cell(size(fnames_file));
-                    for fi = 1:length(fnames_file_pathless)
-                        [~,name,ext] = fileparts(fnames_file{fi});
-                        fnames_file_pathless{fi} = [name ext];
+                    for vari = 1:2:length(varargin)-1
+                        file_data =  matobj.(varargin{vari});
+                        if iscellstr( file_data )   
+                            file_data = cellfun( @(x) x(last(strfind(x,filesep()))+1:end), file_data, 'UniformOutput',false);
+                            assert( isequal( sort(file_data), sort(varargin{vari+1}) ) );
+                        else
+                            assert( isequal( file_data, varargin{vari+1}) );
+                        end 
+                        
                     end
-                    if isequal( sort(fnames_file_pathless), sort(fnames_in_pathless) )
-                        % great, return this file
-                        training_data_match(mi) = true;
-                        selected_model_fname = mat_files{mi};
-                        break;
-                    end
+                    selected_model_fname = mat_files{mi};
+                    return;
+                    
                 end
             end
-            
+              
 end
     
     

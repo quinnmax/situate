@@ -1,5 +1,5 @@
-function h = salience_normal_draw( d, object_string, what_to_draw, box_r0rfc0cf, box_format_arg, initial_draw  )
-% h = uniform_then_normal_draw( d, object_string, what_to_draw, format_arg, [box_r0rfc0cf], [box_format_arg], [initial_draw] );
+function h = uniform_normal_mix_draw( d, object_string, what_to_draw, box_r0rfc0cf, box_format_arg, initial_draw  )
+% h = uniform_normal_mix_draw( d, object_string, what_to_draw, format_arg, [box_r0rfc0cf], [box_format_arg], [initial_draw] );
 %
 %   what to draw can be 'xy', 'shape', or 'size'
 %       xy will be a heat map the shape of the image
@@ -19,7 +19,7 @@ function h = salience_normal_draw( d, object_string, what_to_draw, box_r0rfc0cf,
         im_r = d(i).image_size(1);
         im_c = d(i).image_size(2);
         
-        h = []; % will hold handles that can be deleted
+        h = [];
         
         mu    = d(i).distribution.mu;
         Sigma = d(i).distribution.Sigma;
@@ -43,7 +43,31 @@ function h = salience_normal_draw( d, object_string, what_to_draw, box_r0rfc0cf,
                     % no need to redraw
                 else
                     
-                    imshow(d(i).distribution.discretized_map,[])
+                    if d(i).distribution.is_conditional
+                        
+                        % we currently have a .5 chance of just using a uniform sample anyway, so
+                        % we should mix our representation of a normal dist and a uniform
+                        
+                        rc_ind = strcmp( d(i).distribution.parameters_description, 'rc' );
+                        cc_ind = strcmp( d(i).distribution.parameters_description, 'cc' );
+                        inds_want = block_ind_0 + find(any([ rc_ind; cc_ind ]));
+                        inds_have = [];
+                        data_have = [];
+                        [mu_bar, Sigma_bar] = mvn_marginalize_and_condition( mu, Sigma, inds_want, inds_have, data_have );
+                        lsf = sqrt( 1 / (im_r * im_c ) );
+                        x_vals = linspace( im_c * lsf * -.5, im_c * lsf * .5, im_c );
+                        y_vals = linspace( im_r * lsf * -.5, im_r * lsf * .5, im_r );
+                        [X, Y] = meshgrid( x_vals, y_vals );
+                        Z_flat = mvnpdf( [Y(:) X(:)], mu_bar, Sigma_bar );
+                        Z = reshape( Z_flat,im_r, im_c );
+                        
+                        Z = .5*mat2gray(Z) + .5; 
+                        
+                        imshow(Z);
+                    else
+                        % just draw a representation of a uniform prior
+                        imshow( .5 * ones(im_r,im_c) );
+                    end
                     
                     if ~isequal(prev_distribution_xy,d)
                         prev_distribution_xy = d;

@@ -135,31 +135,12 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
                 keep_going = true;
                 while keep_going
 
-%                     % let the user change to the running parameters using the parameters GUI
-%                     if experiment_settings.use_gui
-%                         h = situate.parameters_adjust_gui(cur_parameterization);
-%                         uiwait(h);
-%                         if exist('temp_situate_parameters_struct.mat','file')
-%                             % edit: the saddest hack. there's some security layer that
-%                             % prevents information from the gui from being brought
-%                             % back into the calling script. I'm sure there's a way to
-%                             % do this properly, but until then, it's dumping out a 
-%                             % little struct file with the changed parameters.
-%                             cur_parameterization = load('temp_situate_parameters_struct.mat');
-%                             delete('temp_situate_parameters_struct.mat');
-%                             % the file being there means we exited
-%                             % properly, so we can carry on with the
-%                             % experiment
-%                         else
-%                             % the file wasn't there, so the parameter gui was closed without being completed.
-%                             % we interpret that as an attept to abort
-%                             break;
-%                         end
-%                     end
-
-                    % learn the situation model unless it's already present
+                    % load or learn the situation model
                     if ~isfield(learned_models, 'situation_model')
-                        learned_models.situation_model.joint = cur_parameterization.situation_model_fit( cur_parameterization, fnames_lb_train );
+                        learned_models.situation_model.joint = ...
+                            cur_parameterization.situation_model.learn( ...
+                                cur_parameterization, ...
+                                fnames_lb_train );
                     end
                     
                     % load or learn the classification models
@@ -168,65 +149,79 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
                             cur_parameterization.classifier_load_or_train( ...
                                 cur_parameterization, ...
                                 fnames_lb_train, ...
-                                cur_parameterization.classifier_saved_models_directory);
+                                cur_parameterization.classifier_saved_models_directory );
                     end
                     
+                    % load or learn the adjustment model
+                    % train( fnames_in, saved_models_directory, IOU_threshold_for_training )
+                    if ~isfield(learned_models, 'adjustment_model')
+                        learned_models.adjustment_model = ...
+                            cur_parameterization.adjustment_model_setup( ...
+                                cur_parameterization, ...
+                                fnames_lb_train, ...
+                                cur_parameterization.classifier_saved_models_directory );
+                    end
+                    
+                    
+                    
                     % run on the current image
-                        cur_fname_im = fnames_im_test{cur_image_ind};
+                    cur_fname_im = fnames_im_test{cur_image_ind};
 
-                        tic;
-                        [ ~, run_data_cur, visualizer_status_string ] = situate.main_loop( cur_fname_im, cur_parameterization, learned_models );
-                        
-                        if experiment_settings.use_gui % handle visualizer status
-                     
-                            switch visualizer_status_string
-                                case 'restart'
-                                    % cur_image_ind = cur_image_ind;
-                                    % keep_going = true;
-                                    % no op
-                                case 'next_image'
-                                    cur_image_ind = cur_image_ind + 1;
-                                    % keep_going = true;
-                                case 'stop'
-                                    keep_going = false;
-                                otherwise
-                                    keep_going = false;
-                                    % because we probably killed it with a window close
-                            end
- 
-                        else
-                            
-                           % store results
-                            workspaces_final{cur_image_ind} = run_data_cur.workspace_final;
-                            agent_records{cur_image_ind}    = run_data_cur.agent_record;
+                    tic;
+                    [ ~, run_data_cur, visualizer_status_string ] = situate.main_loop( cur_fname_im, cur_parameterization, learned_models );
 
-                            % display an update in the console
-                            num_iterations_run = sum(cellfun(@(x) ~isempty(x),{run_data_cur.agent_record.interest}));
-                            IOUs_of_last_run   = num2str(run_data_cur.workspace_final.GT_IOU);
-                            progress_string    = [cur_parameterization.description ', ' num2str(num_iterations_run), ' steps, ' num2str(toc) 's,', ' IOUs: [' IOUs_of_last_run ']'];
-                            progress(cur_image_ind,length(fnames_im_test),progress_string);
-                            
-                            % move on to the next image
-                            cur_image_ind = cur_image_ind + 1;
-                            if cur_image_ind > length(fnames_im_test), keep_going = false; end
-                            
-                        end
-                        
-                        if cur_image_ind > experiment_settings.testing_data_max
-                            keep_going = false;
-                            if experiment_settings.use_gui
-                                msgbox('out of testing images');
-                            end
+                    if experiment_settings.use_gui % handle visualizer status
+
+                        switch visualizer_status_string
+                            case 'restart'
+                                % cur_image_ind = cur_image_ind;
+                                % keep_going = true;
+                                % no op
+                            case 'next_image'
+                                cur_image_ind = cur_image_ind + 1;
+                                % keep_going = true;
+                            case 'stop'
+                                keep_going = false;
+                            otherwise
+                                keep_going = false;
+                                % because we probably killed it with a window close
                         end
 
-                        if ~keep_going
-                            break;
+                    else
+
+                       % store results
+                        workspaces_final{cur_image_ind} = run_data_cur.workspace_final;
+                        agent_records{cur_image_ind}    = run_data_cur.agent_record;
+
+                        % display an update in the console
+                        num_iterations_run = sum(cellfun(@(x) ~isempty(x),{run_data_cur.agent_record.interest}));
+                        IOUs_of_last_run   = num2str(run_data_cur.workspace_final.GT_IOU);
+                        progress_string    = [cur_parameterization.description ', ' num2str(num_iterations_run), ' steps, ' num2str(toc) 's,', ' IOUs: [' IOUs_of_last_run ']'];
+                        progress(cur_image_ind,length(fnames_im_test),progress_string);
+
+                        % move on to the next image
+                        cur_image_ind = cur_image_ind + 1;
+                        if cur_image_ind > length(fnames_im_test), keep_going = false; end
+
+                    end
+
+                    
+                    
+                    if cur_image_ind > experiment_settings.testing_data_max
+                        keep_going = false;
+                        if experiment_settings.use_gui
+                            msgbox('out of testing images');
                         end
+                    end
+
+                    if ~keep_going
+                        break;
+                    end
 
                 end
 
+                % bail after the first experimental setup if we're using the GUI
                 if experiment_settings.use_gui
-                    % bail after the first experimental setup if we're using the GUI
                     break;
                 end
                 
@@ -251,8 +246,8 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
                     
             end
             
+            % bail after the first fold if we're using the GUI
             if experiment_settings.use_gui
-                % bail after the first fold if we're using the GUI
                 break;
             end
 

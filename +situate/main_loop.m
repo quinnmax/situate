@@ -31,15 +31,25 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
             d(dist_index).interest          = p.situation_objects{dist_index};
             d(dist_index).interest_priority = p.situation_objects_urgency_pre.(p.situation_objects{dist_index});
             d(dist_index).distribution      = learned_models.situation_model.joint;
+            if nargin(p.situation_model.update) == 3 % see if it wants the image for updating
+                d(dist_index).distribution      = p.situation_model.update( d(dist_index).distribution, p.situation_objects{dist_index}, workspace );
+            else
+                d(dist_index).distribution      = p.situation_model.update( d(dist_index).distribution, p.situation_objects{dist_index}, workspace, im );
+            end
             d(dist_index).image_size        = [size(im,1)   size(im,2)];
             d(dist_index).image_size_px     =  size(im,1) * size(im,2);
         end
         joint_dist_index = length(d) + 1;
-        d(joint_dist_index).interest = 'joint';
+        d(joint_dist_index).interest          = 'joint';
         d(joint_dist_index).interest_priority = 0;
-        d(joint_dist_index).distribution = learned_models.situation_model.joint;
-        d(joint_dist_index).image_size    = [size(im,1)   size(im,2)];
-        d(joint_dist_index).image_size_px =  size(im,1) * size(im,2);
+        d(joint_dist_index).distribution      = learned_models.situation_model.joint;
+        if nargin(p.situation_model.update) == 3 % see if it wants the image
+            d(dist_index).distribution            = p.situation_model.update( d(dist_index).distribution, p.situation_objects{dist_index}, workspace);
+        else
+            d(dist_index).distribution            = p.situation_model.update( d(dist_index).distribution, p.situation_objects{dist_index}, workspace, im );
+        end
+        d(joint_dist_index).image_size        = [size(im,1)   size(im,2)];
+        d(joint_dist_index).image_size_px     =  size(im,1) * size(im,2);
         
     % initialize the agent pool
         agent_pool = repmat( agent_initialize(), 1, p.num_scouts );
@@ -93,21 +103,48 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
         
             workspace_snapshot = workspace;
             agent_index        = sample_1d( [agent_pool.urgency], 1 );
-        
             
+            % note, d is an output of evaluating agents because we might
+            % have sampling without replacement or a record of sampled
+            % locations or something being updated
+            [agent_pool,d,workspace] = agent_evaluate( agent_pool, agent_index, im, label, d, p, workspace, learned_models );
+            current_agent_snapshot   = agent_pool(agent_index);
             
-            [agent_pool,d_temp,workspace] = agent_evaluate( agent_pool, agent_index, im, label, d, p, workspace, learned_models );
-            current_agent_snapshot        = agent_pool(agent_index);
-            
-            
-            
-            workspace_changed = false;
-            if ~isequal(workspace,workspace_snapshot)
-                workspace_changed = true;
-            end
-            
+            % update distributions and support for existing workspace objects
+            workspace_changed = ~isequal(workspace,workspace_snapshot);
             if workspace_changed
-                d = d_temp;
+                % then update each distribution struct
+                for di = 1:length( p.situation_objects )
+                    % d(end) is the joint
+                    % d(di).interest is the interest for this distribution
+                    % workspace should be the conditioning object
+                    if nargin(p.situation_model.update) == 3
+                        d(di).distribution = p.situation_model.update( d(end).distribution, d(di).interest, workspace );
+                    else
+                        d(di).distribution = p.situation_model.update( d(end).distribution, d(di).interest, workspace, im );
+                    end
+                end
+
+                % update support for existing workspace objects
+                for wi = 1:length(workspace.labels)
+
+                    cur_box = workspace.boxes_r0rfc0cf(wi,:);
+                    dist_index = strcmp( {d.interest}, workspace.labels{wi} );
+                    [~,new_density] = p.situation_model.sample( d(dist_index).distribution, workspace.labels{wi}, 1, d(1).image_size, cur_box );
+                    workspace.external_support(wi) = p.external_support_function( new_density );
+
+                    switch class( p.total_support_function )
+                        case 'function_handle'
+                            workspace.total_support(wi) = p.total_support_function( workspace.internal_support(wi), workspace.external_support(wi) );
+                        case 'cell'
+                            oi = strcmp( p.situation_objects, workspace.labels{wi} );
+                            workspace.total_support(wi) = p.total_support_function{oi}( workspace.internal_support(wi), workspace.external_support(wi) );
+                        otherwise
+                            error(['dunno what to do with ' class(p.total_support_function)]);
+                    end
+
+                end
+                
             end
                 
             % update temperature
@@ -126,6 +163,7 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
             current_agent_snapshot_lean.support = current_agent_snapshot.support;
             records.agent_record(iteration)     = current_agent_snapshot_lean;
             
+            % population of agent types
             if iteration == 1
                 records.population_count = zeros(1,length(agent_types));
                 records.population_count = records.population_count + strcmp(current_agent_snapshot.type,agent_types);
@@ -133,7 +171,7 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
                 records.population_count(iteration,:) = records.population_count(iteration-1,:) + strcmp(current_agent_snapshot.type,agent_types);
             end
             
-            % dumb hack
+            % small adjustment for direct scout->reviewer pipeline
             if isequal(current_agent_snapshot.type,'scout') && workspace_changed
                 % then we must have added an object using the direct 
                 % scout->workspace option, which means the current agent 
@@ -213,9 +251,10 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
         
         % spawn nearby scouts on provisional check-in
             
-            if workspace_changed ...
-            && p.local_search_activation_logic(current_agent_snapshot)
-                agent_pool = p.local_search_function( current_agent_snapshot, agent_pool, im_size);
+            if p.adjustment_model_activation_logic(current_agent_snapshot)
+                % need to make this compatible with box adjust, and then go
+                % back and update the local search functions
+                agent_pool = p.adjustment_model_apply( learned_models.adjustment_model, current_agent_snapshot, agent_pool, im );
             end
           
         % edit: hack adjusts interest priority values.
@@ -352,6 +391,8 @@ end
 
 function [agent_pool, d, workspace] = agent_evaluate( agent_pool, agent_index, im, label, d, p, workspace, learned_models )
 
+    object_was_added = false;
+
     switch( agent_pool(agent_index).type )
         case 'scout'
             % sampling from d may change it, so we include it as an output
@@ -363,7 +404,7 @@ function [agent_pool, d, workspace] = agent_evaluate( agent_pool, agent_index, i
             % builders modify d by changing the prior on scout interests,
             % and by focusing attention on box sizes and shapes similar to
             % those that have been found to be reasonable so far.
-            [workspace,d,agent_pool] = agent_evaluate_builder( agent_pool, agent_index, workspace, d, p  );
+            [workspace,agent_pool,object_was_added] = agent_evaluate_builder( agent_pool, agent_index, workspace );
         otherwise
             error('situate:main_loop:agent_evaluate:agentTypeUnknown','agent does not have a known type field'); 
     end
@@ -385,7 +426,7 @@ function [agent_pool, d, workspace] = agent_evaluate( agent_pool, agent_index, i
         else
             % the reviewer did spawn a builder, so evaluate it
             assert(isequal(agent_pool(end).type,'builder'));
-            [workspace, d] = agent_evaluate_builder( agent_pool, length(agent_pool), workspace, d, p );
+            [workspace, agent_pool, object_was_added] = agent_evaluate_builder( agent_pool, length(agent_pool), workspace );
             % feed the total support back to the scout, since this bonkers
             % process is in effect and the addition to the workspace needs
             % to be justified with a final score. alternatively, we could
@@ -419,10 +460,12 @@ function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, p, d, i
 
             di = find(strcmp({d.interest},cur_agent.interest));
             
-            if d(di).distribution.is_conditional
-                [sampled_box_r0rfc0cf, sample_density] = p.situation_model_sample_box( d(di).distribution, d(di).interest, 1, [size(im,1), size(im,2)] ); 
-            else % is prior from the joint
-                [sampled_box_r0rfc0cf, sample_density] = p.situation_model_sample_box( d(di).distribution, d(di).interest, 1, [size(im,1), size(im,2)] ); 
+            if nargout(p.situation_model.sample) == 2
+                % see if it wants to change the distribution by sampling
+                % (such as for inhibition on return)
+                [sampled_box_r0rfc0cf, sample_density] = p.situation_model.sample( d(di).distribution, d(di).interest, 1, [size(im,1), size(im,2)] ); 
+            else
+                [sampled_box_r0rfc0cf, sample_density, d(di).distribution] = p.situation_model.sample( d(di).distribution, d(di).interest, 1, [size(im,1), size(im,2)] ); 
             end
             
             % double checking that it's in bounds 
@@ -457,7 +500,7 @@ function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, p, d, i
             % Just update the sample density of the box with respect to the distribution as it exists 
             % now. When it was generated, it just had the sample density of its template agent.
             di = find(strcmp({d.interest},cur_agent.interest));
-            [~, sample_density] = p.situation_model_sample_box( d(di).distribution, d(di).interest, 1, [size(im,1), size(im,2)], cur_agent.box.r0rfc0cf ); 
+            [~, sample_density] = p.situation_model.sample( d(di).distribution, d(di).interest, 1, [size(im,1), size(im,2)], cur_agent.box.r0rfc0cf ); 
             cur_agent.support.sample_densities = sample_density;
         end
         
@@ -545,7 +588,7 @@ end
 
 %% eval builder 
 
-function [workspace,d,agent_pool] = agent_evaluate_builder( agent_pool, agent_index, workspace, d, p ) 
+function [workspace,agent_pool,object_was_added] = agent_evaluate_builder( agent_pool, agent_index, workspace ) 
  
     % the builder checks to see if a proposed object, which has passed both
     % scout and reviewer processes, is actually an improvement over what
@@ -610,38 +653,6 @@ function [workspace,d,agent_pool] = agent_evaluate_builder( agent_pool, agent_in
                 
             end
             
-    end
-    
-    if object_was_added
-        
-        % update distributions
-        for di = 1:length( p.situation_objects )
-            % d(end) is the joint
-            % d(di).interest is the interest for this distribution
-            % workspace should be the conditioning object
-            d(di).distribution = p.situation_model_update( d(end).distribution, d(di).interest, workspace );
-        end
-        
-        % update support for existing workspace objects
-        for wi = 1:length(workspace.labels)
-            
-            cur_box = workspace.boxes_r0rfc0cf(wi,:);
-            dist_index = strcmp( {d.interest}, workspace.labels{wi} );
-            [~,new_density] = p.situation_model_sample_box( d(dist_index).distribution, workspace.labels{wi}, 1, d(1).image_size, cur_box );
-            workspace.external_support(wi) = p.external_support_function( new_density );
-            
-            switch class( p.total_support_function )
-                case 'function_handle'
-                    workspace.total_support(wi) = p.total_support_function( workspace.internal_support(wi), workspace.external_support(wi) );
-                case 'cell'
-                    oi = strcmp( p.situation_objects, workspace.labels{wi} );
-                    workspace.total_support(wi) = p.total_support_function{oi}( workspace.internal_support(wi), workspace.external_support(wi) );
-                otherwise
-                    error(['dunno what to do with ' class(p.total_support_function)]);
-            end
-        
-        end
-        
     end
      
 end

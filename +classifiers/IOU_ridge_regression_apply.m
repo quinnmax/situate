@@ -1,13 +1,10 @@
-function [classifier_output, iou] = cnnsvm_apply( classifier_struct, target_class, im, box_r0rfc0cf, lb )
-% [classifier_output, ground_truth_iou] = cnnsvm_apply( classifier_struct, target_class, im, box_r0rfc0cf, [lb] )
+function [classifier_output, iou] = IOU_ridge_regression_apply( classifier_struct, target_class, im, box_r0rfc0cf, lb )
+% [classifier_output, ground_truth_iou] = IOU_ridge_regression_apply( classifier_struct, target_class, im, box_r0rfc0cf, [lb] )
 
-
-% should be in 0-255
+    % should be in 0-255
     if mean(im(:)) < 1
         im = 255 * im;
     end
-
-% current models are based on images in the range 0,1, not 0,255
 
     r0 = box_r0rfc0cf(:,1);
     rf = box_r0rfc0cf(:,2);
@@ -22,20 +19,15 @@ function [classifier_output, iou] = cnnsvm_apply( classifier_struct, target_clas
         classifier_output=-1;
         return;
     end
-    
-    if mean(image_crop(:)) > 1
-        image_crop = image_crop / max(image_crop(:));
-    end
-    
-%     if mean(image_crop(:)) < 1
-%         image_crop = image_crop * 255;
-%     end
-
+  
     model_ind = strcmp( classifier_struct.classes, target_class );
     
     cnn_features = cnn.cnn_process( image_crop );
-    [~, scores] = classifier_struct.models{model_ind}.predict( cnn_features' );
-    classifier_output = scores(2);
+    classifier_output = [1 cnn_features'] * classifier_struct.models{model_ind};
+    
+    if classifier_output > 5 || classifier_output < -1
+       display('bloop'); 
+    end
     
     if exist('lb','var')
         gt_box_r0rfc0cf = lb.boxes_r0rfc0cf( strcmp(target_class,lb.labels_adjusted), : );

@@ -141,13 +141,13 @@ function [h, return_status_string] = visualize( h, im, p, d, workspace, cur_agen
                 label_text{end+1} = ['  coeff:    ' num2str(cur_agent.support.logistic_regression_data.coefficients)];
                 label_text{end+1} = ['  external: ' num2str(cur_agent.support.logistic_regression_data.external)];
             end
-            t1 = text( cur_agent.box.r0rfc0cf(3), cur_agent.box.r0rfc0cf(1), label_text);
+            t1 = text( double(cur_agent.box.r0rfc0cf(3)), double(cur_agent.box.r0rfc0cf(1)), label_text);
             set(t1,'color',[0 0 0]);
-            set(t1,'FontSize',10);
+            set(t1,'FontSize',8);
             set(t1,'FontWeight','bold');
-            t2 = text( cur_agent.box.r0rfc0cf(3)+1, cur_agent.box.r0rfc0cf(1)+1, label_text);
+            t2 = text( double(cur_agent.box.r0rfc0cf(3)+1), double(cur_agent.box.r0rfc0cf(1)+1), label_text);
             set(t2,'color',[1 1 1]);
-            set(t2,'FontSize',10);
+            set(t2,'FontSize',8);
             set(t2,'FontWeight','bold');
             UserData.handles(end+1) = t1;
             UserData.handles(end+1) = t2;
@@ -215,17 +215,17 @@ function [h, return_status_string] = visualize( h, im, p, d, workspace, cur_agen
         end
         
         subplot2(3,sp_cols,1,4+oi-1); 
-        temp_h = p.situation_model_draw( d, p.situation_objects{oi}, 'xy',    boxes_represented, boxes_represented_formatting_box, initial_figure_generation );
+        temp_h = p.situation_model.draw( d, p.situation_objects{oi}, 'xy',    boxes_represented, boxes_represented_formatting_box, initial_figure_generation );
         title([d(oi).interest ' location']);
         UserData.handles(end+1:end+length(temp_h)) = temp_h;
     
         subplot2(3,sp_cols,2,3 + oi); 
-        temp_h = p.situation_model_draw( d, p.situation_objects{oi}, 'shape', boxes_represented, boxes_represented_formatting_point );
+        temp_h = p.situation_model.draw( d, p.situation_objects{oi}, 'shape', boxes_represented, boxes_represented_formatting_point );
         title([d(oi).interest ' box shape']);
         UserData.handles(end+1:end+length(temp_h)) = temp_h;
     
         subplot2(3,sp_cols,3,3 + oi); 
-        temp_h = p.situation_model_draw( d, p.situation_objects{oi}, 'size',  boxes_represented, boxes_represented_formatting_point );
+        temp_h = p.situation_model.draw( d, p.situation_objects{oi}, 'size',  boxes_represented, boxes_represented_formatting_point );
         title([d(oi).interest ' box size']);
         UserData.handles(end+1:end+length(temp_h)) = temp_h;
     

@@ -17,21 +17,25 @@ function iou = intersection_over_union(A,B,format_A,format_B)
     % intersection_over_union(A_xywh,B_xywh,'xywh')
     % intersection_over_union(A_xywh,B_r0rfc0cf,'xywh','r0rfc0cf')
    
-    if ~exist('format_A','var') || isempty(format_A)
-        format_A = 'xywh';
+    if nargin < 4
+
+        if ~exist('format_A','var') || isempty(format_A)
+            format_A = 'xywh';
+        end
+
+        % if only A is provided, run against itself
+        if (~exist('B','var') || isempty(B)) && numel(A) > 4
+            iou = intersection_over_union( A, A, format_A, format_A );
+            return;
+        end
+
+        % then we must have B, so make sure it has a format
+        if ~exist('format_B','var') || isempty(format_B)
+            format_B = format_A;
+        end
+        
     end
-    
-    % if only A is provided, run against itself
-    if (~exist('B','var') || isempty(B)) && numel(A) > 4
-        iou = intersection_over_union( A, A, format_A, format_A );
-        return;
-    end
-    
-    % then we must have B, so make sure it has a format
-    if ~exist('format_B','var') || isempty(format_B)
-        format_B = format_A;
-    end
-    
+
     % if there are multiple boxes in A and/or B, run each against each
     if size(A,1) > 1 || size(B,1) > 1
         iou = zeros( size(A,1), size(B,1) );

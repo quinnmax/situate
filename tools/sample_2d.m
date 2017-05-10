@@ -1,11 +1,11 @@
 
 
 
-function [inds,p,point_density] = sample_2d(pdf,n,x,y)
+function [inds,p,point_density,cdf_out] = sample_2d(pdf,n,x,y, existing_linearized_cdf)
 
 
 
-    % [inds,p] = sample_2d( pdf, n, [x_vals], [y_vals] );
+    % [inds,p,point_density,linearized_cdf] = sample_2d( pdf, n, [x_vals], [y_vals], [existing_linearized_cdf] );
     %
     % draw samples from a 2d empirical (discretized) pdf
     %
@@ -16,6 +16,8 @@ function [inds,p,point_density] = sample_2d(pdf,n,x,y)
     % p has the coordinate values, if you provided that info in [x,y]
     %   column 1 of p is the x value sampled
     %   column 2 of p is the y value sampled
+    %
+    % point_density is the density of the sampled point
     %
     % notice that the ording here is essentially switched from the version
     % that does not provide [x,y] values. this is to respect the usual
@@ -62,14 +64,20 @@ function [inds,p,point_density] = sample_2d(pdf,n,x,y)
     persistent pdf_persistent
     persistent cumsum_pdf
     persistent sum_pdf
-    if ~isequal(pdf_persistent, pdf)
+    
+    if exist('existing_linearized_cdf','var') && ~isempty(existing_linearized_cdf)
+        % use what was provided
+        cumsum_pdf = existing_linearized_cdf;
+    elseif ~isequal(pdf_persistent, pdf)
+        % see if we have to regenerate from pdf
         cumsum_pdf = cumsum(pdf(:));
-        sum_pdf = sum(pdf(:));
+        sum_pdf = cumsum_pdf(end);
         pdf_persistent = pdf;
         epsilon = .00000001;
         if sum_pdf-1 < 0 || sum_pdf-1 > epsilon
             cumsum_pdf = cumsum_pdf/sum_pdf;
         end
+    % else, just use the saved, persistent stuff
     end
     
     r = rand(1,n);
@@ -93,6 +101,8 @@ function [inds,p,point_density] = sample_2d(pdf,n,x,y)
     p(:,1) = x( inds(:,2) );
     p(:,2) = y( inds(:,1) );
     
+    
+    cdf_out = cumsum_pdf;
     
     
     if demo_mode

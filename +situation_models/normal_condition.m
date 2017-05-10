@@ -1,6 +1,6 @@
-function model_out = situation_model_normal_condition( model_in, object_type, workspace )
+function model_out = normal_condition( model_in, object_type, workspace )
 
-    % model_out = situation_model_normal_condition( model_in, object_type, workspace, [im_rows im_cols] );
+    % model_out = situation_model_normal_condition( model_in, object_type, workspace );
     %   model_in: should have mu, Sigma, situation_objects list and column_description list
     %   object_type: is the string from the situation_objects list for the object we want to sample for
     %   workspace: contains information on the conditioning objects
@@ -10,6 +10,12 @@ function model_out = situation_model_normal_condition( model_in, object_type, wo
     % num_features_per_object = length of model.mu / num situaiton objects;
     % need to match up situation objects and objects in workspace
     % then construct the 'have' vector so we can condition
+    
+    if isempty(workspace) || ~isstruct(workspace) || ~isfield(workspace,'labels') || isempty( setsub( workspace.labels, object_type ) )
+        % nothing to condition on
+        model_out = model_in;
+        return;
+    end
     
     num_parameters = length(model_in.mu)/length(model_in.situation_objects);
     

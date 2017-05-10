@@ -1,14 +1,19 @@
 
-function agent_pool = spawn_local_scouts( agent_to_expand, agent_pool, im_size, step_ratio ) 
-
+function agent_pool = spawn_local_scouts( model, agent_to_expand, agent_pool, image  )
+        
+    % agent_pool = spawn_local_scouts( model, agent_to_expand, agent_pool, image  );
+    %
     % this is meant to take an agent and spawn a set of scouts that are
     % focusesed on the same object, but nearby boxes. those boxes are:
     %   shifted slightly {up, down, left, right}
     %   slightly {taller and thinner, shorter and wider}
     %   slightly {larger, smaller}
 
-    if ~exist('step_ratio','var') || isempty(step_ratio)
-        step_ratio = .1;
+    im_size = [size(image,1) size(image,2)];
+    
+    if ~exist('model','var') || isempty(model) || ~isstruct(model) || ~isfield(model,'step_ratio') || isempty(model.step_ratio) || model.step_ratio <= 0
+        model = [];
+        model.step_ratio = .1;
     end
     
     new_agent_template = agent_to_expand;
@@ -23,8 +28,8 @@ function agent_pool = spawn_local_scouts( agent_to_expand, agent_pool, im_size, 
     box_w  = new_agent_template.box.xywh(3);
     box_h  = new_agent_template.box.xywh(4);
     
-    step_w = step_ratio * box_w;
-    step_h = step_ratio * box_h;
+    step_w = model.step_ratio * box_w;
+    step_h = model.step_ratio * box_h;
     step_w = round(step_w);
     step_h = round(step_h);
     
