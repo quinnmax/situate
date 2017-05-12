@@ -303,16 +303,18 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     
     iou_thresholds = (0:10)./10;
     detections_at_iou = zeros( num_conditions, length(iou_thresholds), length( situation_objects ));
+    situation_detections_at_iou = zeros( num_conditions, length(iou_thresholds) );
     
     for ci = 1:num_conditions
     for ti = 1:length(iou_thresholds)
         detections_at_iou(ci,ti,:) = sum(ge( final_ious{ci}, iou_thresholds(ti) ));
+        situation_detections_at_iou(ci,ti) = sum( prod( ge( final_ious{ci}, iou_thresholds(ti)), 2 ) );
     end
     end
     
     h3 = figure;
     for oi = 1:length(situation_objects)
-        subplot(1,length(situation_objects),oi);
+        subplot(1,length(situation_objects)+1,oi);
         plot(iou_thresholds,detections_at_iou(:,:,oi));
         xlabel('IOU threshold');
         ylabel('detections');
@@ -320,6 +322,14 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
         ylim([0 num_images]);
         legend(p_conditions_descriptions);
     end
+    subplot( 1,length(situation_objects)+1,length(situation_objects)+1)
+    plot( iou_thresholds, situation_detections_at_iou);
+    xlabel('IOU threshold');
+    ylabel('detections');
+    title('full situation detections');
+    ylim([0 num_images]);
+    legend(p_conditions_descriptions);
+    
     
     print(h3,fullfile(results_directory,'object_detections_vs_iou_threshold'),'-r300', '-dpdf' );
     
