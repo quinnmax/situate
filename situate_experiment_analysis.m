@@ -283,10 +283,8 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     fprintf('\n\n');
 
     
-%% check for object detections against Ground Truth IOU at various thresholds
-    
-
-
+%% figure: object detections at various Ground Truth IOU at thresholds
+  
     final_ious = cell(1,num_conditions);
     for ci = 1:num_conditions, final_ious{ci }= zeros( num_images, length(situation_objects)  ); end
     
@@ -312,7 +310,7 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     end
     end
     
-    h3 = figure;
+    h3 = figure('color','white');
     for oi = 1:length(situation_objects)
         subplot(1,length(situation_objects)+1,oi);
         plot(iou_thresholds,detections_at_iou(:,:,oi));
@@ -333,6 +331,56 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     
     print(h3,fullfile(results_directory,'object_detections_vs_iou_threshold'),'-r300', '-dpdf' );
     
+    
+%% figure: object detections vs time at fixed IOU threshold    
+    
+    iou_thresholds = [.25 .5 .75 .9];
+    num_thresholds = length(iou_thresholds);
+    num_situation_objects = length(p_conditions{1}.situation_objects);
+    first_iteration_over_threshold = zeros( num_conditions, num_images, num_situation_objects, num_thresholds );
+
+    for ci = 1:num_conditions
+    for ii = 1:num_images
+    for oi = 1:num_situation_objects
+    for ti = 1:num_thresholds
+        
+        iterations_of_interest = find([agent_records{ci,ii}.interest] == oi);
+        
+        temp             = [agent_records{ci,ii}.support];
+        temp             =  temp(iterations_of_interest);
+        internal_support = [temp.internal];
+        total_support    = [temp.total];
+        gt_iou           = [temp.GROUND_TRUTH];
+        
+        first_over_threshold = find( gt( gt_iou, iou_thresholds(ti) ), 1, 'first' );
+        if ~isempty(first_over_threshold)
+            first_iteration_over_threshold(ci,ii,oi,ti) = iterations_of_interest( first_over_threshold );
+        else
+            first_iteration_over_threshold(ci,ii,oi,ti) = -1;
+        end
+        
+    end
+    end
+    end
+    end
+    
+    
+    
+    ti = 2;
+    
+    figure('color','white')
+    for ci = 1:num_conditions
+    for oi = 1:num_situation_objects
+        subplot2( num_situation_objects, num_conditions, oi, ci )
+        hist( reshape(first_iteration_over_threshold(ci,:,oi,ti),1,[]), 20 );
+        if oi == 1, title( p_conditions_descriptions{ci} ); end
+        if ci == 1, ylabel( p_conditions{1}.situation_objects{oi} ); end
+        xlabel('iteration number');
+        xlim([0 1000]);
+        ylim([0 100]);
+    end
+    end
+
     
 %% display IOU for each object type and each image
 
@@ -377,7 +425,7 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     if show_failure_examples
         
         num_rows = 3;
-        num_cols = 2;
+        num_cols = 4;
         
         for ci = 1:size(successful_completion,1)
             h_temp = figure();
@@ -405,6 +453,158 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     end
 
 display('fin');
+
+
+%% take at how many scouts were looking for each object type during the run
+  
+figure
+
+rows = min( size( agent_records,2), 10 );
+cols = size(agent_records,1);
+
+for imi = 1:rows
+for ci = 1:cols
+  
+        subplot2(rows, cols, imi, ci); 
+        hist(double([agent_records{ci,imi}.interest]))
+        ylim([0 length(agent_records{1,1})]);
+        title(p_conditions{ci}.description);
+        xticks([1,2,3])
+        xticklabels(p_conditions{ci}.situation_objects)
+        xlim([0 4]);
+
+end
+end
+
+
+%% visualize the boxes generated during a run for an image
+
+imi = 1;
+ci = 3;
+[~, im] = situate.load_image_and_data( fnames_test_images{ci}{imi}, p_conditions{ci}, true );
+figure;
+b0 = 1;
+bf = 200;
+    
+for oi = 1:3
+    subplot(1,3,oi)
+    imshow(im); 
+    hold on;
+    obj_box_inds = find( [agent_records{ci,imi}.interest] == oi );
+    bf = min( bf, length(obj_box_inds));
+    temp = [agent_records{ci,imi}.box];
+    temp = {temp.r0rfc0cf};
+    temp = cellfun( @(x) double(x'), temp, 'UniformOutput', false );
+    cur_boxes_r0rfc0cf = cell2mat( temp )';
+    h = draw_box( cur_boxes_r0rfc0cf(obj_box_inds(b0:bf),:), 'r0rfc0cf', 'red' );
+    set(h,'linewidth',.1);
+    hold off;
+    title(p_conditions{ci}.situation_objects{oi});
+    xlabel( num2str( obj_box_inds(b0:bf) ) );
+end
+
+%% take a look at internal support, external support, and gt IOU. 
+%   this is a function of classifier and probability density, so the methods shouldn't matter. fine
+%   to just gather everything up in this case
+
+    total_agent_records = sum( sum( cellfun( @length, agent_records ) ) );
+    columns = {'agent_interest_type', 'internal_support', 'external_support', 'total_support', 'gt_iou'};
+    data_pile_flat = -5 * ones( total_agent_records, length(columns) );
+
+    ai = 1;
+    for ci = 1:num_conditions
+    for ii = 1:num_images
+        
+        object_of_interest = [agent_records{ci,ii}.interest];
+        temp               = [agent_records{ci,ii}.support];
+        total_support      = [temp.total];
+        internal_support   = [temp.internal];
+        external_support   = [temp.external];
+        gt_iou             = [temp.GROUND_TRUTH];
+        
+        temp2 = [double(object_of_interest); double(internal_support); double(external_support); double(total_support); double(gt_iou)];
+        data_pile_flat(ai:ai+length(internal_support)-1,:) = temp2';
+        
+        ai = ai + length(internal_support);
+       
+    end
+    fprintf('.');
+    end
+    
+    % external support wasn't recorded for all of them, so infer it from total support
+    external_support = (data_pile_flat(:,4) - .8 * data_pile_flat(:,2)) ./ .2;
+    external_support( external_support < 0 | isnan(external_support) ) = 0;
+    
+    b = zeros( num_situation_objects, 4 );
+    for oi = 1:num_situation_objects
+        rows_of_interest = eq( oi, data_pile_flat(:,1));
+        x = [ data_pile_flat(rows_of_interest,2)-.5   external_support(rows_of_interest)-.5 ];
+        x = [ ones(size(x,1),1) x x(:,1).*x(:,2) ]; % slap on a bias column and a mixed column
+        y = data_pile_flat(rows_of_interest,5);
+        
+        resampled_inds = resample_to_uniform(y);
+        x = x(resampled_inds,:);
+        y = y(resampled_inds);
+        
+        b(oi,:) = regress(y,x);
+    end
+    
+    figure('color','white')
+    for oi = 1:num_situation_objects
+        rows_of_interest = eq( oi, data_pile_flat(:,1));
+        
+        x = [ data_pile_flat(rows_of_interest,2)-.5   external_support(rows_of_interest)-.5 ];
+        x = [ ones(size(x,1),1) x x(:,1).*x(:,2) ]; % slap on a bias column and a mixed column
+        y_predicted = x * b(oi,:)';
+        y_actual = data_pile_flat(rows_of_interest,5);
+        
+        subplot(1,num_situation_objects,oi)
+        plot( y_actual, y_predicted, '.')
+        xlabel('IOU actual');
+        ylabel('IOU predicted (new total support)');
+        title(situation_objects{oi});
+        xlim([0 1]);
+        ylim([-.1 1.1]);
+        hold on;
+        plot([0 1],[0 1],'red');
+        hold off;
+        
+        R=corrcoef(y_actual,y_predicted);
+        legend(num2str(R(1,2)));
+    end
+    
+    figure('color','white')
+    for oi = 1:num_situation_objects
+        rows_of_interest = eq( oi, data_pile_flat(:,1));
+        
+        x = [ data_pile_flat(rows_of_interest,4)   external_support(rows_of_interest) ];
+        x = [ ones(size(x,1),1) x x(:,1).*x(:,2) ]; % slap on a bias column and a mixed column
+        x(isnan(x)) = 0;
+        y_predicted = x * b(oi,:)';
+        y_actual = data_pile_flat(rows_of_interest,5);
+        
+        subplot(1,num_situation_objects,oi)
+        plot( y_actual, x(:,2), '.')
+        xlabel('IOU actual');
+        ylabel('IOU predicted (old total support)');
+        title(situation_objects{oi});
+        xlim([0 1]);
+        ylim([-.1 1.1]);
+        hold on;
+        plot([0 1],[0 1],'red');
+        hold off;
+        
+        R=corrcoef(y_actual,x(:,2));
+        legend(num2str(R(1,2)));
+    end
+    
+    
+
+
+
+
+
+
 
 
 end

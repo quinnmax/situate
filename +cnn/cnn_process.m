@@ -21,10 +21,12 @@ function data = cnn_process( image, image_size, layer_in )
             layer = 18;
         end
         net.layers = net.layers(1:layer);
-        try
-            net = vl_simplenn_move(net, 'gpu');
-        catch
-        end
+        
+%         try
+%             net = vl_simplenn_move(net, 'gpu');
+%         catch
+%         end
+        
 %         net = dagnn.DagNN.loadobj(load('+cnn/imagenet-resnet-152-dag.mat')) ;
 %         net.mode = 'test' ;
 %         net.conserveMemory = false;
@@ -36,10 +38,10 @@ function data = cnn_process( image, image_size, layer_in )
     end
     image = imresize(single(image), image_size);
     image = bsxfun(@minus, image, imresize(net.meta.normalization.averageImage, image_size));
-    try
-        image = gpuArray(image);
-    catch 
-    end
+%     try
+%         image = gpuArray(image);
+%     catch 
+%     end
     
     if isa(net, 'dagnn.DagNN')
         % run the CNN

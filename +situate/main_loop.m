@@ -214,7 +214,7 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
             agent_pool(agent_index)  = [];
         
             % clean up the agent pool
-           if workspace_changed
+            if workspace_changed
                 
                 if p.agent_pool_cleanup.on_object_of_interest_found
                     % clear out agents that are looking for objects that have reached final checkin
@@ -234,24 +234,15 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
                 
                 if p.agent_pool_cleanup.on_workspace_change && workspace_changed
                     
-                    inds_to_clear = true(length(agent_pool),1);
-                    for j = 1:length(agent_pool)
-                        if isequal(current_agent_snapshot.interest, agent_pool(j).interest )
-                            % save the local search agents, 
-                            % clear everything else
-                            inds_to_clear(j) = false;
-                        end
-                    end
-
-                    agent_pool(inds_to_clear) = [];
+                     agent_pool = [];
                     
                 end
                 
            end
         
-        % spawn nearby scouts on provisional check-in
+        % generate new agents based on the current agent's findings
             
-            if p.adjustment_model_activation_logic(current_agent_snapshot)
+            if p.adjustment_model_activation_logic(current_agent_snapshot,workspace)
                 % need to make this compatible with box adjust, and then go
                 % back and update the local search functions
                 agent_pool = p.adjustment_model_apply( learned_models.adjustment_model, current_agent_snapshot, agent_pool, im );
@@ -276,7 +267,12 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
             
         % if the pool is under size, top off with default scouts
         while isempty(agent_pool) || sum( strcmp( 'scout', {agent_pool.type} ) ) < p.num_scouts
-            agent_pool(end+1) = agent_initialize(p);
+            if isempty(agent_pool)
+                agent_pool = agent_initialize(p); 
+            else
+                agent_pool(end+1) = agent_initialize(p); 
+            end
+            
             records.population_count(iteration,:) = records.population_count(iteration,:) + strcmp('scout',agent_types);
         end
             

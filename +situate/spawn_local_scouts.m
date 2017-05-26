@@ -18,7 +18,7 @@ function agent_pool = spawn_local_scouts( model, agent_to_expand, agent_pool, im
     
     new_agent_template = agent_to_expand;
     new_agent_template.type = 'scout';
-    new_agent_template.urgency = 5;
+    new_agent_template.urgency = 1;
     new_agent_template.support.internal     = 0;
     new_agent_template.support.external     = 0;
     new_agent_template.support.total        = 0;
@@ -32,6 +32,8 @@ function agent_pool = spawn_local_scouts( model, agent_to_expand, agent_pool, im
     step_h = model.step_ratio * box_h;
     step_w = round(step_w);
     step_h = round(step_h);
+    
+    new_agents = [];
     
     % agent up
         new_agent = new_agent_template;
@@ -47,7 +49,7 @@ function agent_pool = spawn_local_scouts( model, agent_to_expand, agent_pool, im
             new_agent.box.xcycwh   = [xc yc  w  h];
             new_agent.box.aspect_ratio = w/h;
             new_agent.box.area_ratio   = (w*h) / (im_size(1)*im_size(2));
-            agent_pool(end+1) = new_agent;
+            if isempty(new_agents), new_agents = new_agent; else new_agents(end+1) = new_agent; end
         end
             
     % agent down
@@ -64,7 +66,7 @@ function agent_pool = spawn_local_scouts( model, agent_to_expand, agent_pool, im
             new_agent.box.xcycwh   = [xc yc  w  h];
             new_agent.box.aspect_ratio = w/h;
             new_agent.box.area_ratio   = (w*h) / (im_size(1)*im_size(2));
-            agent_pool(end+1) = new_agent;
+            if isempty(new_agents), new_agents = new_agent; else new_agents(end+1) = new_agent; end
         end
         
     % agent left
@@ -81,7 +83,7 @@ function agent_pool = spawn_local_scouts( model, agent_to_expand, agent_pool, im
             new_agent.box.xcycwh   = [xc yc  w  h];
             new_agent.box.aspect_ratio = w/h;
             new_agent.box.area_ratio   = (w*h) / (im_size(1)*im_size(2));
-            agent_pool(end+1) = new_agent;
+            if isempty(new_agents), new_agents = new_agent; else new_agents(end+1) = new_agent; end
         end
         
     % agent right
@@ -98,7 +100,7 @@ function agent_pool = spawn_local_scouts( model, agent_to_expand, agent_pool, im
             new_agent.box.xcycwh   = [xc yc  w  h];
             new_agent.box.aspect_ratio = w/h;
             new_agent.box.area_ratio   = (w*h) / (im_size(1)*im_size(2));
-            agent_pool(end+1) = new_agent;
+            if isempty(new_agents), new_agents = new_agent; else new_agents(end+1) = new_agent; end
         end
         
     % agent bigger
@@ -115,7 +117,7 @@ function agent_pool = spawn_local_scouts( model, agent_to_expand, agent_pool, im
             new_agent.box.xcycwh   = [xc yc  w  h];
             new_agent.box.aspect_ratio = w/h;
             new_agent.box.area_ratio   = (w*h) / (im_size(1)*im_size(2));
-            agent_pool(end+1) = new_agent;
+            if isempty(new_agents), new_agents = new_agent; else new_agents(end+1) = new_agent; end
         end
         
     % agent smaller
@@ -132,7 +134,7 @@ function agent_pool = spawn_local_scouts( model, agent_to_expand, agent_pool, im
             new_agent.box.xcycwh   = [xc yc  w  h];
             new_agent.box.aspect_ratio = w/h;
             new_agent.box.area_ratio   = (w*h) / (im_size(1)*im_size(2));
-            agent_pool(end+1) = new_agent;
+            if isempty(new_agents), new_agents = new_agent; else new_agents(end+1) = new_agent; end
         end
         
     % agent taller
@@ -149,7 +151,7 @@ function agent_pool = spawn_local_scouts( model, agent_to_expand, agent_pool, im
             new_agent.box.xcycwh   = [xc yc  w  h];
             new_agent.box.aspect_ratio = w/h;
             new_agent.box.area_ratio   = (w*h) / (im_size(1)*im_size(2));
-            agent_pool(end+1) = new_agent;
+            if isempty(new_agents), new_agents = new_agent; else new_agents(end+1) = new_agent; end
         end
         
     % agent wider
@@ -166,8 +168,11 @@ function agent_pool = spawn_local_scouts( model, agent_to_expand, agent_pool, im
             new_agent.box.xcycwh   = [xc yc  w  h];
             new_agent.box.aspect_ratio = w/h;
             new_agent.box.area_ratio   = (w*h) / (im_size(1)*im_size(2));
-            agent_pool(end+1) = new_agent;
+            if isempty(new_agents), new_agents = new_agent; else new_agents(end+1) = new_agent; end
         end
+        
+    %new_agents = new_agents( randperm(length(new_agents),2));
+    agent_pool(end+1:end+length(new_agents)) = new_agents;
     
 end
 

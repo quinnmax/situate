@@ -12,6 +12,10 @@ function [im_data,im] = load_image_and_data( fname_in, p, use_resize )
     persistent prev_im_data;
     persistent prev_im;
     
+    if ~exist('use_resize','var') || isempty(use_resize)
+        use_resize = true;
+    end
+    
     % see if we can get away with returning last times stuff
     if isequal(prev_fname_in, fname_in) ...
     && isequal(prev_p,p) ...

@@ -80,6 +80,10 @@ function [ agent_pool, adjusted_box_r0rfc0cf, delta_xywh ] = apply( model, curre
     new_agent.box.aspect_ratio = adjusted_w/adjusted_h;
     new_agent.box.area_ratio   = (adjusted_w*adjusted_h) / (size(image,1)*size(image,2));
     
-    agent_pool(end+1) = new_agent;
+    if isempty(agent_pool)
+        agent_pool = new_agent; 
+    else
+        agent_pool(end+1) = new_agent; 
+    end
     
 end

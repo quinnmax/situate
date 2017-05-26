@@ -3,11 +3,6 @@ function [boxes_r0rfc0cf, sample_density] = uniform_then_normal_sample( model, o
     
     % [boxes_r0rfc0cf, sample_density] = uniform_then_normal_sample( model, object_type, [n], [im_row im_col]); 
     %   if run without the existing_box var, then you get a sampled box
-    %
-    % [boxes_r0rfc0cf, sample_density] = situation_model_normal_aa_sample( model, object_type, [n], [im_row im_col], existing_box_r0rfc0cf);
-    % if you run with the existing_box var, the return box will match it,
-    %   and the density will be the density of the box with respect to the
-    %   model provided
     
     if ~exist('n','var') || isempty(n)
         n = 1;
@@ -17,7 +12,7 @@ function [boxes_r0rfc0cf, sample_density] = uniform_then_normal_sample( model, o
         im_dims = [];
     end
     
-    % if existing box was passed in, just figure out its density and return
+    %% if existing box was passed in, just figure out its density and return
     if exist('existing_box_r0rfc0cf','var') && ~isempty(existing_box_r0rfc0cf)
         
         lsf = sqrt( 1 / (im_dims(1)*im_dims(2)) ); % linear scaling factor
@@ -60,7 +55,7 @@ function [boxes_r0rfc0cf, sample_density] = uniform_then_normal_sample( model, o
         
     end
     
-    
+    %% otherwise, actually generate a bounding box
     
     raw_samples = mvnrnd( model.mu, model.Sigma, n);
     
@@ -69,19 +64,24 @@ function [boxes_r0rfc0cf, sample_density] = uniform_then_normal_sample( model, o
     log_aspect_col = strcmp( 'log aspect ratio', model.parameters_description );
     log_area_col   = strcmp( 'log area ratio',   model.parameters_description );
     
+    resample_from_uniform = false;
+    
     if model.is_conditional
         obj_samples = raw_samples;
     else
-        % need to resample the location from a uniform distribution
+        % get the columns associated with the object of interest
         num_vars_per_obj = length(model.mu)/length(model.situation_objects);
         obj_ind     = find( strcmp( object_type, model.situation_objects ), 1, 'first' );
         sub_ind_0   = (obj_ind-1) * num_vars_per_obj + 1;
         sub_ind_f   = sub_ind_0 + num_vars_per_obj - 1;
         obj_samples = raw_samples(:, sub_ind_0:sub_ind_f );
         
-        % replace column center and row center with something from a
-        % uniform distribution.
-        lsf = sqrt( 1 / (im_dims(1) * im_dims(2)) );
+        resample_from_uniform = true;
+        
+    end
+    
+    if resample_from_uniform
+        lsf = sqrt( 1 / (im_dims(1) * im_dims(2)) ); % linear scaling factor
         rc = lsf * ( im_dims(1) * rand() - im_dims(1)/2 );
         cc = lsf * ( im_dims(2) * rand() - im_dims(2)/2 );
         obj_samples(:, rc_col ) = rc;

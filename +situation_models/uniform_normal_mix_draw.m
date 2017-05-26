@@ -61,7 +61,8 @@ function h = uniform_normal_mix_draw( d, object_string, what_to_draw, box_r0rfc0
                         Z_flat = mvnpdf( [Y(:) X(:)], mu_bar, Sigma_bar );
                         Z = reshape( Z_flat,im_r, im_c );
                         
-                        Z = .5*mat2gray(Z) + .5; 
+                        alpha = model.probability_of_uniform_after_conditioning;
+                        Z = (1-alpha) * mat2gray(Z) + alpha; 
                         
                         imshow(Z);
                     else

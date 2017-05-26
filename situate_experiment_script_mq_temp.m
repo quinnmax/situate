@@ -67,7 +67,7 @@
     
     % note: use [] if you want to use all available data
     experiment_settings.num_folds           = 1;  
-    experiment_settings.testing_data_max    = 100;  % per fold
+    experiment_settings.testing_data_max    = 2;  % per fold
     experiment_settings.training_data_max   = []; 
     
     % additional visualization options

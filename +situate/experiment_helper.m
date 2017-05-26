@@ -102,6 +102,8 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
     for fold_ind = 1:experiment_settings.num_folds
         
         learned_models = []; % contains everything we gather from training data, so is reset at the start of each fold
+        learned_models_training_functions = [];
+        
         
         % get training and testing file names for the current fold (and validate)
         %   (although not used, these are saved into results that are saved off)
@@ -136,7 +138,11 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
                 while keep_going
 
                     % load or learn the situation model
-                    if ~isfield(learned_models, 'situation_model')
+                    if ~isfield( learned_models, 'situation_model') ...
+                    || ~isequal( learned_models_training_functions.situation, cur_parameterization.situation_model.learn )
+                    
+                        learned_models_training_functions.situation = cur_parameterization.situation_model.learn;
+                
                         learned_models.situation_model.joint = ...
                             cur_parameterization.situation_model.learn( ...
                                 cur_parameterization, ...
@@ -144,7 +150,11 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
                     end
                     
                     % load or learn the classification models
-                    if ~isfield(learned_models, 'classifier_model')
+                    if ~isfield( learned_models, 'classifier_model') ...
+                    || ~isequal( learned_models_training_functions.classifier, cur_parameterization.classifier_load_or_train )
+                    
+                        learned_models_training_functions.classifier = cur_parameterization.classifier_load_or_train;
+                
                         learned_models.classifier_model = ...
                             cur_parameterization.classifier_load_or_train( ...
                                 cur_parameterization, ...
@@ -154,7 +164,11 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
                     
                     % load or learn the adjustment model
                     % train( fnames_in, saved_models_directory, IOU_threshold_for_training )
-                    if ~isfield(learned_models, 'adjustment_model')
+                    if ~isfield(learned_models, 'adjustment_model') ...
+                    || ~isequal( learned_models_training_functions.adjustment, cur_parameterization.adjustment_model_setup )
+                     
+                        learned_models_training_functions.adjustment = cur_parameterization.adjustment_model_setup;
+                
                         learned_models.adjustment_model = ...
                             cur_parameterization.adjustment_model_setup( ...
                                 cur_parameterization, ...

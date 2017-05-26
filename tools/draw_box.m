@@ -45,17 +45,21 @@ function h = draw_box(box, box_format, arg)
             error('unrecogonized box_format');
     end
     
+    if size(box,1)>1
+        h = zeros( size(box,1), 1 );
+    end
+    
     for i = 1:size(box,1)
 
         cs = [c0(i) c0(i) cf(i) cf(i) c0(i)];
         rs = [r0(i) rf(i) rf(i) r0(i) r0(i)];
 
         if ~exist('arg','var') || isempty(arg)
-            h = plot(cs, rs);
+            h(i) = plot(cs, rs);
         elseif ischar(arg)
-            h = plot(cs, rs, arg);
+            h(i) = plot(cs, rs, arg);
         elseif isnumeric(arg) && length(arg) == 3
-            h = plot(cs, rs, 'Color', arg);
+            h(i) = plot(cs, rs, 'Color', arg);
         end
         
     end
