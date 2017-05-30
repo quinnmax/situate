@@ -57,7 +57,7 @@
     experiment_settings.situation           = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
     
     % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % 
-    experiment_settings.use_gui = false;
+    experiment_settings.use_gui = true;
     % note: when doing a GUI run, the following won't happen
     %   run_analysis_after_completion,
     %   saving off results
@@ -90,8 +90,10 @@
       
     if strcmp(computer,'GLNXA64')
         experiment_settings.results_directory = fullfile('/home/',char(java.lang.System.getProperty('user.name')),'/Desktop/',[experiment_settings.title '_' datestr(now,'yyyy.mm.dd.HH.MM.SS')]);                                                                                          
-    else
+    elseif strcmp(computer,'MACI64')
         experiment_settings.results_directory = fullfile('/Users/',char(java.lang.System.getProperty('user.name')),'/Desktop/', [experiment_settings.title '_' datestr(now,'yyyy.mm.dd.HH.MM.SS')]);
+    else
+        error('don''t know the machine');
     end
     if ~exist(experiment_settings.results_directory,'dir') && ~experiment_settings.use_gui, mkdir(experiment_settings.results_directory); display(['made results directory ' experiment_settings.results_directory]); end
 
@@ -455,7 +457,6 @@
     temp.adjustment_model_apply            = @box_adjust.apply;
     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
     
-  
 %     description = 'Situate, local agents, p(uniform)=.5';
 %     temp = p;
 %     temp.description = description;
@@ -465,15 +466,15 @@
 %     temp.adjustment_model_apply            = @situate.spawn_local_scouts;
 %     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
     
-   
-    description = 'Situate, no adjustment model, p(uniform)=.5';
-    temp = p;
-    temp.description = description;
-    temp.situation_model.learn = @(a,b) situation_models.uniform_normal_mix_fit(a,b,.5);
-    temp.adjustment_model_activation_logic = @(cur_agent,workspace) false;
-    temp.adjustment_model_setup            = @(a,b,c,d) [];
-    temp.adjustment_model_apply            = @(cur_agent) assert(1==0);
-    if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+%    
+%     description = 'Situate, no adjustment model, p(uniform)=.5';
+%     temp = p;
+%     temp.description = description;
+%     temp.situation_model.learn = @(a,b) situation_models.uniform_normal_mix_fit(a,b,.5);
+%     temp.adjustment_model_activation_logic = @(cur_agent,workspace) false;
+%     temp.adjustment_model_setup            = @(a,b,c,d) [];
+%     temp.adjustment_model_apply            = @(cur_agent) assert(1==0);
+%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
 
 
     
