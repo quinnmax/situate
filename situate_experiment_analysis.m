@@ -356,7 +356,7 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
         if ~isempty(first_over_threshold)
             first_iteration_over_threshold(ci,ii,oi,ti) = iterations_of_interest( first_over_threshold );
         else
-            first_iteration_over_threshold(ci,ii,oi,ti) = -1;
+            first_iteration_over_threshold(ci,ii,oi,ti) = -1000;
         end
         
     end
@@ -364,19 +364,17 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     end
     end
     
-    
-    
-    ti = 2;
+    ti = 1;
     
     figure('color','white')
     for ci = 1:num_conditions
     for oi = 1:num_situation_objects
         subplot2( num_situation_objects, num_conditions, oi, ci )
-        hist( reshape(first_iteration_over_threshold(ci,:,oi,ti),1,[]), 20 );
+        hist( reshape(first_iteration_over_threshold(ci,:,oi,ti),1,[]), 50 );
         if oi == 1, title( p_conditions_descriptions{ci} ); end
         if ci == 1, ylabel( p_conditions{1}.situation_objects{oi} ); end
         xlabel('iteration number');
-        xlim([0 1000]);
+        xlim([0 max(first_iteration_over_threshold(:))]);
         ylim([0 100]);
     end
     end
@@ -480,14 +478,14 @@ end
 %% visualize the boxes generated during a run for an image
 
 imi = 1;
-ci = 3;
+ci = 1;
 [~, im] = situate.load_image_and_data( fnames_test_images{ci}{imi}, p_conditions{ci}, true );
 figure;
-b0 = 1;
-bf = 200;
+b0 = 001;
+bf = 100;
     
 for oi = 1:3
-    subplot(1,3,oi)
+    subplot(1,3,oi);
     imshow(im); 
     hold on;
     obj_box_inds = find( [agent_records{ci,imi}.interest] == oi );
@@ -496,12 +494,18 @@ for oi = 1:3
     temp = {temp.r0rfc0cf};
     temp = cellfun( @(x) double(x'), temp, 'UniformOutput', false );
     cur_boxes_r0rfc0cf = cell2mat( temp )';
-    h = draw_box( cur_boxes_r0rfc0cf(obj_box_inds(b0:bf),:), 'r0rfc0cf', 'red' );
-    set(h,'linewidth',.1);
+    for bi = b0:bf
+        h = draw_box( cur_boxes_r0rfc0cf(obj_box_inds(bi),:)-.1, 'r0rfc0cf', 'black' );
+        set(h,'linewidth',.1);
+        h = draw_box( cur_boxes_r0rfc0cf(obj_box_inds(bi),:), 'r0rfc0cf', 'red' );
+        set(h,'linewidth',.1);
+    end
     hold off;
     title(p_conditions{ci}.situation_objects{oi});
     xlabel( num2str( obj_box_inds(b0:bf) ) );
 end
+
+
 
 %% take a look at internal support, external support, and gt IOU. 
 %   this is a function of classifier and probability density, so the methods shouldn't matter. fine
@@ -538,8 +542,11 @@ end
     b = zeros( num_situation_objects, 4 );
     for oi = 1:num_situation_objects
         rows_of_interest = eq( oi, data_pile_flat(:,1));
-        x = [ data_pile_flat(rows_of_interest,2)-.5   external_support(rows_of_interest)-.5 ];
-        x = [ ones(size(x,1),1) x x(:,1).*x(:,2) ]; % slap on a bias column and a mixed column
+        internal = data_pile_flat(rows_of_interest,2);
+        external = external_support(rows_of_interest);
+        x = [ ones(length(internal),1) internal external internal.*external];
+        x(isnan(x)) = 0;
+        
         y = data_pile_flat(rows_of_interest,5);
         
         resampled_inds = resample_to_uniform(y);
@@ -552,14 +559,17 @@ end
     figure('color','white')
     for oi = 1:num_situation_objects
         rows_of_interest = eq( oi, data_pile_flat(:,1));
+        internal = data_pile_flat(rows_of_interest,2);
+        external = external_support(rows_of_interest);
+        x = [ ones(length(internal),1) internal external internal.*external];
+        x(isnan(x)) = 0;
         
-        x = [ data_pile_flat(rows_of_interest,2)-.5   external_support(rows_of_interest)-.5 ];
-        x = [ ones(size(x,1),1) x x(:,1).*x(:,2) ]; % slap on a bias column and a mixed column
         y_predicted = x * b(oi,:)';
         y_actual = data_pile_flat(rows_of_interest,5);
         
         subplot(1,num_situation_objects,oi)
-        plot( y_actual, y_predicted, '.')
+        plot( y_actual, y_predicted,'.','MarkerSize', .1)
+        
         xlabel('IOU actual');
         ylabel('IOU predicted (new total support)');
         title(situation_objects{oi});
@@ -570,21 +580,23 @@ end
         hold off;
         
         R=corrcoef(y_actual,y_predicted);
-        legend(num2str(R(1,2)));
+        legend(['r^2: ' num2str(R(1,2))]);
     end
     
     figure('color','white')
     for oi = 1:num_situation_objects
         rows_of_interest = eq( oi, data_pile_flat(:,1));
-        
-        x = [ data_pile_flat(rows_of_interest,4)   external_support(rows_of_interest) ];
-        x = [ ones(size(x,1),1) x x(:,1).*x(:,2) ]; % slap on a bias column and a mixed column
+        internal = data_pile_flat(rows_of_interest,2);
+        external = external_support(rows_of_interest);
+        x = [ ones(length(internal),1) internal external internal.*external];
         x(isnan(x)) = 0;
+        
         y_predicted = x * b(oi,:)';
         y_actual = data_pile_flat(rows_of_interest,5);
         
         subplot(1,num_situation_objects,oi)
-        plot( y_actual, x(:,2), '.')
+        plot( y_actual, x(:,2),'.','MarkerSize', .1)
+        
         xlabel('IOU actual');
         ylabel('IOU predicted (old total support)');
         title(situation_objects{oi});
@@ -595,18 +607,11 @@ end
         hold off;
         
         R=corrcoef(y_actual,x(:,2));
-        legend(num2str(R(1,2)));
+        legend(['r^2: ' num2str(R(1,2))]);
     end
     
     
-
-
-
-
-
-
-
-
+    
 end
 
 

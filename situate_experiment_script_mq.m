@@ -66,7 +66,7 @@
     % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % 
     
     % note: use [] if you want to use all available data
-    experiment_settings.num_folds           = 1;  
+    experiment_settings.num_folds           = 3;  
     experiment_settings.testing_data_max    = 100;  % per fold
     experiment_settings.training_data_max   = []; 
     
@@ -262,7 +262,7 @@
 % running conditions, but in general, these are the things that we haven't
 % been changing very much within an experimental run
         
-    p.num_iterations = 1000;         
+    p.num_iterations = 2000;         
 
     % pipeline
     
@@ -282,7 +282,7 @@
     
         external_support_function = 'logistic_normalized_dist'; % from sample density to a 0,1 range
         
-        total_support_function = 'regression_experiment_values';
+        total_support_function = 'regression_experiment_iteration_4';
         
         switch external_support_function
             case 'logistic_normalized_dist'
@@ -306,12 +306,29 @@
                 p.total_support_function    = @(internal,external) 0.8 * internal + 0.2 * external;
             case 'product'
                 p.total_support_function    = @(internal,external) internal * external;
-            case 'regression_experiment_values'
+            case 'regression_experiment_iteration_1'
                 % version learned from logistic regression experiment
                 p.total_support_function    = {};
-                p.total_support_function{1} = @(internal,external) 0.4864 + 0.7871 * (internal - .5) + 0.1149 * (external - .5) + 0.1158 * (internal - .5) * (external - .5);
-                p.total_support_function{2} = @(internal,external) 0.4912 + 0.9407 * (internal - .5) + 0.1009 * (external - .5) + 0.2624 * (internal - .5) * (external - .5);
-                p.total_support_function{3} = @(internal,external) 0.3923 + 0.2057 * (internal - .5) + 0.2978 * (external - .5) + 0.6864 * (internal - .5) * (external - .5);
+                p.total_support_function{1} = @(internal,external) 0.4864 + 0.7871 * (internal-.5) + 0.1149 * (external-.5) + 0.1158 * (internal-.5) * (external-.5);
+                p.total_support_function{2} = @(internal,external) 0.4912 + 0.9407 * (internal-.5) + 0.1009 * (external-.5) + 0.2624 * (internal-.5) * (external-.5);
+                p.total_support_function{3} = @(internal,external) 0.3923 + 0.2057 * (internal-.5) + 0.2978 * (external-.5) + 0.6864 * (internal-.5) * (external-.5);
+            case 'regression_experiment_iteration_2'
+                % version learned from logistic regression experiment
+                p.total_support_function    = {};
+                p.total_support_function{1} = @(internal,external) 0.4864 + 0.7869 * (internal-.5) + 0.1150 * (external-.5) + 0.1146 * (internal-.5) * (external-.5);
+                p.total_support_function{2} = @(internal,external) 0.4898 + 0.9408 * (internal-.5) + 0.1020 * (external-.5) + 0.2641 * (internal-.5) * (external-.5);
+                p.total_support_function{3} = @(internal,external) 0.3916 + 0.2041 * (internal-.5) + 0.2984 * (external-.5) + 0.6884 * (internal-.5) * (external-.5);
+            case 'regression_experiment_iteration_3'
+                % version learned from logistic regression experiment
+                p.total_support_function    = {};
+                p.total_support_function{1} = @(internal,external) 0.0734 + 0.7358 * internal + -0.0317 * external + 0.2311 * internal * external;
+                p.total_support_function{2} = @(internal,external) 0.0255 + 0.7720 * internal +  0.1044 * external + 0.0453 * internal * external;
+                p.total_support_function{3} = @(internal,external) 0.1168 + 0.4278 * internal + -0.3777 * external + 1.4486 * internal * external;
+            case 'regression_experiment_iteration_4'
+                p.total_support_function    = {};
+                p.total_support_function{1} = @(internal,external) 0.0731 + 0.7413 * internal + -0.0338 * external + 0.2272 * internal * external;
+                p.total_support_function{2} = @(internal,external) 0.0257 + 0.7742 * internal +  0.1032 * external + 0.0443 * internal * external;
+                p.total_support_function{3} = @(internal,external) 0.1163 + 0.4331 * internal + -0.3775 * external + 1.4393 * internal * external;
                 
             otherwise
                 error('unrecognized total support function');
@@ -439,14 +456,14 @@
     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
     
   
-    description = 'Situate, local agents, p(uniform)=.5';
-    temp = p;
-    temp.description = description;
-    temp.situation_model.learn = @(a,b) situation_models.uniform_normal_mix_fit(a,b,.5);
-    temp.adjustment_model_activation_logic = @(cur_agent,workspace) cur_agent.support.total > p.thresholds.internal_support & situate.spawn_local_scouts_activation_logic(cur_agent,workspace) & cur_agent.support.total < .9;
-    temp.adjustment_model_setup            = @(a,b,c,d) [];
-    temp.adjustment_model_apply            = @situate.spawn_local_scouts;
-    if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+%     description = 'Situate, local agents, p(uniform)=.5';
+%     temp = p;
+%     temp.description = description;
+%     temp.situation_model.learn = @(a,b) situation_models.uniform_normal_mix_fit(a,b,.5);
+%     temp.adjustment_model_activation_logic = @(cur_agent,workspace) cur_agent.support.total > p.thresholds.internal_support & situate.spawn_local_scouts_activation_logic(cur_agent,workspace) & cur_agent.support.total < .9;
+%     temp.adjustment_model_setup            = @(a,b,c,d) [];
+%     temp.adjustment_model_apply            = @situate.spawn_local_scouts;
+%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
     
    
     description = 'Situate, no adjustment model, p(uniform)=.5';
