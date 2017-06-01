@@ -1,4 +1,4 @@
-function h = salience_normal_draw( d, object_string, what_to_draw, box_r0rfc0cf, box_format_arg, initial_draw  )
+function h = salience_normal_draw( d, object_string, what_to_draw, input_agent, box_format_arg, initial_draw  )
 % h = uniform_then_normal_draw( d, object_string, what_to_draw, format_arg, [box_r0rfc0cf], [box_format_arg], [initial_draw] );
 %
 %   what to draw can be 'xy', 'shape', or 'size'
@@ -10,6 +10,8 @@ function h = salience_normal_draw( d, object_string, what_to_draw, box_r0rfc0cf,
 %   if box_r0rfc0cf and format_arg are included, the figure will also
 %   include a point (or box) indicating the location of that box in the
 %   figure
+
+    box_r0rfc0cf = input_agent.box.r0rfc0cf;
 
     if ~exist('initial_draw','var') || isempty(initial_draw)
         initial_draw = false;

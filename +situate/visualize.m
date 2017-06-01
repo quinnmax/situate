@@ -20,6 +20,8 @@ function [h, return_status_string] = visualize( h, im, p, d, workspace, cur_agen
     % see if this is an initial drawing, 
     % see if the workspace has been updated
     
+    font_size = 12;
+    
     min_frame_time = .001; % seconds
     
     global situate_visualizer_run_status;
@@ -123,31 +125,42 @@ function [h, return_status_string] = visualize( h, im, p, d, workspace, cur_agen
         set(h,'UserData',UserData);
         
         % draw the workspace entries on the workspace image
-        temp_h = situate.draw_workspace( [], p, workspace );
+        temp_h = situate.draw_workspace( [], p, workspace, font_size );
         UserData.handles(end+1:end+length(temp_h)) = temp_h;
      
         % draw the current agent on the workspace image
-        if ~isempty(cur_agent)
+        skip_this_agent = false;
+        if isempty(cur_agent) ...
+        || (~isempty(workspace.boxes_r0rfc0cf) ...
+            && any(logical(prod(eq( repmat(cur_agent.box.r0rfc0cf,size(workspace.boxes_r0rfc0cf,1),1), workspace.boxes_r0rfc0cf),2))) )
+            skip_this_agent = true;
+        end
+        
+        if ~skip_this_agent
+            
             hold on;
             UserData.handles(end+1) = draw_box(cur_agent.box.r0rfc0cf, 'r0rfc0cf', 'blue');
             hold off;
+            
             label_text = {...
                 [cur_agent.interest '?']; ...
-                ['  internal: ' num2str(cur_agent.support.internal)]; ...
+                % ['  internal: ' num2str(cur_agent.support.internal)]; ...
                 % ['  external: ' num2str(cur_agent.support.external)]; ...   % this should be NaN at scout level anayway
                 % ['  total:    ' num2str(cur_agent.support.total)]; ...      % this should be NaN at scout level anayway
-                ['  gt:       ' num2str(cur_agent.support.GROUND_TRUTH)]};
+                % ['  gt:       ' num2str(cur_agent.support.GROUND_TRUTH)] ...
+            };
             if isfield(cur_agent.support, 'logistic_regression_data')
+                display('does this exist anymore?');
                 label_text{end+1} = ['  coeff:    ' num2str(cur_agent.support.logistic_regression_data.coefficients)];
                 label_text{end+1} = ['  external: ' num2str(cur_agent.support.logistic_regression_data.external)];
             end
             t1 = text( double(cur_agent.box.r0rfc0cf(3)), double(cur_agent.box.r0rfc0cf(1)), label_text);
             set(t1,'color',[0 0 0]);
-            set(t1,'FontSize',8);
+            set(t1,'FontSize',font_size);
             set(t1,'FontWeight','bold');
             t2 = text( double(cur_agent.box.r0rfc0cf(3)+1), double(cur_agent.box.r0rfc0cf(1)+1), label_text);
             set(t2,'color',[1 1 1]);
-            set(t2,'FontSize',8);
+            set(t2,'FontSize',font_size);
             set(t2,'FontWeight','bold');
             UserData.handles(end+1) = t1;
             UserData.handles(end+1) = t2;
@@ -175,7 +188,12 @@ function [h, return_status_string] = visualize( h, im, p, d, workspace, cur_agen
             end
             %[value_counts] = counts( {scout_record.interest}, p.situation_objects );
             temp_h = bar( 1:length(p.situation_objects), value_counts );
-            set( get( temp_h, 'Parent' ), 'XTickLabel', p.situation_objects );
+            
+            interest_priorities = {d.interest_priority};
+            interest_priorities = interest_priorities(1:end-1);
+            xtic_labels = cellfun( @(x,y) [x ': ' num2str(y)], p.situation_objects, interest_priorities, 'UniformOutput', false );
+            
+            set( get( temp_h, 'Parent' ), 'XTickLabel', xtic_labels );
             if ~isempty(value_counts), ylim([0 max(value_counts) + 2]); else ylim([0 1]); end
             xlabel('category');
             ylabel('number of samples');
@@ -190,42 +208,55 @@ function [h, return_status_string] = visualize( h, im, p, d, workspace, cur_agen
    
     for oi = 1:length(p.situation_objects)
         
-        boxes_represented = [];
-        boxes_represented_formatting_box   = {};
-        boxes_represented_formatting_point = {};
+        samples_represented = [];
+        samples_represented_formatting_box   = {};
+        samples_represented_formatting_point = {};
         
+        % represent the workspace entries
         owi = strcmp( workspace.labels, p.situation_objects{oi}); % object workspace indices
         if any( owi )
             % add box to boxes_represented with appropriate formatting
-            boxes_represented(end+1,:) = workspace.boxes_r0rfc0cf(owi,:);
+            samples_represented(end+1,:) = workspace.boxes_r0rfc0cf(owi,:);
             if workspace.total_support(owi) >= p.thresholds.total_support_final
-                boxes_represented_formatting_box{end+1}   = bounding_box_format_final;
-                boxes_represented_formatting_point{end+1} = point_format_final;
+                samples_represented_formatting_box{end+1}   = bounding_box_format_final;
+                samples_represented_formatting_point{end+1} = point_format_final;
             else
-                boxes_represented_formatting_box{end+1}   = bounding_box_format_provisional;
-                boxes_represented_formatting_point{end+1} = point_format_provisional;
+                samples_represented_formatting_box{end+1}   = bounding_box_format_provisional;
+                samples_represented_formatting_point{end+1} = point_format_provisional;
             end
         end
         
+        % add the current agent to the list of samples to represent
+        internal_string = '';
+        external_string = '';
+        total_string = '';
+        gt_string = '';
         if ~isempty(cur_agent) && isequal( cur_agent.interest, p.situation_objects{oi} )
+            
             % add box to boxes_respresented with appropriate formatting
-            boxes_represented(end+1,:) = cur_agent.box.r0rfc0cf;
-            boxes_represented_formatting_box{end+1}   = '-b';
-            boxes_represented_formatting_point{end+1} = 'ob';
+            samples_represented(end+1,:) = cur_agent.box.r0rfc0cf;
+            samples_represented_formatting_box{end+1}   = '-b';
+            samples_represented_formatting_point{end+1} = 'ob';
+            
+            internal_string = ['  internal: ' num2str(cur_agent.support.internal) ];
+            external_string = ['  internal: ' num2str(cur_agent.support.external) ];
+            total_string = ['  internal: ' num2str(cur_agent.support.total) ];
+            gt_string = ['  gt: ' num2str(cur_agent.support.GROUND_TRUTH) ];
+            
         end
         
         subplot2(3,sp_cols,1,4+oi-1); 
-        temp_h = p.situation_model.draw( d, p.situation_objects{oi}, 'xy',    boxes_represented, boxes_represented_formatting_box, initial_figure_generation );
-        title([d(oi).interest ' location']);
+        temp_h = p.situation_model.draw( d, p.situation_objects{oi}, 'xy', samples_represented, samples_represented_formatting_box, initial_figure_generation );    
+        title({[d(oi).interest ' location'];internal_string;gt_string});
         UserData.handles(end+1:end+length(temp_h)) = temp_h;
     
         subplot2(3,sp_cols,2,3 + oi); 
-        temp_h = p.situation_model.draw( d, p.situation_objects{oi}, 'shape', boxes_represented, boxes_represented_formatting_point );
+        temp_h = p.situation_model.draw( d, p.situation_objects{oi}, 'shape', samples_represented, samples_represented_formatting_point, false );
         title([d(oi).interest ' box shape']);
         UserData.handles(end+1:end+length(temp_h)) = temp_h;
     
         subplot2(3,sp_cols,3,3 + oi); 
-        temp_h = p.situation_model.draw( d, p.situation_objects{oi}, 'size',  boxes_represented, boxes_represented_formatting_point );
+        temp_h = p.situation_model.draw( d, p.situation_objects{oi}, 'size',  samples_represented, samples_represented_formatting_point, false );
         title([d(oi).interest ' box size']);
         UserData.handles(end+1:end+length(temp_h)) = temp_h;
     
@@ -294,7 +325,7 @@ function [h, return_status_string] = visualize( h, im, p, d, workspace, cur_agen
     % after drawing the update, we wait for a user input to continue
     
     if ~ishandle(h)
-        % if the user killed it while we were drawing
+        % if the user closed the visualization while it was being rendered
         return_status_string = 'stop';
     else
         UserData.last_draw_time = toc;
@@ -306,7 +337,7 @@ function [h, return_status_string] = visualize( h, im, p, d, workspace, cur_agen
                 % we're waiting on a button press, possibely a callback, 
                 % which might change the user data in h, so we need to grab
                 % that as soon as we know it still exists
-                if ishandle(h), 
+                if ishandle(h)
                     if any(strcmp( situate_visualizer_run_status, {'restart','next_image'} ))
                         return_status_string = situate_visualizer_run_status;
                     else

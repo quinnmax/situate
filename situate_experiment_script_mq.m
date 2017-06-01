@@ -52,9 +52,16 @@
 % whether or not you want to use the GUI, where to save the experiment
 % results, and how many images for training and testing.
 
-    experiment_settings.title               = 'dogwalking, now with first round of parameters set';
+    experiment_settings.title               = 'dogwalking, updating local search activation logic';
     experiment_settings.situations_struct   = situate.situation_definitions();
     experiment_settings.situation           = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
+    
+    % note: use [] if you want to use all available data
+    experiment_settings.num_folds           = 1;  
+    experiment_settings.testing_data_max    = 4;  % per fold
+    experiment_settings.training_data_max   = []; 
+    
+    
     
     % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % 
     experiment_settings.use_gui = true;
@@ -64,12 +71,7 @@
     %   using more than the first experimental condition
     %   using more than the first data fold
     % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % 
-    
-    % note: use [] if you want to use all available data
-    experiment_settings.num_folds           = 3;  
-    experiment_settings.testing_data_max    = 100;  % per fold
-    experiment_settings.training_data_max   = []; 
-    
+   
     % additional visualization options
     
         if experiment_settings.use_gui
@@ -133,7 +135,7 @@
                     %   what_to_draw can be 'xy', 'shape', 'size'
             
             case 'uniform normal mix'
-                 p.situation_model.learn = @situation_models.uniform_normal_mix_fit;        
+                 p.situation_model.learn = @(a,b) situation_models.uniform_normal_mix_fit(a,b,.5);        
                     % takes: p, cellstr of training images 
                     % returns: model object
 
@@ -275,8 +277,8 @@
         
     % stopping conditions
     
-        p.stopping_condition = @situate.stopping_condition_null; % use all iterations, don't stop on detection
-        %p.stopping_condition = @situate.stopping_condition_situation_found; % go until all situation objects are checked-in over p.thresholds.total_support_final
+        %p.stopping_condition = @situate.stopping_condition_null; % use all iterations, don't stop on detection
+        p.stopping_condition = @situate.stopping_condition_situation_found; % stop early if all situation objects are checked-in over p.thresholds.total_support_final
         
         
         
@@ -368,11 +370,11 @@
         switch adjustment_model_description
             
             case 'bounding box regression'
-                p.adjustment_model_activation_logic = @(cur_agent) cur_agent.support.total > p.thresholds.total_support_provisional;
+                p.adjustment_model_activation_logic = @(cur_agent,workspace) situate.adjustment_model_activation_logic( cur_agent, workspace, p.thresholds.internal_support, .9 );
                 p.adjustment_model_setup            = @box_adjust.train;
                 p.adjustment_model_apply            = @box_adjust.apply;
             case 'local agent search'
-                p.adjustment_model_activation_logic = @(cur_agent) cur_agent.support.total > p.thresholds.total_support_provisional;
+                p.adjustment_model_activation_logic = @(cur_agent,workspace) situate.adjustment_model_activation_logic( cur_agent, workspace, p.thresholds.internal_support, .9 );
                 p.adjustment_model_setup            = @(a,b,c,d) [];
                 p.adjustment_model_apply            = @situate.spawn_local_scouts;
             case 'none'
@@ -391,12 +393,12 @@
                 %p.situation_objects_urgency_pre  = experiment_settings.situations_struct.('dogwalking').object_urgency_pre;
                 %p.situation_objects_urgency_post = experiment_settings.situations_struct.('dogwalking').object_urgency_post;
                 
-                p.situation_objects_urgency_pre.(  'dogwalker') = 1.0;
-                p.situation_objects_urgency_pre.(  'dog'      ) = 1.0;
-                p.situation_objects_urgency_pre.(  'leash'    ) = 1.0;
-                p.situation_objects_urgency_post.( 'dogwalker') =  .1;
-                p.situation_objects_urgency_post.( 'dog'      ) =  .1;
-                p.situation_objects_urgency_post.( 'leash'    ) =  .1;
+                p.situation_objects_urgency_pre.(  'dogwalker') = 1.00;
+                p.situation_objects_urgency_pre.(  'dog'      ) = 1.00;
+                p.situation_objects_urgency_pre.(  'leash'    ) = 0.25;
+                p.situation_objects_urgency_post.( 'dogwalker') = 0.125;
+                p.situation_objects_urgency_post.( 'dog'      ) = 0.125;
+                p.situation_objects_urgency_post.( 'leash'    ) = 0.125;
                 
             case 'pingpong' 
                 
@@ -452,7 +454,7 @@
     temp = p;
     temp.description = description;
     temp.situation_model.learn = @(a,b) situation_models.uniform_normal_mix_fit(a,b,.5);
-    temp.adjustment_model_activation_logic = @(cur_agent,workspace) cur_agent.support.total > p.thresholds.internal_support & cur_agent.support.total < .9;
+    temp.adjustment_model_activation_logic = @(cur_agent,workspace) situate.adjustment_model_activation_logic( cur_agent, workspace, p.thresholds.internal_support, .9 );
     temp.adjustment_model_setup            = @box_adjust.train;
     temp.adjustment_model_apply            = @box_adjust.apply;
     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
@@ -461,11 +463,10 @@
 %     temp = p;
 %     temp.description = description;
 %     temp.situation_model.learn = @(a,b) situation_models.uniform_normal_mix_fit(a,b,.5);
-%     temp.adjustment_model_activation_logic = @(cur_agent,workspace) cur_agent.support.total > p.thresholds.internal_support & situate.spawn_local_scouts_activation_logic(cur_agent,workspace) & cur_agent.support.total < .9;
+%     temp.adjustment_model_activation_logic = @(cur_agent,workspace) situate.adjustment_model_activation_logic( cur_agent, workspace, p.thresholds.internal_support, .9 );
 %     temp.adjustment_model_setup            = @(a,b,c,d) [];
 %     temp.adjustment_model_apply            = @situate.spawn_local_scouts;
 %     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
-    
 %    
 %     description = 'Situate, no adjustment model, p(uniform)=.5';
 %     temp = p;
@@ -501,7 +502,11 @@
 
 %% Run the experiment 
 
-    situate.experiment_helper(experiment_settings, p_conditions, data_path, split_arg);
+    if experiment_settings.use_gui
+        situate.experiment_helper(experiment_settings, p_conditions, data_path, split_arg);
+    else
+        situate.experiment_helper_par(experiment_settings, p_conditions, data_path, split_arg);
+    end
 
 
 

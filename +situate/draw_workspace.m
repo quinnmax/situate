@@ -1,6 +1,6 @@
 
 
-function h = draw_workspace( input, p, workspace )
+function h = draw_workspace( input, p, workspace, font_size )
 
     % handle_array = situate.draw_workspace( input, p, workspace )
     %
@@ -15,6 +15,10 @@ function h = draw_workspace( input, p, workspace )
     bounding_box_format_final = 'r';
     
     h = [];
+    
+    if ~exist('font_size','var')
+        font_size = 8;
+    end
     
     %% figure out what the input was 
     %   might be an image fname, an image matrix, or a handle to an existing figure
@@ -63,17 +67,17 @@ function h = draw_workspace( input, p, workspace )
         for wi = 1:size(workspace.boxes_r0rfc0cf,1)
             label_text = {...
                 workspace.labels{wi}; ...
-                ['  internal: ' num2str(workspace.internal_support(wi))]; ...
-                ['  external: ' num2str(workspace.external_support(wi))]; ...
-                ['  total:    ' num2str(workspace.total_support(wi))]; ...
-                ['  gt:       ' num2str(workspace.GT_IOU(wi))]};
+                ['  int: ' num2str(workspace.internal_support(wi))]; ...
+                ['  ext: ' num2str(workspace.external_support(wi))]; ...
+                ['  tot:    ' num2str(workspace.total_support(wi))]; ...
+                ['  gt :       ' num2str(workspace.GT_IOU(wi))]};
             t1 = text( workspace.boxes_r0rfc0cf(wi,3), workspace.boxes_r0rfc0cf(wi,1), label_text);
             set(t1,'color',[0 0 0]);
-            set(t1,'FontSize',8);
+            set(t1,'FontSize',font_size);
             set(t1,'FontWeight','bold');
             t2 = text( workspace.boxes_r0rfc0cf(wi,3)+1, workspace.boxes_r0rfc0cf(wi,1)+1, label_text);
             set(t2,'color',[1 1 1]);
-            set(t2,'FontSize',8);
+            set(t2,'FontSize',font_size);
             set(t2,'FontWeight','bold');
 
             %UserData.handles(end+1) = t1;

@@ -361,8 +361,8 @@ function agent = agent_initialize(p)
         agent_base.support.internal          = NaN;
         agent_base.support.external          = NaN;
         agent_base.support.total             = NaN;
-        agent_base.support.GROUND_TRUTH      = [];
-        agent_base.support.sample_densities  = [];
+        agent_base.support.GROUND_TRUTH      = NaN;
+        agent_base.support.sample_densities  = NaN;
         agent_base.eval_function             = []; % not really using it right now :/
         agent_base.GT_label_raw = [];
     
@@ -372,11 +372,7 @@ function agent = agent_initialize(p)
         
         p_old = p;
     end
-    
-%     if exist('d','var')
-%         agent_base.interest = d( sample_1d( [d.interest_priority] ) ).interest;
-%     end
-    
+   
     agent = agent_base;
     
 end
@@ -415,7 +411,8 @@ function [agent_pool, d, workspace] = agent_evaluate( agent_pool, agent_index, i
         % up any further. The scout will be killed in the iteration loop
         % per usual.
         [agent_pool] = agent_evaluate_reviewer( agent_pool, length(agent_pool), p, workspace, d );
-        agent_pool(agent_index).support.total = agent_pool(end).support.total;
+        agent_pool(agent_index).support.external = agent_pool(end).support.external;
+        agent_pool(agent_index).support.total    = agent_pool(end).support.total;
         if isequal(agent_pool(end).type,'reviewer')
             % the reviewer failed to spawn a builder, so just fizzle
             agent_pool(end) = [];
@@ -429,6 +426,16 @@ function [agent_pool, d, workspace] = agent_evaluate( agent_pool, agent_index, i
             % just turn scouts into reviewers and builders, rather than
             % adding them to the pool...
             agent_pool([end-1 end]) = [];
+        end
+    end
+    
+    % for found objects, adjust their priority
+    if object_was_added
+       for wi = 1:length(workspace.labels)
+            if workspace.total_support(wi) >= p.thresholds.total_support_final
+                cur_obj_type_ind = find( strcmp( workspace.labels(wi), p.situation_objects ) );
+                d(cur_obj_type_ind).interest_priority = p.situation_objects_urgency_post.( p.situation_objects{cur_obj_type_ind} );
+            end
         end
     end
     

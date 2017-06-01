@@ -1,5 +1,5 @@
-function h = uniform_normal_mix_draw( d, object_string, what_to_draw, box_r0rfc0cf, box_format_arg, initial_draw  )
-% h = uniform_normal_mix_draw( d, object_string, what_to_draw, format_arg, [box_r0rfc0cf], [box_format_arg], [initial_draw] );
+function h = uniform_normal_mix_draw( d, object_string, what_to_draw, input_agent, box_format_arg, initial_draw  )
+% h = uniform_normal_mix_draw( d, object_string, what_to_draw, input_agent, format_arg, [box_r0rfc0cf], [box_format_arg], [initial_draw] );
 %
 %   what to draw can be 'xy', 'shape', or 'size'
 %       xy will be a heat map the shape of the image
@@ -7,9 +7,14 @@ function h = uniform_normal_mix_draw( d, object_string, what_to_draw, box_r0rfc0
 %       size  will be a single dimensional distribution of log area ratio
 %   each is marginalized from the full sized distribution
 %
-%   if box_r0rfc0cf and format_arg are included, the figure will also
-%   include a point (or box) indicating the location of that box in the
-%   figure
+%   if input_agent and format_arg are included, the figure will also
+%   include a representation of the sample (as a point or box) indicating the location or desnity 
+%   of that sample
+
+    if ~isempty(input_agent) 
+        %box_r0rfc0cf = input_agent.box.r0rfc0cf;
+        box_r0rfc0cf = input_agent;
+    end
 
     if ~exist('initial_draw','var') || isempty(initial_draw)
         initial_draw = false;
@@ -45,9 +50,6 @@ function h = uniform_normal_mix_draw( d, object_string, what_to_draw, box_r0rfc0
                     
                     if d(i).distribution.is_conditional
                         
-                        % we currently have a .5 chance of just using a uniform sample anyway, so
-                        % we should mix our representation of a normal dist and a uniform
-                        
                         rc_ind = strcmp( d(i).distribution.parameters_description, 'rc' );
                         cc_ind = strcmp( d(i).distribution.parameters_description, 'cc' );
                         inds_want = block_ind_0 + find(any([ rc_ind; cc_ind ]));
@@ -61,7 +63,12 @@ function h = uniform_normal_mix_draw( d, object_string, what_to_draw, box_r0rfc0
                         Z_flat = mvnpdf( [Y(:) X(:)], mu_bar, Sigma_bar );
                         Z = reshape( Z_flat,im_r, im_c );
                         
-                        alpha = d(i).distribution.probability_of_uniform_after_conditioning;
+                        if isfield(d(i).distribution,'probability_of_uniform_after_conditioning')
+                            alpha = d(i).distribution.probability_of_uniform_after_conditioning;
+                        else
+                            alpha = 0;
+                        end
+                        
                         Z = (1-alpha) * mat2gray(Z) + alpha; 
                         
                         imshow(Z);
@@ -78,8 +85,7 @@ function h = uniform_normal_mix_draw( d, object_string, what_to_draw, box_r0rfc0
                     up_to_date_inds_xy = unique([up_to_date_inds_xy i]);
                     
                 end
-                        
-                  
+                     
                 if exist('box_r0rfc0cf','var') && ~isempty(box_r0rfc0cf)
                     
                     % if we're drawing a workspace box and an agent
@@ -115,7 +121,7 @@ function h = uniform_normal_mix_draw( d, object_string, what_to_draw, box_r0rfc0
                 plot(x_vals,y_vals,'-b');
                 xlim([-2,2]);
                 h_temp = gca;
-                h_temp.XTick = [ log(.25)  log(.5) log(1) log(2) log(4) ];
+                h_temp.XTick      = [ log(.25)  log(.5) log(1) log(2) log(4) ];
                 h_temp.XTickLabel = { '1:4' '1:2' '1:1' '2:1' '4:1'};
                 %xticks([ log(.25)  log(.5) log(1) log(2) log(4) ]);
                 %xticklabels({ '1:4' '1:2' '1:1' '2:1' '4:1'});
@@ -159,8 +165,8 @@ function h = uniform_normal_mix_draw( d, object_string, what_to_draw, box_r0rfc0
                 plot(x_vals,y_vals,'-b');
                 xlim([-7,0.5]);
                 h_temp = gca;
-                h_temp.XTick = [ log(.001) log(.01) log(.05)   log(.5) log(1) ];
-                h_temp.XTickLabel = {'.001' '.01' '.05'   '.5' '1'};
+                h_temp.XTick = [ log(.001) log(.01) log(.1)   log(.5) log(1) ];
+                h_temp.XTickLabel = {'.001' '.01' '.1'   '.5' '1'};
                 %xticks([log(.001) log(.01) log(.05)   log(.5) log(1) ]);
                 %xticklabels({'.001' '.01' '.05'   '.5' '1'});
                 xlabel('area (box/image)');

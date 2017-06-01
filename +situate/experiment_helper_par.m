@@ -1,7 +1,7 @@
 
     
-function [] = experiment_helper(experiment_settings, parameterization_conditions, data_path, split_arg)
-% experiment_helper(experiment_settings, p_conditions, data_path, split_arg)
+function [] = experiment_helper_par(experiment_settings, parameterization_conditions, data_path, split_arg)
+% experiment_helper_par(experiment_settings, p_conditions, data_path, split_arg)
 
 
   
@@ -125,6 +125,40 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
 
                 cur_parameterization = parameterization_conditions(parameters_ind);
                 rng( cur_parameterization.seed_test );
+                
+                % build or load models for these parameters
+                % load or learn the situation model
+                if ~isfield( learned_models, 'situation_model') ...
+                || ~isequal( learned_models_training_functions.situation, cur_parameterization.situation_model.learn )
+                    learned_models_training_functions.situation = cur_parameterization.situation_model.learn;
+                    learned_models.situation_model.joint = ...
+                        cur_parameterization.situation_model.learn( ...
+                            cur_parameterization, ...
+                            fnames_lb_train );
+                end
+
+                % load or learn the classification models
+                if ~isfield( learned_models, 'classifier_model') ...
+                || ~isequal( learned_models_training_functions.classifier, cur_parameterization.classifier_load_or_train )
+                    learned_models_training_functions.classifier = cur_parameterization.classifier_load_or_train;
+                    learned_models.classifier_model = ...
+                        cur_parameterization.classifier_load_or_train( ...
+                            cur_parameterization, ...
+                            fnames_lb_train, ...
+                            cur_parameterization.classifier_saved_models_directory );
+                end
+
+                % load or learn the adjustment model
+                % train( fnames_in, saved_models_directory, IOU_threshold_for_training )
+                if ~isfield(learned_models, 'adjustment_model') ...
+                || ~isequal( learned_models_training_functions.adjustment, cur_parameterization.adjustment_model_setup )
+                    learned_models_training_functions.adjustment = cur_parameterization.adjustment_model_setup;
+                    learned_models.adjustment_model = ...
+                        cur_parameterization.adjustment_model_setup( ...
+                            cur_parameterization, ...
+                            fnames_lb_train, ...
+                            cur_parameterization.classifier_saved_models_directory );
+                end
 
                 progress( 0, length(fnames_im_test),cur_parameterization.description); 
 
@@ -132,104 +166,26 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
                 workspaces_final    = cell(1,length(fnames_im_test));
                 agent_records       = cell(1,length(fnames_im_test));
                 
-                keep_going = true;
-                for cur_image_ind = 1:experiment_settings.testing_data_max
-                    
-                    % load or learn the situation model
-                    if ~isfield( learned_models, 'situation_model') ...
-                    || ~isequal( learned_models_training_functions.situation, cur_parameterization.situation_model.learn )
-                    
-                        learned_models_training_functions.situation = cur_parameterization.situation_model.learn;
-                
-                        learned_models.situation_model.joint = ...
-                            cur_parameterization.situation_model.learn( ...
-                                cur_parameterization, ...
-                                fnames_lb_train );
-                    end
-                    
-                    % load or learn the classification models
-                    if ~isfield( learned_models, 'classifier_model') ...
-                    || ~isequal( learned_models_training_functions.classifier, cur_parameterization.classifier_load_or_train )
-                    
-                        learned_models_training_functions.classifier = cur_parameterization.classifier_load_or_train;
-                
-                        learned_models.classifier_model = ...
-                            cur_parameterization.classifier_load_or_train( ...
-                                cur_parameterization, ...
-                                fnames_lb_train, ...
-                                cur_parameterization.classifier_saved_models_directory );
-                    end
-                    
-                    % load or learn the adjustment model
-                    % train( fnames_in, saved_models_directory, IOU_threshold_for_training )
-                    if ~isfield(learned_models, 'adjustment_model') ...
-                    || ~isequal( learned_models_training_functions.adjustment, cur_parameterization.adjustment_model_setup )
-                     
-                        learned_models_training_functions.adjustment = cur_parameterization.adjustment_model_setup;
-                
-                        learned_models.adjustment_model = ...
-                            cur_parameterization.adjustment_model_setup( ...
-                                cur_parameterization, ...
-                                fnames_lb_train, ...
-                                cur_parameterization.classifier_saved_models_directory );
-                    end
+                parfor cur_image_ind = 1:experiment_settings.testing_data_max
                     
                     % run on the current image
                     cur_fname_im = fnames_im_test{cur_image_ind};
 
                     tic;
-                    [ ~, run_data_cur, visualizer_status_string ] = situate.main_loop( cur_fname_im, cur_parameterization, learned_models );
+                    [ ~, run_data_cur ] = situate.main_loop( cur_fname_im, cur_parameterization, learned_models );
 
-                    
-                    if experiment_settings.use_gui % handle visualizer status
+                    % store results
+                    workspaces_final{cur_image_ind} = run_data_cur.workspace_final;
+                    agent_records{cur_image_ind}    = run_data_cur.agent_record;
 
-                        switch visualizer_status_string
-                            case 'restart'
-                                % cur_image_ind = cur_image_ind;
-                                % keep_going = true;
-                                % no op
-                            case 'next_image'
-                                cur_image_ind = cur_image_ind + 1;
-                                % keep_going = true;
-                            case 'stop'
-                                keep_going = false;
-                            otherwise
-                                keep_going = false;
-                                % because we probably killed it with a window close
-                        end
-
-                    else
-
-                       % store results
-                        workspaces_final{cur_image_ind} = run_data_cur.workspace_final;
-                        agent_records{cur_image_ind}    = run_data_cur.agent_record;
-
-                        % display an update in the console
-                        num_iterations_run = sum(~eq(0,[run_data_cur.agent_record.interest]));
-                        IOUs_of_last_run   = num2str(run_data_cur.workspace_final.GT_IOU);
-                        progress_string    = [cur_parameterization.description ', ' num2str(num_iterations_run), ' steps, ' num2str(toc) 's,', ' IOUs: [' IOUs_of_last_run ']'];
-                        progress(cur_image_ind,length(fnames_im_test),progress_string);
-
-                    end
-
-                    if cur_image_ind > experiment_settings.testing_data_max
-                        keep_going = false;
-                        if experiment_settings.use_gui
-                            msgbox('out of testing images');
-                        end
-                    end
-
-                    if ~keep_going
-                        break;
-                    end
+                    % display an update in the console
+                    num_iterations_run = sum(~eq(0,[run_data_cur.agent_record.interest]));
+                    IOUs_of_last_run   = num2str(run_data_cur.workspace_final.GT_IOU);
+                    progress_string    = [cur_parameterization.description ', ' num2str(num_iterations_run), ' steps, ' num2str(toc) 's,', ' IOUs: [' IOUs_of_last_run '] ' num2str(cur_image_ind) '/' num2str(experiment_settings.testing_data_max)];
+                    display(progress_string);
 
                 end
 
-                % bail after the first experimental setup if we're using the GUI
-                if experiment_settings.use_gui
-                    break;
-                end
-                
                 % save off results every condition and fold
                 %   current fold and 
                 %   experimental condition
@@ -250,16 +206,9 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
                 display(['saved to ' save_fname]);
                     
             end
-            
-            % bail after the first fold if we're using the GUI
-            if experiment_settings.use_gui
-                break;
-            end
-
+           
     end
-
-    
-    
+  
 end
 
 

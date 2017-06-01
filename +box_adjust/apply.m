@@ -1,12 +1,7 @@
 function [ agent_pool, adjusted_box_r0rfc0cf, delta_xywh ] = apply( model, current_agent_snapshot, agent_pool, image, cnn_features )
 
-
-
     % [ agent_pool, adjusted_box_r0rfc0cf, delta_xywh ] = apply( model, current_agent_snapshot, agent_pool, image, cnn_features );
 
-
-    
-    
     % [adjusted_box_r0rfc0cf, delta_xywh] = apply( model, object_type, box_r0rfc0cf, image, cnn_features );
     %
     % adjusted_box_r0rfc0cf: the adjusted bounding box is returned in r0rfc0cf format

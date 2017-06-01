@@ -520,6 +520,7 @@ end
     for ii = 1:num_images
         
         object_of_interest = [agent_records{ci,ii}.interest];
+        object_of_interest(eq(object_of_interest,0)) = [];
         temp               = [agent_records{ci,ii}.support];
         total_support      = [temp.total];
         internal_support   = [temp.internal];
