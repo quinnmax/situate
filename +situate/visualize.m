@@ -34,7 +34,7 @@ function [h, return_status_string] = visualize( h, im, p, d, workspace, cur_agen
     bounding_box_format_final       = 'r';
     bounding_box_format_provisional = 'r--';
     
-    sp_cols = 3 + length(p.situation_objects); % number of columns in the subplot
+    sp_cols = 4 + length(p.situation_objects); % number of columns in the subplot
     
     initial_figure_generation = false;
     redraw_density_maps = false;
@@ -245,17 +245,17 @@ function [h, return_status_string] = visualize( h, im, p, d, workspace, cur_agen
             
         end
         
-        subplot2(3,sp_cols,1,4+oi-1); 
+        subplot2(3,sp_cols,1,5+oi-1); 
         temp_h = p.situation_model.draw( d, p.situation_objects{oi}, 'xy', samples_represented, samples_represented_formatting_box, initial_figure_generation );    
         title({[d(oi).interest ' location'];internal_string;gt_string});
         UserData.handles(end+1:end+length(temp_h)) = temp_h;
     
-        subplot2(3,sp_cols,2,3 + oi); 
+        subplot2(3,sp_cols,2,5+oi-1); 
         temp_h = p.situation_model.draw( d, p.situation_objects{oi}, 'shape', samples_represented, samples_represented_formatting_point, false );
         title([d(oi).interest ' box shape']);
         UserData.handles(end+1:end+length(temp_h)) = temp_h;
     
-        subplot2(3,sp_cols,3,3 + oi); 
+        subplot2(3,sp_cols,3,5+oi-1); 
         temp_h = p.situation_model.draw( d, p.situation_objects{oi}, 'size',  samples_represented, samples_represented_formatting_point, false );
         title([d(oi).interest ' box size']);
         UserData.handles(end+1:end+length(temp_h)) = temp_h;

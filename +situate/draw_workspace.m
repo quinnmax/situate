@@ -65,25 +65,46 @@ function h = draw_workspace( input, p, workspace, font_size )
     %% then draw the text ( so boxes don't cover text )
     
         for wi = 1:size(workspace.boxes_r0rfc0cf,1)
-            label_text = {...
-                workspace.labels{wi}; ...
-                ['  int: ' num2str(workspace.internal_support(wi))]; ...
-                ['  ext: ' num2str(workspace.external_support(wi))]; ...
-                ['  tot:    ' num2str(workspace.total_support(wi))]; ...
-                ['  gt :       ' num2str(workspace.GT_IOU(wi))]};
-            t1 = text( workspace.boxes_r0rfc0cf(wi,3), workspace.boxes_r0rfc0cf(wi,1), label_text);
+            
+            label_text = workspace.labels{wi};
+            
+            x_position = workspace.boxes_r0rfc0cf(wi,3);
+            y_position = workspace.boxes_r0rfc0cf(wi,1);
+            
+            t1 = text( x_position, y_position, label_text);
             set(t1,'color',[0 0 0]);
             set(t1,'FontSize',font_size);
             set(t1,'FontWeight','bold');
-            t2 = text( workspace.boxes_r0rfc0cf(wi,3)+1, workspace.boxes_r0rfc0cf(wi,1)+1, label_text);
+            t2 = text( x_position+1, y_position+1, label_text);
             set(t2,'color',[1 1 1]);
             set(t2,'FontSize',font_size);
             set(t2,'FontWeight','bold');
-
-            %UserData.handles(end+1) = t1;
-            %UserData.handles(end+1) = t2;
+            
             h(end+1) = t1;
             h(end+1) = t2;
+            
+            detailed_text = {...
+                workspace.labels{wi}; ...
+                ['  int: ' num2str(workspace.internal_support(wi))]; ...
+                ['  ext: ' num2str(workspace.external_support(wi))]; ...
+                ['  tot: ' num2str(workspace.total_support(wi))]; ...
+                ['  gt : ' num2str(workspace.GT_IOU(wi))]};
+            
+            x_position = workspace.im_size(2)+10;
+            
+            y_positions = linspace( 1, workspace.im_size(1), length(p.situation_objects)+2 );
+            y_positions = y_positions(2:end-1);
+            
+            %y_position = workspace.boxes_r0rfc0cf(wi,1);
+            y_position = y_positions(find(strcmp(workspace.labels{wi},p.situation_objects)));
+            
+            t3 = text( x_position, y_position, detailed_text);
+            set(t1,'color',[0 0 0]);
+            set(t1,'FontSize',font_size);
+            set(t1,'FontWeight','bold');
+            
+            h(end+1) = t3;
+            
         end
         hold off;
 
