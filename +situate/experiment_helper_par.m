@@ -166,7 +166,7 @@ function [] = experiment_helper_par(experiment_settings, parameterization_condit
                 workspaces_final    = cell(1,length(fnames_im_test));
                 agent_records       = cell(1,length(fnames_im_test));
                 
-                parfor cur_image_ind = 1:experiment_settings.testing_data_max
+                for cur_image_ind = 1:experiment_settings.testing_data_max
                     
                     % run on the current image
                     cur_fname_im = fnames_im_test{cur_image_ind};

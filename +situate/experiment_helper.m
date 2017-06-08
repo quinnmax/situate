@@ -133,7 +133,8 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
                 agent_records       = cell(1,length(fnames_im_test));
                 
                 keep_going = true;
-                for cur_image_ind = 1:experiment_settings.testing_data_max
+                cur_image_ind = 1;
+                while keep_going
                     
                     % load or learn the situation model
                     if ~isfield( learned_models, 'situation_model') ...
@@ -185,12 +186,10 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
 
                         switch visualizer_status_string
                             case 'restart'
-                                % cur_image_ind = cur_image_ind;
                                 % keep_going = true;
-                                % no op
                             case 'next_image'
-                                cur_image_ind = cur_image_ind + 1;
                                 % keep_going = true;
+                                cur_image_ind = cur_image_ind + 1;
                             case 'stop'
                                 keep_going = false;
                             otherwise

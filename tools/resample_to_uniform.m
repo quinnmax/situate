@@ -15,7 +15,7 @@ function [inds_out, vals_out] = resample_to_uniform( vals_in, n, num_bins )
     
     %vals_in = randn(1,1000);
     
-    if ~exist('n','var') || isemty(n)
+    if ~exist('n','var') || isempty(n)
         n = length(vals_in);
     end
     

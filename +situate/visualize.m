@@ -151,6 +151,7 @@ function [h, return_status_string] = visualize( h, im, p, d, workspace, cur_agen
             };
             if isfield(cur_agent.support, 'logistic_regression_data')
                 display('does this exist anymore?');
+                assert(1==0);
                 label_text{end+1} = ['  coeff:    ' num2str(cur_agent.support.logistic_regression_data.coefficients)];
                 label_text{end+1} = ['  external: ' num2str(cur_agent.support.logistic_regression_data.external)];
             end
@@ -238,10 +239,10 @@ function [h, return_status_string] = visualize( h, im, p, d, workspace, cur_agen
             samples_represented_formatting_box{end+1}   = '-b';
             samples_represented_formatting_point{end+1} = 'ob';
             
-            internal_string = ['  internal: ' num2str(cur_agent.support.internal) ];
-            external_string = ['  internal: ' num2str(cur_agent.support.external) ];
-            total_string = ['  internal: ' num2str(cur_agent.support.total) ];
-            gt_string = ['  gt: ' num2str(cur_agent.support.GROUND_TRUTH) ];
+            internal_string = ['int: ' sprintf('%0.4f', cur_agent.support.internal) ];
+            external_string = ['ext: ' sprintf('%0.4f', cur_agent.support.external) ];
+            total_string    = ['tot: ' sprintf('%0.4f', cur_agent.support.total)    ];
+            gt_string       = ['gt:  ' sprintf('%0.4f', cur_agent.support.GROUND_TRUTH) ];
             
         end
         

@@ -380,7 +380,7 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     end
 
     
-%% display IOU for each object type and each image
+%% table: display IOU for each object type and each image
 
     final_ious = cell(1,num_conditions);
     iou_threshold = .5;
@@ -453,7 +453,7 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
 display('fin');
 
 
-%% take at how many scouts were looking for each object type during the run
+%% figure: how many scouts were looking for each object type during the run
   
 figure
 
@@ -475,7 +475,7 @@ end
 end
 
 
-%% visualize the boxes generated during a run for an image
+%% figure: visualize the boxes generated during a run for an image
 
 imi = 1;
 ci = 1;
@@ -512,7 +512,7 @@ end
 %   to just gather everything up in this case
 
     total_agent_records = sum( sum( cellfun( @length, agent_records ) ) );
-    columns = {'agent_interest_type', 'internal_support', 'external_support', 'total_support', 'gt_iou'};
+    columns = {'agent interest type', 'internal support', 'sample density', 'external support', 'total support', 'gt iou'};
     data_pile_flat = -5 * ones( total_agent_records, length(columns) );
 
     ai = 1;
@@ -524,10 +524,11 @@ end
         temp               = [agent_records{ci,ii}.support];
         total_support      = [temp.total];
         internal_support   = [temp.internal];
+        sample_densities   = [temp.sample_densities];
         external_support   = [temp.external];
         gt_iou             = [temp.GROUND_TRUTH];
         
-        temp2 = [double(object_of_interest); double(internal_support); double(external_support); double(total_support); double(gt_iou)];
+        temp2 = [double(object_of_interest); double(internal_support); double(sample_densities); double(external_support); double(total_support); double(gt_iou)];
         data_pile_flat(ai:ai+length(internal_support)-1,:) = temp2';
         
         ai = ai + length(internal_support);
@@ -536,81 +537,143 @@ end
     fprintf('.');
     end
     
-    % external support wasn't recorded for all of them, so infer it from total support
-    external_support = (data_pile_flat(:,4) - .8 * data_pile_flat(:,2)) ./ .2;
-    external_support( external_support < 0 | isnan(external_support) ) = 0;
     
-    b = zeros( num_situation_objects, 4 );
-    for oi = 1:num_situation_objects
-        rows_of_interest = eq( oi, data_pile_flat(:,1));
-        internal = data_pile_flat(rows_of_interest,2);
-        external = external_support(rows_of_interest);
-        x = [ ones(length(internal),1) internal external internal.*external];
-        x(isnan(x)) = 0;
+    
+    % visualize support values (slow, lots of values)
+    figure
+        for ci = 1:6
+        subplot(1,6,ci);
+            if ci == 3
+                plot(log(data_pile_flat(:,ci)), logistic( data_pile_flat(:,ci), .1 ), '.' );
+            else
+                hist(data_pile_flat(:,ci),50);
+            end
+            title(columns(ci));
+        end
+    
+    ci = 3; % density values
+    x = sort(data_pile_flat(:,ci));
+    y = cumsum( ones(size(x)) ) / length(x);
+    
+    figure;
+    subplot(2,2,1); hist(x,50); xlabel('density');
+    title('density distributions');
+    subplot(2,2,2); plot(y,x); xlabel('data percentile'); ylabel('density'); 
+    title('cumulative distribution of data')
+    subplot(2,2,3); hist(log(x),50); xlabel('log density');
+    subplot(2,2,4); plot(y,log(x)); xlabel('data percentile'); ylabel('log density');
+    
+    
+    
+    % hand drawn target activation function
+    x_hand = [ 0  .5  .9   1 ];
+    y_hand = [ 0   0   1   1 ];
+    y_interp = interp1(x_hand,y_hand,linspace(0,1,length(x)));
+    y_interp = y_interp';
+    
+    activation_function = @(x,b) b(1) + b(2) * atan( b(3) * (x-b(4)) );
+    b0 = [ 0.0601    0.5596    9.2032e-12   -0.2116];
+    
+    bf = fminsearch( @(b) sum( (y_interp - activation_function(x,b)) .^2 ), b0 );
+    
+    
+    
+    figure;
+    plot(y,y_interp,'b');
+    legend('made-up possible activation function','location','northwest');
+    hold on;
+    plot( y, activation_function(x,b0), 'green' );
+    plot( y, activation_function(x,bf), 'red' );
+    hold off;
+    legend('made-up possible activation function','guess estimate','best fit','location','northwest');
+    xlabel('data percentile');
+    ylabel('external support value');
+    xlim([-.1 1.1]);
+    ylim([-.1 1.1]);
+    
+    
+    
+    % now fitting total support using the learned external support function
+    object_type      = data_pile_flat(:,1);
+    internal_support = data_pile_flat(:,2);
+    densities        = data_pile_flat(:,3);
+    external_support = activation_function( densities, bf );
+    gt_iou           = data_pile_flat(:,6);
+    
+    b0_total = [0 1 1 0];
+    bf_total = zeros( length(p.situation_objects), length(b0_total) );
+    for ci = 1:length(p.situation_objects)
+        cur_inds = eq(object_type,ci);
+        cur_internal = internal_support(cur_inds);
+        cur_external = external_support(cur_inds);
+        cur_gt_iou   = gt_iou(cur_inds);
+        resampled_inds = resample_to_uniform( cur_gt_iou );
         
-        y = data_pile_flat(rows_of_interest,5);
-        
-        resampled_inds = resample_to_uniform(y);
-        x = x(resampled_inds,:);
-        y = y(resampled_inds);
-        
-        b(oi,:) = regress(y,x);
+        cur_internal = cur_internal( resampled_inds );
+        cur_external = cur_external( resampled_inds );
+        cur_gt_iou   = cur_gt_iou(   resampled_inds );
+        bf_total(ci,:) = fminsearch( @(b) sum((  cur_gt_iou - (b(1) + b(2)*cur_internal + b(3)*cur_external + b(4)*cur_internal.*cur_external)  ).^2), b0_total );
+        fprintf('.');
     end
     
-    figure('color','white')
-    for oi = 1:num_situation_objects
-        rows_of_interest = eq( oi, data_pile_flat(:,1));
-        internal = data_pile_flat(rows_of_interest,2);
-        external = external_support(rows_of_interest);
-        x = [ ones(length(internal),1) internal external internal.*external];
-        x(isnan(x)) = 0;
+    
+    
+    
+    %% fitting external and total support in one shot
+    
+    object_type = data_pile_flat(:,1);
+    internal_support = data_pile_flat(:,2);
+    densities = data_pile_flat(:,3);
+    % external_support = logistic( log(data_pile_flat(:,3)), .1);
+    gt_iou = data_pile_flat(:,6);
+    
+    %iou_estimate_function = @(internal,density,b) b(1) + b(2) * internal + b(3) * activation_function(density,b(5:8)) + b(4) * internal .* activation_function(density,b(5:8));
+    iou_estimate_function = @(internal,density,b) b(1) * internal + b(2) * activation_function(density,[0 1 b(4) b(5)]) + b(3) * internal .* activation_function(density,[0 1 b(4) b(5)]);
+    b0 = [1 1 1 10e-12 0]; % internal, external, mixing, a,b,c,d
+    figure
+    bfs = zeros(length(situation_objects),length(b0));
+    for oi = 1:3
         
-        y_predicted = x * b(oi,:)';
-        y_actual = data_pile_flat(rows_of_interest,5);
+        if any(logical(bfs(oi,:)))
+            b0 = bfs(oi,:);
+        else
+            b0 = [1 1 1 10e-12 0];
+        end
         
-        subplot(1,num_situation_objects,oi)
-        plot( y_actual, y_predicted,'.','MarkerSize', .1)
+        cur_inds = eq(object_type,oi);
         
-        xlabel('IOU actual');
-        ylabel('IOU predicted (new total support)');
+        cur_internal_support = internal_support(cur_inds);
+        cur_densities   = densities(cur_inds);
+        cur_gt_iou           = gt_iou(cur_inds);
+        resampled_inds = resample_to_uniform(cur_gt_iou,[],10);
+        
+        cur_internal_support = cur_internal_support(resampled_inds);
+        cur_densities = cur_densities(resampled_inds);
+        cur_gt_iou = cur_gt_iou(resampled_inds);
+        
+        bfs(oi,:) = fminsearch( @(b) sum( (cur_gt_iou - iou_estimate_function(cur_internal_support,cur_densities,b) ) .^2 ), b0 );
+        
+        fprintf('.');
+    end
+    fprintf('\n');
+    
+    figure
+    for oi = 1:length(situation_objects)
+        
+        cur_inds = eq(object_type,oi);
+        iou_estimate = iou_estimate_function( internal_support(cur_inds), densities(cur_inds), bfs(oi,:));
+        
+        subplot(1,3,oi)
+        plot(gt_iou(cur_inds),iou_estimate,'.');
         title(situation_objects{oi});
-        xlim([0 1]);
-        ylim([-.1 1.1]);
-        hold on;
-        plot([0 1],[0 1],'red');
-        hold off;
+        xlabel('gt iou');
+        ylabel('predicted iou');
         
-        R=corrcoef(y_actual,y_predicted);
-        legend(['r^2: ' num2str(R(1,2))]);
     end
     
-    figure('color','white')
-    for oi = 1:num_situation_objects
-        rows_of_interest = eq( oi, data_pile_flat(:,1));
-        internal = data_pile_flat(rows_of_interest,2);
-        external = external_support(rows_of_interest);
-        x = [ ones(length(internal),1) internal external internal.*external];
-        x(isnan(x)) = 0;
-        
-        y_predicted = x * b(oi,:)';
-        y_actual = data_pile_flat(rows_of_interest,5);
-        
-        subplot(1,num_situation_objects,oi)
-        plot( y_actual, x(:,2),'.','MarkerSize', .1)
-        
-        xlabel('IOU actual');
-        ylabel('IOU predicted (old total support)');
-        title(situation_objects{oi});
-        xlim([0 1]);
-        ylim([-.1 1.1]);
-        hold on;
-        plot([0 1],[0 1],'red');
-        hold off;
-        
-        R=corrcoef(y_actual,x(:,2));
-        legend(['r^2: ' num2str(R(1,2))]);
-    end
     
+    
+
     
     
 end

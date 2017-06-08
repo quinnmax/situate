@@ -52,13 +52,13 @@
 % whether or not you want to use the GUI, where to save the experiment
 % results, and how many images for training and testing.
 
-    experiment_settings.title               = 'dogwalking, updating local search activation logic';
+    experiment_settings.title               = 'dogwalking experiment';
     experiment_settings.situations_struct   = situate.situation_definitions();
     experiment_settings.situation           = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
     
     % note: use [] if you want to use all available data
     experiment_settings.num_folds           = 1;  
-    experiment_settings.testing_data_max    = 4;  % per fold
+    experiment_settings.testing_data_max    = 3;  % per fold
     experiment_settings.training_data_max   = []; 
     
     
@@ -284,11 +284,25 @@
         
 %% Situate parameters: support functions 
     
-        external_support_function = 'logistic_normalized_dist'; % from sample density to a 0,1 range
-        
-        total_support_function = 'regression_experiment_iteration_4';
+        external_support_function = 'atan fit';
+        total_support_function    = 'regression_experiment';
         
         switch external_support_function
+            case 'jointly learned external and total'
+                b = [0.9266   -0.0583    0.0453   -4.6040e-13    0.0063; ...
+                     0.9177    0.0065    0.0654    1.7392e-12    0.0025; ...
+                     0.7588   31.4216  -14.1538    8.1987e-15   -0.1110  ];
+                activation_function = @(x,b) b(1) + b(2) * atan( b(3) * (x-b(4)) );
+                p.external_support_function = {};
+                p.external_support_function{1} = @(x) activation_function(x,[0 1 b(1,4) b(1,5)]);
+                p.external_support_function{2} = @(x) activation_function(x,[0 1 b(2,4) b(2,5)]);
+                p.external_support_function{3} = @(x) activation_function(x,[0 1 b(3,4) b(3,5)]);
+            case 'atan fit'
+                %x_target_function = [ 0  .5  .9   1 ];
+                %y_target_function = [ 0   0   1   1 ];
+                activation_function = @(x,b) b(1) + b(2) * atan( b(3) * (x-b(4)) );
+                b = [ 0.0237, 0.6106, 4.4710e-12, -0.3192 ];
+                p.external_support_function = @(x) activation_function(x,b);
             case 'logistic_normalized_dist'
                 p.external_support_function = @(x) logistic( log(x), .1); 
                 % based on just poking at density values from training data. 
@@ -310,30 +324,23 @@
                 p.total_support_function    = @(internal,external) 0.8 * internal + 0.2 * external;
             case 'product'
                 p.total_support_function    = @(internal,external) internal * external;
-            case 'regression_experiment_iteration_1'
-                % version learned from logistic regression experiment
+            case 'regression_experiment'
+               b = [    0.0441    0.8744    0.0256    0.0068; ...
+                       -0.0227    0.9646    0.0517    0.0073; ...
+                        0.0319    0.5971    0.2638    0.0047 ];
                 p.total_support_function    = {};
-                p.total_support_function{1} = @(internal,external) 0.4864 + 0.7871 * (internal-.5) + 0.1149 * (external-.5) + 0.1158 * (internal-.5) * (external-.5);
-                p.total_support_function{2} = @(internal,external) 0.4912 + 0.9407 * (internal-.5) + 0.1009 * (external-.5) + 0.2624 * (internal-.5) * (external-.5);
-                p.total_support_function{3} = @(internal,external) 0.3923 + 0.2057 * (internal-.5) + 0.2978 * (external-.5) + 0.6864 * (internal-.5) * (external-.5);
-            case 'regression_experiment_iteration_2'
-                % version learned from logistic regression experiment
-                p.total_support_function    = {};
-                p.total_support_function{1} = @(internal,external) 0.4864 + 0.7869 * (internal-.5) + 0.1150 * (external-.5) + 0.1146 * (internal-.5) * (external-.5);
-                p.total_support_function{2} = @(internal,external) 0.4898 + 0.9408 * (internal-.5) + 0.1020 * (external-.5) + 0.2641 * (internal-.5) * (external-.5);
-                p.total_support_function{3} = @(internal,external) 0.3916 + 0.2041 * (internal-.5) + 0.2984 * (external-.5) + 0.6884 * (internal-.5) * (external-.5);
-            case 'regression_experiment_iteration_3'
-                % version learned from logistic regression experiment
-                p.total_support_function    = {};
-                p.total_support_function{1} = @(internal,external) 0.0734 + 0.7358 * internal + -0.0317 * external + 0.2311 * internal * external;
-                p.total_support_function{2} = @(internal,external) 0.0255 + 0.7720 * internal +  0.1044 * external + 0.0453 * internal * external;
-                p.total_support_function{3} = @(internal,external) 0.1168 + 0.4278 * internal + -0.3777 * external + 1.4486 * internal * external;
-            case 'regression_experiment_iteration_4'
-                p.total_support_function    = {};
-                p.total_support_function{1} = @(internal,external) 0.0731 + 0.7413 * internal + -0.0338 * external + 0.2272 * internal * external;
-                p.total_support_function{2} = @(internal,external) 0.0257 + 0.7742 * internal +  0.1032 * external + 0.0443 * internal * external;
-                p.total_support_function{3} = @(internal,external) 0.1163 + 0.4331 * internal + -0.3775 * external + 1.4393 * internal * external;
-                
+                p.total_support_function{1} = @(internal,external) b(1,1) + b(1,2) * internal + b(1,3) * external + b(1,4) * internal * external;
+                p.total_support_function{2} = @(internal,external) b(2,1) + b(2,2) * internal + b(2,3) * external + b(2,4) * internal * external;
+                p.total_support_function{3} = @(internal,external) b(3,1) + b(3,2) * internal + b(3,3) * external + b(3,4) * internal * external;
+            case 'jointly learned external and total'
+                b = [0.9266   -0.0583    0.0453   -4.6040e-13    0.0063; ...
+                     0.9177    0.0065    0.0654    1.7392e-12    0.0025; ...
+                     0.7588   31.4216  -14.1538    8.1987e-15   -0.1110  ];
+                activation_function = @(x,b) b(1) + b(2) * atan( b(3) * (x-b(4)) );
+                p.total_support_function = {};
+                p.total_support_function{1} = @(internal,external) b(1,1) * internal + b(1,2) * external + b(1,3) * internal * external;
+                p.total_support_function{2} = @(internal,external) b(2,1) * internal + b(2,2) * external + b(2,3) * internal * external;
+                p.total_support_function{3} = @(internal,external) b(3,1) * internal + b(3,2) * external + b(3,3) * internal * external;
             otherwise
                 error('unrecognized total support function');
         end
@@ -396,9 +403,9 @@
                 p.situation_objects_urgency_pre.(  'dogwalker') = 1.00;
                 p.situation_objects_urgency_pre.(  'dog'      ) = 1.00;
                 p.situation_objects_urgency_pre.(  'leash'    ) = 0.25;
-                p.situation_objects_urgency_post.( 'dogwalker') = 0.125;
-                p.situation_objects_urgency_post.( 'dog'      ) = 0.125;
-                p.situation_objects_urgency_post.( 'leash'    ) = 0.125;
+                p.situation_objects_urgency_post.( 'dogwalker') = 0.10;
+                p.situation_objects_urgency_post.( 'dog'      ) = 0.10;
+                p.situation_objects_urgency_post.( 'leash'    ) = 0.10;
                 
             case 'pingpong' 
                 
@@ -467,15 +474,15 @@
 %     temp.adjustment_model_setup            = @(a,b,c,d) [];
 %     temp.adjustment_model_apply            = @situate.spawn_local_scouts;
 %     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
-%    
-%     description = 'Situate, no adjustment model, p(uniform)=.5';
-%     temp = p;
-%     temp.description = description;
-%     temp.situation_model.learn = @(a,b) situation_models.uniform_normal_mix_fit(a,b,.5);
-%     temp.adjustment_model_activation_logic = @(cur_agent,workspace) false;
-%     temp.adjustment_model_setup            = @(a,b,c,d) [];
-%     temp.adjustment_model_apply            = @(cur_agent) assert(1==0);
-%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+   
+    description = 'Situate, no adjustment model, p(uniform)=.5';
+    temp = p;
+    temp.description = description;
+    temp.situation_model.learn = @(a,b) situation_models.uniform_normal_mix_fit(a,b,.5);
+    temp.adjustment_model_activation_logic = @(cur_agent,workspace) false;
+    temp.adjustment_model_setup            = @(a,b,c,d) [];
+    temp.adjustment_model_apply            = @(cur_agent) assert(1==0);
+    if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
 
 
     

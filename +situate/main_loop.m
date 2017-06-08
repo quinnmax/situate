@@ -66,6 +66,9 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
             current_agent_snapshot_lean.interest = uint8( 0 );
             current_agent_snapshot_lean.box.r0rfc0cf = [0 0 0 0];
             current_agent_snapshot_lean.support = [];
+            current_agent_snapshot_lean.workspace = [];
+            current_agent_snapshot_lean.workspace.objects = [];
+            current_agent_snapshot_lean.workspace.objects_total_support = [];
         records.agent_record = repmat( current_agent_snapshot_lean, p.num_iterations, 1 );
         records.population_count          = [];
         records.population_count.scout    = 0;
@@ -131,8 +134,14 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
                     cur_box = workspace.boxes_r0rfc0cf(wi,:);
                     dist_index = strcmp( {d.interest}, workspace.labels{wi} );
                     [~,new_density] = p.situation_model.sample( d(dist_index).distribution, workspace.labels{wi}, 1, d(1).image_size, cur_box );
-                    workspace.external_support(wi) = p.external_support_function( new_density );
-
+                    
+                    if length(p.external_support_function) == 1
+                        workspace.external_support(wi) = p.external_support_function( new_density );
+                    else
+                        obj_ind = strcmp( workspace.labels{wi},p.situation_objects);
+                        workspace.external_support(wi) = p.external_support_function{obj_ind}( new_density );
+                    end
+                    
                     switch class( p.total_support_function )
                         case 'function_handle'
                             workspace.total_support(wi) = p.total_support_function( workspace.internal_support(wi), workspace.external_support(wi) );
@@ -161,6 +170,8 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
             current_agent_snapshot_lean.interest = uint8( find( strcmp( current_agent_snapshot.interest, p.situation_objects )));
             current_agent_snapshot_lean.box.r0rfc0cf = current_agent_snapshot.box.r0rfc0cf;
             current_agent_snapshot_lean.support = current_agent_snapshot.support;
+            current_agent_snapshot_lean.workspace.objects = cellfun( @(x) find(strcmp(x,p.situation_objects)), workspace.labels );
+            current_agent_snapshot_lean.workspace.total_support = workspace.total_support;
             records.agent_record(iteration)     = current_agent_snapshot_lean;
             
             % population of agent types
@@ -563,7 +574,12 @@ function [agent_pool] = agent_evaluate_reviewer( agent_pool, agent_index, p, wor
     cur_agent = agent_pool(agent_index);
     assert( isequal( cur_agent.type, 'reviewer' ) );
     
-    cur_agent.support.external = p.external_support_function( agent_pool(agent_index).support.sample_densities ); 
+    if length(p.external_support_function) == 1
+        cur_agent.support.external = p.external_support_function( agent_pool(agent_index).support.sample_densities ); 
+    else
+        obj_ind = strcmp(agent_pool(agent_index).interest,p.situation_objects);
+        cur_agent.support.external = p.external_support_function{obj_ind}( agent_pool(agent_index).support.sample_densities ); 
+    end
     
     switch class( p.total_support_function )
         case 'function_handle'
