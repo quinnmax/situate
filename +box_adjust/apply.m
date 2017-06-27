@@ -24,7 +24,7 @@ function [ agent_pool, adjusted_box_r0rfc0cf, delta_xywh ] = apply( model, curre
     y = r0 + h/2 - .5;
 
     % get cnn features, if necessary
-    if ~exist('cnn_features','var') || ~isempty(cnn_features)
+    if ~exist('cnn_features','var') || isempty(cnn_features)
         if mean(image(:)) < 1, image = image*255; end
         cnn_features = cnn.cnn_process( image(r0:rf,c0:cf,:))';
     end

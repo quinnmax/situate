@@ -17,7 +17,8 @@
         % split_arg = 1;
         % split_arg = uigetdir(pwd);
         % split_arg = 'split_default/';
-        split_arg = 'split_holdout_301_400/';
+        %split_arg = 'split_holdout_301_400/';
+        split_arg = 'split_test_301_400/';
         
         if ischar(split_arg)
             seed_train = [];
@@ -52,19 +53,20 @@
 % whether or not you want to use the GUI, where to save the experiment
 % results, and how many images for training and testing.
 
-    experiment_settings.title               = 'dogwalking experiment';
+    experiment_settings.title               = 'dogwalking, test set test run 4';
     experiment_settings.situations_struct   = situate.situation_definitions();
     experiment_settings.situation           = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
     
     % note: use [] if you want to use all available data
     experiment_settings.num_folds           = 1;  
-    experiment_settings.testing_data_max    = 3;  % per fold
+    experiment_settings.testing_data_max    = 100;  % per fold
+    
     experiment_settings.training_data_max   = []; 
     
     
     
     % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % 
-    experiment_settings.use_gui = true;
+    experiment_settings.use_gui = false;
     % note: when doing a GUI run, the following won't happen
     %   run_analysis_after_completion,
     %   saving off results
@@ -349,7 +351,7 @@
         
 %% Situate parameters: thresholds
     
-        check_in_thresholds = 'custom';
+        check_in_thresholds = 'parameter experiment findings';
         
         switch check_in_thresholds
             case 'IOU'
@@ -364,6 +366,10 @@
                 p.thresholds.internal_support          = .25; % scout -> reviewer threshold
                 p.thresholds.total_support_provisional = .25; % workspace entry, provisional (search continues)
                 p.thresholds.total_support_final       = .75; % workspace entry, final (search (maybe) ends) depends on p.situation_objects_urgency_post
+            case 'parameter experiment findings'
+                p.thresholds.internal_support          = .2;   % scout -> reviewer threshold
+                p.thresholds.total_support_provisional = inf;   % workspace entry, provisional (search continues)
+                p.thresholds.total_support_final       = .5625; % workspace entry, final (search (maybe) ends) depends on p.situation_objects_urgency_post
             otherwise
                 error('unrecognized check-in method');
         end
@@ -372,20 +378,27 @@
         
 %% Situate parameters: adjustment model
     
-        adjustment_model_description = 'none';
+        adjustment_model_description = 'bounding box regression two-tone';
     
         switch adjustment_model_description
             
             case 'bounding box regression'
-                p.adjustment_model_activation_logic = @(cur_agent,workspace) situate.adjustment_model_activation_logic( cur_agent, workspace, p.thresholds.internal_support, .9 );
-                p.adjustment_model_setup            = @box_adjust.train;
+                p.adjustment_model_activation_logic = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, p.thresholds.internal_support, .9 );
+                box_adjust_training_threshold       = .1;
+                p.adjustment_model_setup            = @(a,b,c) box_adjust.train(a,b,c,box_adjust_training_threshold);
                 p.adjustment_model_apply            = @box_adjust.apply;
+            case 'bounding box regression two-tone'
+                p.adjustment_model_activation_logic = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, p.thresholds.internal_support, 1.0 );
+                box_adjust_training_thresholds      = [.1 .6];
+                model_selection_threshold           = .5;
+                p.adjustment_model_setup            = @(a,b,c) box_adjust.two_tone_train(a,b,c,box_adjust_training_thresholds, model_selection_threshold);
+                p.adjustment_model_apply            = @box_adjust.two_tone_apply;
             case 'local agent search'
-                p.adjustment_model_activation_logic = @(cur_agent,workspace) situate.adjustment_model_activation_logic( cur_agent, workspace, p.thresholds.internal_support, .9 );
+                p.adjustment_model_activation_logic = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, p.thresholds.internal_support, .9 );
                 p.adjustment_model_setup            = @(a,b,c,d) [];
                 p.adjustment_model_apply            = @situate.spawn_local_scouts;
             case 'none'
-                p.adjustment_model_activation_logic = @(cur_agent) false;
+                p.adjustment_model_activation_logic = @(cur_agent,a,b) false;
                 p.adjustment_model_setup            = @(a,b,c,d) [];
                 p.adjustment_model_apply            = @(cur_agent) assert(1==0);
         end
@@ -402,7 +415,7 @@
                 
                 p.situation_objects_urgency_pre.(  'dogwalker') = 1.00;
                 p.situation_objects_urgency_pre.(  'dog'      ) = 1.00;
-                p.situation_objects_urgency_pre.(  'leash'    ) = 0.25;
+                p.situation_objects_urgency_pre.(  'leash'    ) = 1.00;
                 p.situation_objects_urgency_post.( 'dogwalker') = 0.10;
                 p.situation_objects_urgency_post.( 'dog'      ) = 0.10;
                 p.situation_objects_urgency_post.( 'leash'    ) = 0.10;
@@ -452,39 +465,28 @@
     p_conditions = [];
     p_conditions_descriptions = {};
     
-%     description = 'Situate, default condition';
+%     description = 'Situate, two-toned box adjust';
 %     temp = p;
 %     temp.description = description;
 %     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
     
-    description = 'Situate, box adjust, p(uniform)=.5';
+%     description = 'Situate, two-tone cutoff: .3';
+%     temp = p;
+%         temp.description = description;
+%         temp.adjustment_model_setup = @(a,b,c) box_adjust.two_tone_train(a,b,c,box_adjust_training_thresholds, .3);
+%         temp.thresholds.internal_support          = .2;   % scout -> reviewer threshold
+%         temp.thresholds.total_support_provisional = inf;   % workspace entry, provisional (search continues)
+%         temp.thresholds.total_support_final       = .5625; % workspace entry, final (search (maybe) ends) depends on p.situation_objects_urgency_post
+%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+    
+  
+    description = 'Situate, test set test run';
     temp = p;
     temp.description = description;
-    temp.situation_model.learn = @(a,b) situation_models.uniform_normal_mix_fit(a,b,.5);
-    temp.adjustment_model_activation_logic = @(cur_agent,workspace) situate.adjustment_model_activation_logic( cur_agent, workspace, p.thresholds.internal_support, .9 );
-    temp.adjustment_model_setup            = @box_adjust.train;
-    temp.adjustment_model_apply            = @box_adjust.apply;
     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
-    
-%     description = 'Situate, local agents, p(uniform)=.5';
-%     temp = p;
-%     temp.description = description;
-%     temp.situation_model.learn = @(a,b) situation_models.uniform_normal_mix_fit(a,b,.5);
-%     temp.adjustment_model_activation_logic = @(cur_agent,workspace) situate.adjustment_model_activation_logic( cur_agent, workspace, p.thresholds.internal_support, .9 );
-%     temp.adjustment_model_setup            = @(a,b,c,d) [];
-%     temp.adjustment_model_apply            = @situate.spawn_local_scouts;
-%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+
    
-    description = 'Situate, no adjustment model, p(uniform)=.5';
-    temp = p;
-    temp.description = description;
-    temp.situation_model.learn = @(a,b) situation_models.uniform_normal_mix_fit(a,b,.5);
-    temp.adjustment_model_activation_logic = @(cur_agent,workspace) false;
-    temp.adjustment_model_setup            = @(a,b,c,d) [];
-    temp.adjustment_model_apply            = @(cur_agent) assert(1==0);
-    if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
-
-
+    
     
 %% Data directory 
 %

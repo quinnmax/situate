@@ -5,10 +5,13 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
 % situate_experiment_analysis( results_directory, show_failure_examples );
 
 
+
+
+
 %% data source 
 
     if ~exist('show_failure_examples','var') || isempty(show_failure_examples)
-        show_failure_examples = true;
+        show_failure_examples = false;
     end
 
     while ~exist( 'results_directory', 'var' ) || isempty(results_directory) || ~isdir(results_directory)
@@ -59,6 +62,8 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     if ~all(eq(images_per_run(1),images_per_run)), error('different numbers of images in different runs'); end
     
     num_images = sum( cellfun( @length, workspaces_final_temp ) ) / length(p_conditions_descriptions);
+    
+    fprintf('.');
  
     
 %% group on condition
@@ -78,7 +83,10 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
 
     clear temp_d
     clear agent_records_temp;
-
+    
+    fprintf('.');
+    
+    
     
 %% check for successful detections against Ground Truth IOU
     
@@ -93,6 +101,25 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     end
     end
     
+    
+    
+%% repeat detections
+    if num_images > length(unique(fnames_test_images{1}))
+        sum_completions = zeros(num_conditions,length(unique(fnames_test_images{1})));
+        for ci = 1:num_conditions
+            temp = fnames_test_images{ci};
+            [~,~,im_inds] = unique(temp);
+            for imi = 1:length(unique(fnames_test_images{1}))
+                sum_completions(ci,imi) = sum(successful_completion(ci,eq(im_inds,imi)));
+            end    
+        end
+    end
+    stem(sort(sum_completions));
+    xlabel('image index');
+    ylabel('number of times detected (of 4 attempts)');
+
+
+
     
 %% gather data on detection order of objects
     
@@ -137,6 +164,8 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     end
     end
     
+    fprintf('.');
+    
 
 %% define conditions to include, color and line specifications 
 
@@ -165,6 +194,9 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     colors = sqrt(colors);
 
 
+    
+    
+    
 %% figure: completed detections as a function of iterations 
 
     h2 = figure();
@@ -173,7 +205,6 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     
     for i = 1:length(display_order)
         ci = display_order(i);
-        %plot( detections_at_num_proposals_total(ci,:), 'Color', colors(i,:), 'LineWidth', 1.25, 'LineStyle', linespec{i} );
         plot( detections_at_num_proposals(ci,:), 'Color', colors(i,:), 'LineWidth', 1.25, 'LineStyle', linespec{i} );
     end
     hold off;
@@ -200,7 +231,13 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     end
     
     h2.Position = [440 537 560 220];
-    print(h2,fullfile(results_directory,'situate_experiment_figure'),'-r300', '-dpdf' );
+    print(h2,fullfile(results_directory,'situate_experiment_figure'),'-r300', '-dpdf','-bestfit' );
+    
+    ylim([0, 1.1*max([1; detections_at_num_proposals(:)])]);
+    ylabel({ 'Completed Situation Detections', ['(Cumulative, max: ' num2str(num_images) ')'] });
+    print(h2,fullfile(results_directory,'situate_experiment_figure_zoomed'),'-r300', '-dpdf','-bestfit' );
+    
+    
 
 
 %% table: medians over conditions 
@@ -311,6 +348,7 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     end
     
     h3 = figure('color','white');
+    set(h3,'position',[50 529 1400 450])
     for oi = 1:length(situation_objects)
         subplot(1,length(situation_objects)+1,oi);
         plot(iou_thresholds,detections_at_iou(:,:,oi));
@@ -318,7 +356,7 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
         ylabel('detections');
         title([situation_objects{oi} ' detections']);
         ylim([0 num_images]);
-        legend(p_conditions_descriptions);
+        legend(p_conditions_descriptions,'location','southoutside');
     end
     subplot( 1,length(situation_objects)+1,length(situation_objects)+1)
     plot( iou_thresholds, situation_detections_at_iou);
@@ -326,15 +364,40 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     ylabel('detections');
     title('full situation detections');
     ylim([0 num_images]);
-    legend(p_conditions_descriptions);
+    legend(p_conditions_descriptions,'location','southoutside');
+    
+    print(h3,fullfile(results_directory,'object_detections_vs_iou_threshold'),'-r300', '-dpdf','-bestfit');
+    saveas(h3,fullfile(results_directory,'object_detections_vs_iou_threshold'),'png')
+    
+    h3b = figure('color','white');
+    set(h3b,'position',[50 529 1400 450])
+    for oi = 1:length(situation_objects)
+        subplot(1,length(situation_objects)+1,oi);
+        plot(iou_thresholds,detections_at_iou(:,:,oi));
+        xlabel('IOU threshold');
+        ylabel('detections');
+        title([situation_objects{oi} ' detections']);
+        ylim([0 num_images]);
+        xlim([.4 .6]);
+        legend(p_conditions_descriptions,'location','southoutside');
+    end
+    subplot( 1,length(situation_objects)+1,length(situation_objects)+1)
+    plot( iou_thresholds, situation_detections_at_iou);
+    xlabel('IOU threshold');
+    ylabel('detections');
+    title('full situation detections');
+    ylim([0 num_images]);
+    xlim([.4,.6])
+    legend(p_conditions_descriptions,'location','southoutside');
     
     
-    print(h3,fullfile(results_directory,'object_detections_vs_iou_threshold'),'-r300', '-dpdf' );
+    print(h3b,fullfile(results_directory,'object_detections_vs_iou_threshold'),'-r300', '-dpdf','-bestfit');
+    saveas(h3b,fullfile(results_directory,'object_detections_vs_iou_threshold'),'png')
     
     
 %% figure: object detections vs time at fixed IOU threshold    
     
-    iou_thresholds = [.25 .5 .75 .9];
+    iou_thresholds = [.25 .5 .75];
     num_thresholds = length(iou_thresholds);
     num_situation_objects = length(p_conditions{1}.situation_objects);
     first_iteration_over_threshold = zeros( num_conditions, num_images, num_situation_objects, num_thresholds );
@@ -352,21 +415,33 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
         total_support    = [temp.total];
         gt_iou           = [temp.GROUND_TRUTH];
         
-        first_over_threshold = find( gt( gt_iou, iou_thresholds(ti) ), 1, 'first' );
+        % this was first with an actual gt_iou over threshold, but situate may not have known
+        %first_over_threshold = find( ge( gt_iou, iou_thresholds(ti) ), 1, 'first' );
+        
+        % first time something is over detection threshold, but may not satisfy GT IOU
+        %first_over_threshold = find( ge( total_support, iou_thresholds(ti) ) , 1, 'first' );
+        
+        % this is when it thinks it is, and it is
+        first_over_threshold = find( ge( gt_iou, iou_thresholds(ti) ) & ge( total_support, iou_thresholds(ti) ) , 1, 'first' );
+        
+        
         if ~isempty(first_over_threshold)
             first_iteration_over_threshold(ci,ii,oi,ti) = iterations_of_interest( first_over_threshold );
         else
-            first_iteration_over_threshold(ci,ii,oi,ti) = -1000;
+            first_iteration_over_threshold(ci,ii,oi,ti) = nan;
         end
         
     end
     end
+        fprintf('.');
     end
+        fprintf('\n');
     end
+    
+    
     
     ti = 1;
-    
-    figure('color','white')
+    h4 = figure('color','white')
     for ci = 1:num_conditions
     for oi = 1:num_situation_objects
         subplot2( num_situation_objects, num_conditions, oi, ci )
@@ -378,6 +453,46 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
         ylim([0 100]);
     end
     end
+    
+    
+    
+    fig_title = 'detections per iteration at multiple thresholds';
+    h5 = figure('color','white','Name',fig_title,'position',[720 2 900 600]);
+    for ti = 1:num_thresholds
+    for oi = 1:num_situation_objects
+            
+        subplot2( num_situation_objects+1, num_thresholds, oi, ti )
+        if oi == num_situation_objects, subplot2( num_situation_objects+1, num_thresholds, oi, ti, oi+1, ti ); end
+
+        for ci = 1:num_conditions
+        
+            detection_times = sort(reshape(first_iteration_over_threshold(ci,:,oi,ti),1,[]));
+            detection_times(detection_times < 1) = nan;
+            iteration_thresholds = unique( detection_times );
+            cumulative_detection_ratio = zeros(1,length(iteration_thresholds));
+            for ii = 1:length(iteration_thresholds)
+                cur_iteration_threshold = iteration_thresholds(ii);
+                cumulative_detection_ratio(ii) = sum( le( detection_times, cur_iteration_threshold ) ) / length(detection_times);
+            end
+
+            plot(iteration_thresholds,cumulative_detection_ratio);
+            hold on;
+
+            if oi == 1, title( ['detection threshold: ' num2str(iou_thresholds(ti))] ); end
+            if ci == 1, ylabel( p_conditions{1}.situation_objects{oi} ); end
+            xlabel('iteration number');
+            xlim([0 max(first_iteration_over_threshold(:))]);
+            ylim([0 1]);
+        end
+        
+        
+        if oi == num_situation_objects, legend(p_conditions_descriptions,'location','southoutside'); end
+        
+        
+    end
+    end
+    
+    saveas(h5,fullfile(results_directory,fig_title),'png')
 
     
 %% table: display IOU for each object type and each image
@@ -507,13 +622,19 @@ end
 
 
 
+
+
 %% take a look at internal support, external support, and gt IOU. 
 %   this is a function of classifier and probability density, so the methods shouldn't matter. fine
 %   to just gather everything up in this case
 
+
+do_support_fitting = false;
+if do_support_fitting
+
     total_agent_records = sum( sum( cellfun( @length, agent_records ) ) );
     columns = {'agent interest type', 'internal support', 'sample density', 'external support', 'total support', 'gt iou'};
-    data_pile_flat = -5 * ones( total_agent_records, length(columns) );
+    data_pile_flat = nan( total_agent_records, length(columns) );
 
     ai = 1;
     for ci = 1:num_conditions
@@ -537,18 +658,32 @@ end
     fprintf('.');
     end
     
+    % remove rows with complex or infinite entries. don't know where these are coming from
+    rows_to_remove = [];
+    for ri = 1:size(data_pile_flat,1)
+        if ~all(isreal(data_pile_flat(ri,:))) || any(isinf(data_pile_flat(ri,:)))
+            rows_to_remove = [rows_to_remove ri];
+        end
+    end
+    data_pile_flat(rows_to_remove,:) = [];
     
+    % remove rows that are all Nan, as they are allocated space for agents that didn't run
+    data_pile_flat( isnan(data_pile_flat(:,1)), : ) = [];
     
     % visualize support values (slow, lots of values)
     figure
         for ci = 1:6
         subplot(1,6,ci);
             if ci == 3
-                plot(log(data_pile_flat(:,ci)), logistic( data_pile_flat(:,ci), .1 ), '.' );
+                temp = data_pile_flat(:,ci);
+                temp( eq(temp,0) ) = min( temp( ~eq(temp,0) ) );
+                plot(log(temp), logistic( temp, .1 ), '.' );
+                title('log sample densities');
             else
                 hist(data_pile_flat(:,ci),50);
+                title(columns(ci));
             end
-            title(columns(ci));
+            
         end
     
     ci = 3; % density values
@@ -572,7 +707,7 @@ end
     y_interp = y_interp';
     
     activation_function = @(x,b) b(1) + b(2) * atan( b(3) * (x-b(4)) );
-    b0 = [ 0.0601    0.5596    9.2032e-12   -0.2116];
+    b0 = [ 0.0480    0.5567    3.6761e-11   -0.0514];
     
     bf = fminsearch( @(b) sum( (y_interp - activation_function(x,b)) .^2 ), b0 );
     
@@ -593,6 +728,60 @@ end
     
     
     
+    %% fit total support to gt IOU
+    
+    object_type      = data_pile_flat(:,1);
+    internal_support = data_pile_flat(:,2);
+    densities        = data_pile_flat(:,3);
+    external_support = activation_function( densities, bf );
+    gt_iou           = data_pile_flat(:,6);
+    
+    b0_total = [0 1 1 0];
+    bf_total = zeros( length(situation_objects), length(b0_total) );
+    for oi = 1:length(situation_objects)
+        cur_inds = eq(object_type,oi);
+        cur_internal = internal_support(cur_inds);
+        cur_external = external_support(cur_inds);
+        cur_gt_iou   = gt_iou(cur_inds);
+        
+        resampled_inds = resample_to_uniform( cur_gt_iou, 2*length(cur_gt_iou) );
+        cur_internal = cur_internal( resampled_inds );
+        cur_external = cur_external( resampled_inds );
+        cur_gt_iou   = cur_gt_iou(   resampled_inds );
+        
+        target_value = cur_gt_iou;
+        %bf_total(oi,:) = fminsearch( @(b) sum((  target_value - (b(1) + b(2)*cur_internal + b(3)*cur_external + b(4)*cur_internal.*cur_external)  ).^2), b0_total );
+        bf_total(oi,:) = fminsearch( @(b) sum((  target_value - logistic(b(1) + b(2)*cur_internal + b(3)*cur_external + b(4)*cur_internal.*cur_external)  ).^2), b0_total );
+        fprintf('.');
+    end
+    
+    % see how it did
+    figure
+    for oi = 1:length(situation_objects)
+        cur_b = bf_total(oi,:);
+        
+        cur_inds = eq(object_type,oi);
+        cur_internal = internal_support(cur_inds);
+        cur_external = external_support(cur_inds);
+        cur_gt_iou   = gt_iou(cur_inds);
+        
+%         resampled_inds = resample_to_uniform( cur_gt_iou );
+%         cur_internal = cur_internal( resampled_inds );
+%         cur_external = cur_external( resampled_inds );
+%         cur_gt_iou   = cur_gt_iou(   resampled_inds );
+        
+        %cur_total = cur_b(1) + cur_b(2)*cur_internal + cur_b(3)*cur_external + cur_b(4)*cur_internal.*cur_external;
+        cur_total = logistic( cur_b(1) + cur_b(2)*cur_internal + cur_b(3)*cur_external + cur_b(4)*cur_internal.*cur_external );
+        
+        subplot(1,length(situation_objects),oi);
+        plot(cur_gt_iou,cur_total,'.');
+        title(situation_objects{oi})
+        xlabel('gt iou');
+        ylabel('est iou');
+    end
+    
+    %% fit total support for >.5
+    
     % now fitting total support using the learned external support function
     object_type      = data_pile_flat(:,1);
     internal_support = data_pile_flat(:,2);
@@ -601,21 +790,46 @@ end
     gt_iou           = data_pile_flat(:,6);
     
     b0_total = [0 1 1 0];
-    bf_total = zeros( length(p.situation_objects), length(b0_total) );
-    for ci = 1:length(p.situation_objects)
-        cur_inds = eq(object_type,ci);
+    bf_total = zeros( length(situation_objects), length(b0_total) );
+    for oi = 1:length(situation_objects)
+        cur_inds = eq(object_type,oi);
         cur_internal = internal_support(cur_inds);
         cur_external = external_support(cur_inds);
         cur_gt_iou   = gt_iou(cur_inds);
-        resampled_inds = resample_to_uniform( cur_gt_iou );
         
+        resampled_inds = resample_to_uniform( cur_gt_iou );
         cur_internal = cur_internal( resampled_inds );
         cur_external = cur_external( resampled_inds );
         cur_gt_iou   = cur_gt_iou(   resampled_inds );
-        bf_total(ci,:) = fminsearch( @(b) sum((  cur_gt_iou - (b(1) + b(2)*cur_internal + b(3)*cur_external + b(4)*cur_internal.*cur_external)  ).^2), b0_total );
+        
+        target_value = ge( cur_gt_iou, .5 );
+        bf_total(oi,:) = fminsearch( @(b) sum((  target_value - logistic(b(1) + b(2)*cur_internal + b(3)*cur_external + b(4)*cur_internal.*cur_external)  ).^2), b0_total );
         fprintf('.');
     end
     
+    % see how it did
+    figure
+    for oi = 1:length(situation_objects)
+        cur_b = bf_total(oi,:);
+        
+        cur_inds = eq(object_type,oi);
+        cur_internal = internal_support(cur_inds);
+        cur_external = external_support(cur_inds);
+        cur_gt_iou   = gt_iou(cur_inds);
+        
+%         resampled_inds = resample_to_uniform( cur_gt_iou );
+%         cur_internal = cur_internal( resampled_inds );
+%         cur_external = cur_external( resampled_inds );
+%         cur_gt_iou   = cur_gt_iou(   resampled_inds );
+        
+        cur_total = logistic( cur_b(1) + cur_b(2)*cur_internal + cur_b(3)*cur_external + cur_b(4)*cur_internal.*cur_external );
+        
+        subplot(1,length(situation_objects),oi);
+        plot(cur_gt_iou,cur_total,'.');
+        title(situation_objects{oi})
+        xlabel('gt iou');
+        ylabel('est iou');
+    end
     
     
     
@@ -672,10 +886,12 @@ end
     end
     
     
-    
+end 
 
     
     
+
+
 end
 
 

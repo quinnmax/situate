@@ -7,9 +7,23 @@ function model = train( p, fnames_in, saved_models_directory, training_IOU_thres
 % cnn_features file that's hard coded in
  
     if ~exist('training_IOU_threshold','var') || isempty(training_IOU_threshold)
+        error('need a training IOU threshold');
         training_IOU_threshold = .1;
     end
+    if ~exist('fnames_in','var') || isempty(fnames_in)
+        error('need the fnames in');
+        fnames_in = data.fnames(1:400);
+        warning('box_adjust.train using default data');
+    end
+    if ~exist('p','var') || isempty(p)
+        error('need a situate parameters structure');
+        p = data.p;
+        warning('box_adjust.train using default data');
+    end
 
+    
+    % see if we can find a model that exists with the same training files and parameterization
+    
     fnames_in_pathless = cellfun( @(x) x( last(strfind(x,filesep()))+1:end), fnames_in, 'UniformOutput', false );
     
     model_description = 'box_adjust';
@@ -38,17 +52,7 @@ function model = train( p, fnames_in, saved_models_directory, training_IOU_thres
     model_description = 'box_adjust';
     
     
-    if ~exist('fnames_in','var') || isempty(fnames_in)
-        fnames_in = data.fnames(1:400);
-        warning('box_adjust.train using default data');
-    end
-    if ~exist('p','var') || isempty(p)
-        p = data.p;
-        warning('box_adjust.train using default data');
-    end
-    if ~exist('training_IOU_threshold','var') || isempty(training_IOU_threshold)
-       training_IOU_threshold = .1; 
-    end
+    
     
     model = [];
     model.model_description = model_description;

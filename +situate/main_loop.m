@@ -253,7 +253,7 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
         
         % generate new agents based on the current agent's findings
             
-            if p.adjustment_model_activation_logic(current_agent_snapshot,workspace)
+            if p.adjustment_model_activation_logic(current_agent_snapshot,workspace,p)
                 % need to make this compatible with box adjust, and then go
                 % back and update the local search functions
                 agent_pool = p.adjustment_model_apply( learned_models.adjustment_model, current_agent_snapshot, agent_pool, im );
@@ -268,7 +268,7 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
         % The solution is to just return the tentatively checked-in objects
         % to their original priority and continue on.
             if sum( [d.interest_priority] ) == 0
-                for wi = 1:size(workspace.boxes,1)
+                for wi = 1:size(workspace.boxes_r0rfc0cf,1)
                 if workspace.total_support(wi) < p.thresholds.total_support_final
                     di = strcmp( workspace.labels{wi}, {d.interest} );
                     d(di).interest_priority = p.situation_objects_urgency_pre.( d(di).interest );
@@ -595,7 +595,7 @@ function [agent_pool] = agent_evaluate_reviewer( agent_pool, agent_index, p, wor
     agent_pool(agent_index) = cur_agent;
 
     % consider adding a builder to the pool
-    if cur_agent.support.total >= p.thresholds.total_support_provisional
+    if cur_agent.support.total >= p.thresholds.total_support_provisional || cur_agent.support.total >= p.thresholds.total_support_final
         agent_pool(end+1) = cur_agent;
         agent_pool(end).type = 'builder';
         agent_pool(end).urgency = p.agent_urgency_defaults.builder;

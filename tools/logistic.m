@@ -1,5 +1,6 @@
 function y = logistic(x,h,k)
 
+% y = logistic(x,h,k)
 % y = 1 ./ ( 1 + exp( -h .* (x - k) ) );
 
     if ~exist('h','var')

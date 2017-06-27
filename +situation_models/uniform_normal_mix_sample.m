@@ -27,7 +27,7 @@ function [boxes_r0rfc0cf, sample_density] = uniform_normal_mix_sample( model, ob
         log_aspect_ratio = log( w / h );
         log_area_ratio   = log( w * h ); % already normed to unit area image
         box_vect = [ r0 rc rf c0 cc cf log(w) log(h) log_aspect_ratio log_area_ratio ];
-
+        
         % then we just want to return the density with respect to a
         % uniform distribution over location. Because the location
         % distribution is based on a unit square, the density with
@@ -65,8 +65,6 @@ function [boxes_r0rfc0cf, sample_density] = uniform_normal_mix_sample( model, ob
     end
     
     %% otherwise, actually generate a bounding box
-    
-     %% otherwise, actually generate a bounding box
     
     raw_samples = mvnrnd( model.mu, model.Sigma, n);
     
