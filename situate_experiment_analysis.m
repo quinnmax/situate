@@ -113,11 +113,11 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
                 sum_completions(ci,imi) = sum(successful_completion(ci,eq(im_inds,imi)));
             end    
         end
+        stem(sort(sum_completions));
+        xlabel('image index');
+        ylabel('number of times detected (of 4 attempts)');
     end
-    stem(sort(sum_completions));
-    xlabel('image index');
-    ylabel('number of times detected (of 4 attempts)');
-
+    
 
 
     

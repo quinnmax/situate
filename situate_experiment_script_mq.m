@@ -53,17 +53,14 @@
 % whether or not you want to use the GUI, where to save the experiment
 % results, and how many images for training and testing.
 
-    experiment_settings.title               = 'dogwalking, test set test run 4';
+    experiment_settings.title               = 'dogwalking, test set, lesions, test run 1';
     experiment_settings.situations_struct   = situate.situation_definitions();
     experiment_settings.situation           = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
     
     % note: use [] if you want to use all available data
     experiment_settings.num_folds           = 1;  
     experiment_settings.testing_data_max    = 100;  % per fold
-    
     experiment_settings.training_data_max   = []; 
-    
-    
     
     % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % 
     experiment_settings.use_gui = false;
@@ -135,7 +132,19 @@
                     % takes: situation_model, object_string, what_to_draw_string
                     % returns: nothing, just draws a figure
                     %   what_to_draw can be 'xy', 'shape', 'size'
-            
+                    
+            case 'uniform'
+                p.situation_model.learn  = @situation_models.uniform_fit;
+                p.situation_model.update = @situation_models.uniform_condition;
+                p.situation_model.sample = @situation_models.uniform_sample;
+                p.situation_model.draw   = @situation_models.uniform_draw;
+                
+            case 'uniform location normal box'
+                p.situation_model.learn  = @situation_models.uniform_location_normal_box_fit;
+                p.situation_model.update = @situation_models.uniform_location_normal_box_condition;
+                p.situation_model.sample = @situation_models.uniform_location_normal_box_sample;
+                p.situation_model.draw   = @situation_models.uniform_location_normal_box_draw;
+                
             case 'uniform normal mix'
                  p.situation_model.learn = @(a,b) situation_models.uniform_normal_mix_fit(a,b,.5);        
                     % takes: p, cellstr of training images 
@@ -198,6 +207,8 @@
                 
             case 'none'
                 assert(0==1);
+                
+                
             otherwise
                 assert(0==1);
         end
@@ -464,29 +475,53 @@
 
     p_conditions = [];
     p_conditions_descriptions = {};
+   
+    description = 'uniform location and box, no box adjust';
+    temp = p;
+    temp.description = description;
+    temp.situation_model.learn  = @situation_models.uniform_fit;
+    temp.situation_model.update = @situation_models.uniform_condition;
+    temp.situation_model.sample = @situation_models.uniform_sample;
+    temp.situation_model.draw   = @situation_models.uniform_draw;
+    temp.adjustment_model_activation_logic = @(cur_agent,a,b) false;
+    temp.adjustment_model_setup            = @(a,b,c,d) [];
+    temp.adjustment_model_apply            = @(cur_agent) assert(1==0);
+    if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
     
-%     description = 'Situate, two-toned box adjust';
-%     temp = p;
-%     temp.description = description;
-%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+    description = 'uniform location, normal box, no box adjust';
+    temp = p;
+    temp.description = description;
+    temp.situation_model.learn  = @situation_models.uniform_location_normal_box_fit;
+    temp.situation_model.update = @situation_models.uniform_location_normal_box_condition;
+    temp.situation_model.sample = @situation_models.uniform_location_normal_box_sample;
+    temp.situation_model.draw   = @situation_models.uniform_location_normal_box_draw;
+    temp.adjustment_model_activation_logic = @(cur_agent,a,b) false;
+    temp.adjustment_model_setup            = @(a,b,c,d) [];
+    temp.adjustment_model_apply            = @(cur_agent) assert(1==0);
+    if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
     
-%     description = 'Situate, two-tone cutoff: .3';
-%     temp = p;
-%         temp.description = description;
-%         temp.adjustment_model_setup = @(a,b,c) box_adjust.two_tone_train(a,b,c,box_adjust_training_thresholds, .3);
-%         temp.thresholds.internal_support          = .2;   % scout -> reviewer threshold
-%         temp.thresholds.total_support_provisional = inf;   % workspace entry, provisional (search continues)
-%         temp.thresholds.total_support_final       = .5625; % workspace entry, final (search (maybe) ends) depends on p.situation_objects_urgency_post
-%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+    description = 'situation location and box, no box adjust';
+    temp = p;
+    temp.description = description;
+    temp.adjustment_model_activation_logic = @(cur_agent,a,b) false;
+    temp.adjustment_model_setup            = @(a,b,c,d) [];
+    temp.adjustment_model_apply            = @(cur_agent) assert(1==0);
+    if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
     
-  
-    description = 'Situate, test set test run';
+    description = 'situation location and box, local agent search';
+    temp = p;
+    temp.description = description;
+    temp.adjustment_model_activation_logic = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, p.thresholds.internal_support, .9 );
+    temp.adjustment_model_setup            = @(a,b,c,d) [];
+    temp.adjustment_model_apply            = @situate.spawn_local_scouts;
+    if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+    
+    description = 'situation location and box, box adjust';
     temp = p;
     temp.description = description;
     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
 
-   
-    
+
     
 %% Data directory 
 %
