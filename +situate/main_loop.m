@@ -388,22 +388,55 @@ function [agent_pool, d, workspace] = agent_evaluate( agent_pool, agent_index, i
             error('situate:main_loop:agent_evaluate:agentTypeUnknown','agent does not have a known type field'); 
     end
     
+%     % implementing the direct scout -> reviewer -> builder pipeline
+%     if p.use_direct_scout_to_workspace_pipe ...
+%     && strcmp(agent_pool(agent_index).type, 'scout' ) ...
+%     && agent_pool(agent_index).support.internal >= p.thresholds.internal_support
+%         % We now know that a scout added a reviewer to the end of the agent
+%         % pool. We'll evaluate that and the associated builder, and then
+%         % delete both of them, keeping the iteration counter from ticking
+%         % up any further. The scout will be killed in the iteration loop
+%         % per usual.
+%         [agent_pool] = agent_evaluate_reviewer( agent_pool, length(agent_pool), p, workspace, d );
+%         agent_pool(agent_index).support.external = agent_pool(end).support.external;
+%         agent_pool(agent_index).support.total    = agent_pool(end).support.total;
+%         if isequal(agent_pool(end).type,'reviewer')
+%             % the reviewer failed to spawn a builder, so just fizzle
+%             agent_pool(end) = [];
+%         else
+%             % the reviewer did spawn a builder, so evaluate it
+%             assert(isequal(agent_pool(end).type,'builder'));
+%             [workspace, agent_pool, object_was_added] = agent_evaluate_builder( agent_pool, length(agent_pool), workspace );
+%             % feed the total support back to the scout, since this bonkers
+%             % process is in effect and the addition to the workspace needs
+%             % to be justified with a final score. alternatively, we could
+%             % just turn scouts into reviewers and builders, rather than
+%             % adding them to the pool...
+%             agent_pool([end-1 end]) = [];
+%         end
+%     end
+
     % implementing the direct scout -> reviewer -> builder pipeline
     if p.use_direct_scout_to_workspace_pipe ...
-    && strcmp(agent_pool(agent_index).type, 'scout' ) ...
-    && agent_pool(agent_index).support.internal >= p.thresholds.internal_support
+    && strcmp(agent_pool(agent_index).type, 'scout' )
         % We now know that a scout added a reviewer to the end of the agent
         % pool. We'll evaluate that and the associated builder, and then
         % delete both of them, keeping the iteration counter from ticking
         % up any further. The scout will be killed in the iteration loop
         % per usual.
+        
+        % if we didn't generate a reviewer, let's just fake it and see what the total support would
+        % have been anyway.
+        if ~isequal(agent_pool(end).type, 'reviewer')
+            agent_pool(end+1) = agent_pool(agent_index);
+            agent_pool(end).type = 'reviewer';
+            agent_pool(end).urgency = p.agent_urgency_defaults.reviewer;
+        end
+        
         [agent_pool] = agent_evaluate_reviewer( agent_pool, length(agent_pool), p, workspace, d );
         agent_pool(agent_index).support.external = agent_pool(end).support.external;
         agent_pool(agent_index).support.total    = agent_pool(end).support.total;
-        if isequal(agent_pool(end).type,'reviewer')
-            % the reviewer failed to spawn a builder, so just fizzle
-            agent_pool(end) = [];
-        else
+        if isequal(agent_pool(end).type,'builder') && agent_pool(agent_index).support.internal >= p.thresholds.internal_support
             % the reviewer did spawn a builder, so evaluate it
             assert(isequal(agent_pool(end).type,'builder'));
             [workspace, agent_pool, object_was_added] = agent_evaluate_builder( agent_pool, length(agent_pool), workspace );
@@ -413,8 +446,17 @@ function [agent_pool, d, workspace] = agent_evaluate( agent_pool, agent_index, i
             % just turn scouts into reviewers and builders, rather than
             % adding them to the pool...
             agent_pool([end-1 end]) = [];
+        elseif isequal(agent_pool(end).type,'builder')
+            % the reviewer spawned a builder, but it really shouldn't have, so remove it and the
+            % reviewer
+            agent_pool([end-1 end]) = [];
+        elseif isequal(agent_pool(end).type,'reviewer')
+            % the reviewer failed to spawn a builder, so just fizzle
+            agent_pool(end) = [];
         end
+       
     end
+
     
     % for found objects, adjust their priority
     if object_was_added
