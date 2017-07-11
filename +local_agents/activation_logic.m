@@ -1,5 +1,5 @@
 
-function is_to_be_expanded = adjustment_model_activation_logic( agent_to_expand, workspace, expand_min, expand_max  )
+function is_to_be_expanded = activation_logic( agent_to_expand, workspace, expand_min, expand_max  )
 
     is_to_be_expanded = false;
     

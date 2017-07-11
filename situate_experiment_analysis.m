@@ -37,34 +37,153 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
 %% reshaping the data 
     
     % gather all p_conditions and p_conditions descriptions
-    p_conditions_temp = [];
+    p_conditions_temp = {};
     p_conditions_descriptions_temp = {};
     agent_records_temp = {};
     workspaces_final_temp = {};  
     fnames_test_images_temp = {};
-    % run_data_temp = {};
     
+    % just get the description for grouping
+    p_conditions_temp = cell(1,length(fn));
+    p_conditions_descriptions_temp = cell(1,length(fn));
     for fi = 1:length(fn) % file ind
-        temp_d = load(fn{fi});
-        p_conditions_temp{end+1}           = temp_d.p_condition;
-        p_conditions_descriptions_temp{fi} = temp_d.p_condition.description;
-        agent_records_temp{end+1}          = temp_d.agent_records;
-        workspaces_final_temp{end+1}       = temp_d.workspaces_final;
-        fnames_test_images_temp{end+1}     = temp_d.fnames_im_test;
+        temp = load(fn{fi},'p_condition');
+        p_conditions_temp{fi} = temp.p_condition;
+        p_conditions_descriptions_temp{fi} = temp.p_condition.description;
+        progress(fi,length(fn),'loading parameterization data');
     end
     
-    [description_counts, p_conditions_descriptions] = counts( p_conditions_descriptions_temp );
+    [p_conditions_descriptions,~,condition_indices] = unique(p_conditions_descriptions_temp);
     num_conditions = length(p_conditions_descriptions);
     
-    % check that things seem balanced
-    if ~all(eq(description_counts(1), description_counts)), error('different numbers of runs for different experimental conditions'); end
-    images_per_run = cellfun( @length, workspaces_final_temp );
-    if ~all(eq(images_per_run(1),images_per_run)), error('different numbers of images in different runs'); end
     
-    num_images = sum( cellfun( @length, workspaces_final_temp ) ) / length(p_conditions_descriptions);
+    results_per_condition = [];
     
-    fprintf('.');
- 
+    % now go through each condition
+    %   load up related files, combine
+    for ci = 1:num_conditions
+        cur_files_inds = find(eq(ci,condition_indices));
+        temp_data = cell(1,length(cur_files_inds));
+        for fii = 1:length(cur_files_inds)
+            fi = cur_files_inds(fii);
+            cur_fname = fn{fi};
+            fprintf('condition: %i trial: %i fname: %s \n', ci,fii,cur_fname);
+            temp_data{fii} = load(cur_fname);
+        end
+        
+        p_condition = temp_data{1}.p_condition;
+        
+        workspaces_final = cellfun( @(x) x.workspaces_final, temp_data, 'UniformOutput', false);
+        workspaces_final = cellfun( @(x) [x{:}], workspaces_final, 'UniformOutput', false);
+        workspaces_final = [workspaces_final{:}];
+        
+        agent_records = cellfun( @(x) x.agent_records, temp_data, 'UniformOutput', false);
+        agent_records = cellfun( @(x) [x{:}], agent_records, 'UniformOutput', false);
+        agent_records = [agent_records{:}]';
+        
+        fnames_test = cellfun( @(x) x.fnames_im_test, temp_data, 'UniformOutput', false);
+        fnames_test = cellfun( @(x) x', fnames_test,'UniformOutput',false);
+        fnames_test = [fnames_test{:}]';
+        
+        % detections at threshold, iteration
+        num_thresholds = 11;
+        iou_thresholds = sort(unique([linspace(0,1,num_thresholds) .5])); % make sure .5 is in there
+        num_thresholds = length(iou_thresholds);
+        num_images = length(fnames_test);
+        situation_objects = p_condition.situation_objects;
+        num_situation_objects = length(situation_objects );
+        %num_iterations = p_condition.num_iterations;
+        
+        % final IOUs for objects
+        final_ious = zeros( num_images, num_situation_objects );
+        for imi = 1:num_images
+        for oi  = 1:num_situation_objects
+            wi  = strcmp( situation_objects{oi},workspaces_final(imi).labels);
+            if any(wi)
+                final_ious(imi,oi) = workspaces_final(imi).GT_IOU(wi);
+            end
+        end
+        end
+        results_per_condition(ci).final_ious = final_ious;
+        
+        % detections at various IOU thresholds
+        detections_at_iou = zeros( num_thresholds, num_situation_objects+1 );
+        for ti  = 1:num_thresholds
+            for oi  = 1:num_situation_objects
+                detections_at_iou(ti,oi) = sum( ge( final_ious(:,oi), iou_thresholds(ti) ) );
+            end
+            detections_at_iou(ti,end) = sum( all( final_ious >= iou_thresholds(ti), 2 ) );
+        end
+        results_per_condition(ci).detections_at_iou = detections_at_iou;
+        
+        % time of first detections (over GT IOU threshold )
+        first_iteration_over_threshold = zeros( num_images, num_situation_objects+1, num_thresholds );
+
+        for ii = 1:num_images
+        for ti = 1:num_thresholds
+            
+            for oi = 1:num_situation_objects
+
+                iterations_of_interest = find([agent_records(ii,:).interest] == oi);
+                temp             = [agent_records(ii,:).support];
+                temp             = temp(iterations_of_interest);
+                internal_support = [temp.internal];
+                total_support    = [temp.total];
+                gt_iou           = [temp.GROUND_TRUTH];
+
+                % first with an actual gt_iou over threshold (situate may not know if using provisional check-ins)
+                first_over_threshold = find( ge( gt_iou, iou_thresholds(ti) ), 1, 'first' );
+
+                if ~isempty(first_over_threshold)
+                    first_iteration_over_threshold(ii,oi,ti) = iterations_of_interest( first_over_threshold );
+                else
+                    first_iteration_over_threshold(ii,oi,ti) = nan;
+                end
+            
+            end
+        
+            if any(isnan(first_iteration_over_threshold(ii,1:num_situation_objects,ti)))
+                first_iteration_over_threshold(ii,end,ti) = nan;
+            else
+                first_iteration_over_threshold(ii,end,ti) = max(first_iteration_over_threshold(ii,1:num_situation_objects,ti));
+            end
+        
+        end
+            fprintf('.');
+            if mod(ii,100)==0, fprintf('\n'); end
+        end
+        fprintf('\n');
+        results_per_condition(ci).first_iteration_over_threshold = first_iteration_over_threshold;
+        
+        % get scout distribution over full run
+
+        for imi = 1:num_images
+            hist(double([agent_records{ci,imi}.interest]))
+        end
+        
+        
+        
+        
+            
+           
+            
+            
+          
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+    end
+    
+  
     
 %% group on condition
     
@@ -81,45 +200,44 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
         fnames_test_images{ci}  = reshape([fnames_test_images_temp{cur_condition_inds}],[],1);
     end
 
+    situation_objects = p_conditions{1}.situation_objects;
+    
     clear temp_d
     clear agent_records_temp;
     
-    fprintf('.');
+    display('.');
     
     
     
 %% check for successful detections against Ground Truth IOU
+%   also get detection level of each object type, and the unique id for each image
+%   at multiple detection levels
     
     iou_threshold = .5;
     successful_completion = false( num_conditions, num_images );
+    object_detections     = false( num_conditions, num_images, length(situation_objects));
     for ci = 1:num_conditions
     for ii = 1:num_images
         if isequal( sort(workspaces_final{ci,ii}.labels), sort(p_conditions{ci}.situation_objects) )...
         && all(workspaces_final{ci,ii}.GT_IOU >= iou_threshold)
             successful_completion(ci,ii) = true;
         end
-    end
-    end
-    
-    
-    
-%% repeat detections
-    if num_images > length(unique(fnames_test_images{1}))
-        sum_completions = zeros(num_conditions,length(unique(fnames_test_images{1})));
-        for ci = 1:num_conditions
-            temp = fnames_test_images{ci};
-            [~,~,im_inds] = unique(temp);
-            for imi = 1:length(unique(fnames_test_images{1}))
-                sum_completions(ci,imi) = sum(successful_completion(ci,eq(im_inds,imi)));
-            end    
+        
+        for oi = 1:length(situation_objects)
+            if ismember(situation_objects{oi}, workspaces_final{ci,ii}.labels )
+                obj_workspace_ind = strcmp(situation_objects{oi},workspaces_final{ci,ii}.labels);
+                if workspaces_final{ci,ii}.GT_IOU(obj_workspace_ind) > iou_threshold
+                    object_detections(ci,ii,oi) = true;
+                end
+            end
         end
-        stem(sort(sum_completions));
-        xlabel('image index');
-        ylabel('number of times detected (of 4 attempts)');
+        
+    end
     end
     
-
-
+    display('.');
+    
+    
     
 %% gather data on detection order of objects
     
@@ -232,10 +350,13 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     
     h2.Position = [440 537 560 220];
     print(h2,fullfile(results_directory,'situate_experiment_figure'),'-r300', '-dpdf','-bestfit' );
+    saveas(h2,fullfile(results_directory,'situate_experiment_figure detections at iteration'),'png');
     
     ylim([0, 1.1*max([1; detections_at_num_proposals(:)])]);
     ylabel({ 'Completed Situation Detections', ['(Cumulative, max: ' num2str(num_images) ')'] });
     print(h2,fullfile(results_directory,'situate_experiment_figure_zoomed'),'-r300', '-dpdf','-bestfit' );
+    saveas(h2,fullfile(results_directory,'situate_experiment_figure detections at iteration zoomed'),'png');
+    
     
     
 
@@ -391,8 +512,56 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     legend(p_conditions_descriptions,'location','southoutside');
     
     
-    print(h3b,fullfile(results_directory,'object_detections_vs_iou_threshold'),'-r300', '-dpdf','-bestfit');
-    saveas(h3b,fullfile(results_directory,'object_detections_vs_iou_threshold'),'png')
+    print(h3b,fullfile(results_directory,'object_detections_vs_iou_threshold zoomed'),'-r300', '-dpdf','-bestfit');
+    saveas(h3b,fullfile(results_directory,'object_detections_vs_iou_threshold zoomed'),'png')
+    
+%% figure: repeat detections
+
+    num_repeat_runs = num_images / length(unique(fnames_test_images{1}));
+    
+    %if num_repeat_runs > 1
+    
+        sum_completions = zeros(num_conditions,length(unique(fnames_test_images{1})));
+        sum_obj_detections = zeros(num_conditions,length(unique(fnames_test_images{1})),length(situation_objects) );
+        
+        for ci = 1:num_conditions
+            temp = fnames_test_images{ci};
+            [~,~,im_inds] = unique(temp);
+            for imi = 1:length(unique(fnames_test_images{1}))
+                sum_completions(ci,imi) = sum(successful_completion(ci,eq(im_inds,imi)));
+                for oi = 1:length(situation_objects)
+                    sum_obj_detections(ci,imi,oi) = sum(object_detections(ci,eq(im_inds,imi),oi));
+                end
+            end  
+        end
+        
+        figure;
+        
+        for ci = 1:num_conditions
+        for oi = 1:length(situation_objects)
+            subplot2( length(situation_objects)+1,num_conditions,oi,ci);
+            stem(sort(sum_obj_detections(ci,:,oi)));
+            xlabel(situation_objects{oi});
+            if ci == 1, ylabel({'times detected'; ['(' num2str(num_repeat_runs) ' attempts)']}); end
+            if oi == 1, title(p_conditions_descriptions{ci}); end
+            ylim([0 1.1*num_repeat_runs]);
+            xlim([0 length(unique(fnames_test_images{1}))]);
+        end
+        end
+        
+        for ci = 1:num_conditions
+            subplot2( length(situation_objects)+1,num_conditions,length(situation_objects)+1,ci);
+            stem(sort(sum_completions(ci,:)));
+            xlabel('full situation');
+            if ci == 1, ylabel({'times detected'; ['(' num2str(num_repeat_runs) ' attempts)']}); end
+            ylim([0 1.1*num_repeat_runs]);
+            xlim([0 length(unique(fnames_test_images{1}))]);
+        end
+        
+    %end
+    
+    display('.');
+
     
     
 %% figure: object detections vs time at fixed IOU threshold    
@@ -438,10 +607,10 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
         fprintf('\n');
     end
     
-    
+%%
     
     ti = 1;
-    h4 = figure('color','white')
+    h4 = figure('color','white');
     for ci = 1:num_conditions
     for oi = 1:num_situation_objects
         subplot2( num_situation_objects, num_conditions, oi, ci )
@@ -594,7 +763,19 @@ end
 
 imi = 1;
 ci = 1;
-[~, im] = situate.load_image_and_data( fnames_test_images{ci}{imi}, p_conditions{ci}, true );
+try
+    [~, im] = situate.load_image_and_data( fnames_test_images{ci}{imi}, p_conditions{ci}, true );
+catch
+    images_directory = '/Users/Max/Documents/MATLAB/data/situate_images/PortlandSimpleDogWalking';
+    if ~exist(images_directory,'dir')
+        h = msgbox('Select directory containing image data');
+        uiwait(h);
+        images_directory = uigetdir(pwd); 
+    end
+    fnames_test_images{ci}{imi}
+        
+    
+end
 figure;
 b0 = 001;
 bf = 100;

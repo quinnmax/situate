@@ -22,6 +22,7 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
         % passed around.
         workspace = workspace_initialize(p,im_size);
         
+        situation_detected = false;
         
     % initialize distributions struct, which keeps track of distribution during a run, including:
     %   obj urgency, 
@@ -209,83 +210,53 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
                 end 
             end
             
-        % check completion status
+        % check situation detection status
         
-            if workspace_changed 
-                [is_done, message] = p.stopping_condition( workspace, p );
-                if is_done
-                    broke_for = message;
-                    break; 
-                end
+            if workspace_changed ...
+            && isequal( sort(workspace.labels), sort(p.situation_objects) ) ...
+            && all( workspace.total_support >= p.thresholds.total_support_final )
+                situation_detected = true;
             end
             
-        % update the agent pool
+        % update agent pool
             
             % remove the evaluated agent from the pool
             agent_pool(agent_index)  = [];
-        
-            % clean up the agent pool
-            if workspace_changed
-                
-                if p.agent_pool_cleanup.on_object_of_interest_found
-                    % clear out agents that are looking for objects that have reached final checkin
-                    for i = 1:length(workspace.labels)
-                        if workspace.total_support >= p.thresholds.total_support_final
-                            interest_to_clear = workspace.labels{i};
-                            inds_to_clear = false(length(agent_pool),1);
-                            for j = 1:length(agent_pool)
-                                if isequal(agent_pool(j).interest,interest_to_clear)
-                                    inds_to_clear(j) = true;
-                                end
-                            end
-                            agent_pool(inds_to_clear) = [];
-                        end
-                    end
-                end
-                
-                if p.agent_pool_cleanup.on_workspace_change && workspace_changed
-                    
-                     agent_pool = [];
-                    
-                end
-                
-           end
-        
-        % generate new agents based on the current agent's findings
             
+            % generate new agents based on the current agent's findings
+            %   do it if we haven't finished yet
+            %   OR if we made progress and want to let it keep improving,
+            %       even though a situation has been detected
             if p.adjustment_model_activation_logic(current_agent_snapshot,workspace,p)
-                % need to make this compatible with box adjust, and then go
-                % back and update the local search functions
                 agent_pool = p.adjustment_model_apply( learned_models.adjustment_model, current_agent_snapshot, agent_pool, im );
             end
+            
+        % check stopping condition
+        
+            if p.stopping_condition( workspace, agent_pool, p )
+                break;
+            end
           
-        % edit: hack adjusts interest priority values.
-        %
-        % There's a problem where three objects are checked in
-        % provisionally, and we're not actually looking for any of them
-        % anymore, so we try to normalize a distribution of all zeros.
-        %
-        % The solution is to just return the tentatively checked-in objects
-        % to their original priority and continue on.
+        % prep for the next iteration
+        
+            % check for degenerate object priority distribution
+            %   if, for some reason, all of the priorities have been set to 0, then make them non-zero
+            %   to avoid trying to sample from a zero density distribution
             if sum( [d.interest_priority] ) == 0
-                for wi = 1:size(workspace.boxes_r0rfc0cf,1)
-                if workspace.total_support(wi) < p.thresholds.total_support_final
-                    di = strcmp( workspace.labels{wi}, {d.interest} );
-                    d(di).interest_priority = p.situation_objects_urgency_pre.( d(di).interest );
-                end
+                for di = 1:length(d)
+                    dj = strcmp( workspace.labels{di}, {d.interest} );
+                    d(dj).interest_priorty = p.situation_objects_urgency_pre.( d(dj).interest );
                 end
             end
-            
-        % if the pool is under size, top off with default scouts
-        while isempty(agent_pool) || sum( strcmp( 'scout', {agent_pool.type} ) ) < p.num_scouts
-            if isempty(agent_pool)
-                agent_pool = agent_initialize(p); 
-            else
-                agent_pool(end+1) = agent_initialize(p); 
+              
+            % refill the pool if we're continuing on and the pool is under size
+            while ~situation_detected && sum( strcmp( 'scout', {agent_pool.type} ) ) < p.num_scouts
+                if isempty(agent_pool)
+                    agent_pool = agent_initialize(p); 
+                else
+                    agent_pool(end+1) = agent_initialize(p); 
+                end
             end
-            
-            records.population_count(iteration,:) = records.population_count(iteration,:) + strcmp('scout',agent_types);
-        end
             
     end % of main iteration loop
 

@@ -1,4 +1,4 @@
-function [result, message] = stopping_condition_situation_found( workspace, p )
+function [result, message] = stopping_condition_situation_found( workspace, ~, p )
 
     result = false;
     message = '';

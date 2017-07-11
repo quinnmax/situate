@@ -17,8 +17,8 @@
         % split_arg = 1;
         % split_arg = uigetdir(pwd);
         % split_arg = 'split_default/';
-        %split_arg = 'split_holdout_301_400/';
-        split_arg = 'split_test_301_400/';
+        split_arg = 'split_holdout_301_400/';
+        % split_arg = 'split_test_301_400/';
         
         if ischar(split_arg)
             seed_train = [];
@@ -53,7 +53,7 @@
 % whether or not you want to use the GUI, where to save the experiment
 % results, and how many images for training and testing.
 
-    experiment_settings.title               = 'dogwalking, test set, lesions, test run 1';
+    experiment_settings.title               = 'dogwalking, stopping condition check';
     experiment_settings.situations_struct   = situate.situation_definitions();
     experiment_settings.situation           = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
     
@@ -62,15 +62,10 @@
     experiment_settings.testing_data_max    = 100;  % per fold
     experiment_settings.training_data_max   = []; 
     
-    % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % 
-    experiment_settings.use_gui = false;
-    % note: when doing a GUI run, the following won't happen
-    %   run_analysis_after_completion,
-    %   saving off results
-    %   using more than the first experimental condition
-    %   using more than the first data fold
-    % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % 
-   
+    experiment_settings.use_gui                         = true;
+    experiment_settings.use_parallel                    = false;
+    experiment_settings.run_analysis_after_completion   = false;
+    
     % additional visualization options
     
         if experiment_settings.use_gui
@@ -86,9 +81,9 @@
             p.viz_options.on_end                = false;
             p.viz_options.start_paused          = false;
         end
-        
-    experiment_settings.run_analysis_after_completion = true;
       
+    % lazy output results directory setting
+    
     if strcmp(computer,'GLNXA64')
         experiment_settings.results_directory = fullfile('/home/',char(java.lang.System.getProperty('user.name')),'/Desktop/',[experiment_settings.title '_' datestr(now,'yyyy.mm.dd.HH.MM.SS')]);                                                                                          
     elseif strcmp(computer,'MACI64')
@@ -279,19 +274,19 @@
 % running conditions, but in general, these are the things that we haven't
 % been changing very much within an experimental run
         
-    p.num_iterations = 2000;         
+    p.num_iterations = 1000;         
 
     % pipeline
     
-        p.num_scouts = 20;
+        p.num_scouts = 10;
         p.use_direct_scout_to_workspace_pipe             = true; % hides stochastic agent stuff a bit, more comparable to other methods     
-        p.agent_pool_cleanup.on_workspace_change         = true;
-        p.agent_pool_cleanup.on_object_of_interest_found = true;
+        %p.agent_pool_cleanup.on_workspace_change         = true;
         
     % stopping conditions
     
         %p.stopping_condition = @situate.stopping_condition_null; % use all iterations, don't stop on detection
-        p.stopping_condition = @situate.stopping_condition_situation_found; % stop early if all situation objects are checked-in over p.thresholds.total_support_final
+        %p.stopping_condition = @situate.stopping_condition_situation_found; % stop once the situation is checked-in
+        p.stopping_condition = @situate.stopping_condition_finish_up_pool; % stop once the situation is checked-in and residual agents have been evaluated
         
         
         
@@ -394,20 +389,20 @@
         switch adjustment_model_description
             
             case 'bounding box regression'
-                p.adjustment_model_activation_logic = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, p.thresholds.internal_support, .9 );
+                p.adjustment_model_activation_logic = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, p.thresholds.internal_support, 1.0 );
                 box_adjust_training_threshold       = .1;
                 p.adjustment_model_setup            = @(a,b,c) box_adjust.train(a,b,c,box_adjust_training_threshold);
                 p.adjustment_model_apply            = @box_adjust.apply;
             case 'bounding box regression two-tone'
                 p.adjustment_model_activation_logic = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, p.thresholds.internal_support, 1.0 );
                 box_adjust_training_thresholds      = [.1 .6];
-                model_selection_threshold           = .5;
+                model_selection_threshold           = .5; % set via validation set experiments
                 p.adjustment_model_setup            = @(a,b,c) box_adjust.two_tone_train(a,b,c,box_adjust_training_thresholds, model_selection_threshold);
                 p.adjustment_model_apply            = @box_adjust.two_tone_apply;
             case 'local agent search'
-                p.adjustment_model_activation_logic = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, p.thresholds.internal_support, .9 );
+                p.adjustment_model_activation_logic = @(cur_agent,workspace,p) local_agents.activation_logic( cur_agent, workspace, .65, 1.0 ); % set via validation set experiments                                                                     
                 p.adjustment_model_setup            = @(a,b,c,d) [];
-                p.adjustment_model_apply            = @situate.spawn_local_scouts;
+                p.adjustment_model_apply            = @local_agents.generate_agents;
             case 'none'
                 p.adjustment_model_activation_logic = @(cur_agent,a,b) false;
                 p.adjustment_model_setup            = @(a,b,c,d) [];
@@ -476,45 +471,57 @@
     p_conditions = [];
     p_conditions_descriptions = {};
    
-    description = 'uniform location and box, no box adjust';
-    temp = p;
-    temp.description = description;
-    temp.situation_model.learn  = @situation_models.uniform_fit;
-    temp.situation_model.update = @situation_models.uniform_condition;
-    temp.situation_model.sample = @situation_models.uniform_sample;
-    temp.situation_model.draw   = @situation_models.uniform_draw;
-    temp.adjustment_model_activation_logic = @(cur_agent,a,b) false;
-    temp.adjustment_model_setup            = @(a,b,c,d) [];
-    temp.adjustment_model_apply            = @(cur_agent) assert(1==0);
-    if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
-    
-    description = 'uniform location, normal box, no box adjust';
-    temp = p;
-    temp.description = description;
-    temp.situation_model.learn  = @situation_models.uniform_location_normal_box_fit;
-    temp.situation_model.update = @situation_models.uniform_location_normal_box_condition;
-    temp.situation_model.sample = @situation_models.uniform_location_normal_box_sample;
-    temp.situation_model.draw   = @situation_models.uniform_location_normal_box_draw;
-    temp.adjustment_model_activation_logic = @(cur_agent,a,b) false;
-    temp.adjustment_model_setup            = @(a,b,c,d) [];
-    temp.adjustment_model_apply            = @(cur_agent) assert(1==0);
-    if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
-    
-    description = 'situation location and box, no box adjust';
-    temp = p;
-    temp.description = description;
-    temp.adjustment_model_activation_logic = @(cur_agent,a,b) false;
-    temp.adjustment_model_setup            = @(a,b,c,d) [];
-    temp.adjustment_model_apply            = @(cur_agent) assert(1==0);
-    if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
-    
-    description = 'situation location and box, local agent search';
-    temp = p;
-    temp.description = description;
-    temp.adjustment_model_activation_logic = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, p.thresholds.internal_support, .9 );
-    temp.adjustment_model_setup            = @(a,b,c,d) [];
-    temp.adjustment_model_apply            = @situate.spawn_local_scouts;
-    if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+%     description = 'uniform location and box, no box adjust';
+%     temp = p;
+%     temp.description = description;
+%     temp.situation_model.learn  = @situation_models.uniform_fit;
+%     temp.situation_model.update = @situation_models.uniform_condition;
+%     temp.situation_model.sample = @situation_models.uniform_sample;
+%     temp.situation_model.draw   = @situation_models.uniform_draw;
+%     temp.adjustment_model_activation_logic = @(cur_agent,a,b) false;
+%     temp.adjustment_model_setup            = @(a,b,c,d) [];
+%     temp.adjustment_model_apply            = @(cur_agent) assert(1==0);
+%     temp.total_support_function    = @(internal,external) 1.0 * internal + 0 * external;
+%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+%     
+%     description = 'uniform location, normal box, no box adjust';
+%     temp = p;
+%     temp.description = description;
+%     temp.situation_model.learn  = @situation_models.uniform_location_normal_box_fit;
+%     temp.situation_model.update = @situation_models.uniform_location_normal_box_condition;
+%     temp.situation_model.sample = @situation_models.uniform_location_normal_box_sample;
+%     temp.situation_model.draw   = @situation_models.uniform_location_normal_box_draw;
+%     temp.adjustment_model_activation_logic = @(cur_agent,a,b) false;
+%     temp.adjustment_model_setup            = @(a,b,c,d) [];
+%     temp.adjustment_model_apply            = @(cur_agent) assert(1==0);
+%     temp.total_support_function    = @(internal,external) 1.0 * internal + 0.0 * external;
+%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+%     
+%     description = 'uniform location and box, box adjust';
+%     temp = p;
+%     temp.description = description;
+%     temp.situation_model.learn  = @situation_models.uniform_fit;
+%     temp.situation_model.update = @situation_models.uniform_condition;
+%     temp.situation_model.sample = @situation_models.uniform_sample;
+%     temp.situation_model.draw   = @situation_models.uniform_draw;
+%     temp.total_support_function = @(internal,external) 1.0 * internal + 0 * external;
+%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+%     
+%     description = 'situation location and box, no box adjust';
+%     temp = p;
+%     temp.description = description;
+%     temp.adjustment_model_activation_logic = @(cur_agent,a,b) false;
+%     temp.adjustment_model_setup            = @(a,b,c,d) [];
+%     temp.adjustment_model_apply            = @(cur_agent) assert(1==0);
+%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+% 
+%     description = 'situation location and box, local agent search';
+%     temp = p;
+%     temp.description = description;
+%     temp.adjustment_model_activation_logic = @(cur_agent,workspace,p) local_agents.activation_logic( cur_agent, workspace, .65, 1.0 );
+%     temp.adjustment_model_setup            = @(a,b,c,d) [];
+%     temp.adjustment_model_apply            = @local_agents.generate_agents;
+%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
     
     description = 'situation location and box, box adjust';
     temp = p;
@@ -546,7 +553,7 @@
 
 %% Run the experiment 
 
-    if experiment_settings.use_gui
+    if experiment_settings.use_gui || ~experiment_settings.use_parallel
         situate.experiment_helper(experiment_settings, p_conditions, data_path, split_arg);
     else
         situate.experiment_helper_par(experiment_settings, p_conditions, data_path, split_arg);

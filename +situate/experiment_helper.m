@@ -208,7 +208,9 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
                         IOUs_of_last_run   = num2str(run_data_cur.workspace_final.GT_IOU);
                         progress_string    = [cur_parameterization.description ', ' num2str(num_iterations_run), ' steps, ' num2str(toc) 's,', ' IOUs: [' IOUs_of_last_run ']'];
                         progress(cur_image_ind,length(fnames_im_test),progress_string);
-
+                        
+                        cur_image_ind = cur_image_ind + 1;
+                        
                     end
 
                     if cur_image_ind > experiment_settings.testing_data_max
