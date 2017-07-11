@@ -212,8 +212,7 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
             
         % check situation detection status
         
-            if workspace_changed ...
-            && isequal( sort(workspace.labels), sort(p.situation_objects) ) ...
+            if isequal( sort(workspace.labels), sort(p.situation_objects) ) ...
             && all( workspace.total_support >= p.thresholds.total_support_final )
                 situation_detected = true;
             end
@@ -248,6 +247,10 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
                     d(dj).interest_priorty = p.situation_objects_urgency_pre.( d(dj).interest );
                 end
             end
+            
+            if rand() < .01
+                agent_pool = agent_initialize(p);
+            end
               
             % refill the pool if we're continuing on and the pool is under size
             while ~situation_detected && sum( strcmp( 'scout', {agent_pool.type} ) ) < p.num_scouts
@@ -257,6 +260,8 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
                     agent_pool(end+1) = agent_initialize(p); 
                 end
             end
+            
+            % fprintf(' dogwalker: %d, dog: %d, leash: %d, blank: %d , total: %d \n', sum(strcmp({agent_pool.interest},'dogwalker')), sum(strcmp({agent_pool.interest},'dog')), sum(strcmp({agent_pool.interest},'leash')), sum(cellfun(@isempty,{agent_pool.interest})), length(agent_pool))
             
     end % of main iteration loop
 

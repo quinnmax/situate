@@ -62,7 +62,7 @@ function [ agent_pool, adjusted_box_r0rfc0cf, delta_xywh ] = apply( model, curre
     % construct a new agent to add to the pool
     new_agent = current_agent_snapshot;
     new_agent.type = 'scout';
-    new_agent.urgency = 5;
+    new_agent.urgency = 2;
     new_agent.support.internal     = 0;
     new_agent.support.external     = 0;
     new_agent.support.total        = 0;

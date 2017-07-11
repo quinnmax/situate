@@ -422,9 +422,9 @@
                 p.situation_objects_urgency_pre.(  'dogwalker') = 1.00;
                 p.situation_objects_urgency_pre.(  'dog'      ) = 1.00;
                 p.situation_objects_urgency_pre.(  'leash'    ) = 1.00;
-                p.situation_objects_urgency_post.( 'dogwalker') = 0.10;
-                p.situation_objects_urgency_post.( 'dog'      ) = 0.10;
-                p.situation_objects_urgency_post.( 'leash'    ) = 0.10;
+                p.situation_objects_urgency_post.( 'dogwalker') = 0.25;
+                p.situation_objects_urgency_post.( 'dog'      ) = 0.25;
+                p.situation_objects_urgency_post.( 'leash'    ) = 0.25;
                 
             case 'pingpong' 
                 

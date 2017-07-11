@@ -131,8 +131,10 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
                 total_support    = [temp.total];
                 gt_iou           = [temp.GROUND_TRUTH];
 
-                % first with an actual gt_iou over threshold (situate may not know if using provisional check-ins)
-                first_over_threshold = find( ge( gt_iou, iou_thresholds(ti) ), 1, 'first' );
+                % first with an actual gt_iou over threshold 
+                % and total support over threshold (using .5 total support)
+                % first_over_threshold = find( ge( gt_iou, iou_thresholds(ti) ), 1, 'first' );
+                first_over_threshold = find( ge( gt_iou, iou_thresholds(ti) ) & ge( total_support, iou_thresholds(ti) ), 1, 'first' );
 
                 if ~isempty(first_over_threshold)
                     first_iteration_over_threshold(ii,oi,ti) = iterations_of_interest( first_over_threshold );

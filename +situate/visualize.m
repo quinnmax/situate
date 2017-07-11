@@ -248,7 +248,7 @@ function [h, return_status_string] = visualize( h, im, p, d, workspace, cur_agen
         
         subplot2(3,sp_cols,1,5+oi-1); 
         temp_h = p.situation_model.draw( d, p.situation_objects{oi}, 'xy', samples_represented, samples_represented_formatting_box, initial_figure_generation );    
-        title({[d(oi).interest ' location'];internal_string;gt_string});
+        title({[d(oi).interest ' location'];internal_string;total_string;gt_string});
         UserData.handles(end+1:end+length(temp_h)) = temp_h;
     
         subplot2(3,sp_cols,2,5+oi-1); 
