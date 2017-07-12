@@ -62,9 +62,9 @@
     experiment_settings.testing_data_max    = 100;  % per fold
     experiment_settings.training_data_max   = []; 
     
-    experiment_settings.use_gui                         = true;
-    experiment_settings.use_parallel                    = false;
-    experiment_settings.run_analysis_after_completion   = false;
+    experiment_settings.use_gui                         = false;
+    experiment_settings.use_parallel                    = true;
+    experiment_settings.run_analysis_after_completion   = true;
     
     % additional visualization options
     
