@@ -1,15 +1,10 @@
 
 
 % this goes through much of the process of setting up the classifier and
-% situation model used in situate. it uses the defualt training/testing
-% split and loads the default classifier models.
+% situation model used in situate.
 %
 % this is a pretty good place to run classifier experiments and stuff that
 % shouldn't use situate's stochastic nature to pull crops.
-
-    cd( fileparts(which('non_situate_experiment_setup') ) );
-
-
 
 %% initialize the situate structures
     
@@ -150,8 +145,7 @@
     
     num_bins = 20; % IOU bins between IOU 0 and 1
     samples_per_bin = 5;
-            
-    
+        
     column_descriptions = { ...
         'image index', ...
         'box coordinates r0rfc0cf', ...
@@ -167,7 +161,6 @@
         'single conditioned density values (in order of situation_objects)', ...
         'single conditioned density values (in order of situation_objects)', ...
         'double conditioned density values (in order of situation_objects)' };
-    
     
     % boxes and box info for this image
     box_proposals_r0rfc0cf = zeros(0,4);
@@ -405,7 +398,7 @@
     
     save_name = ['cnn_features_and_IOUs' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat' ];
     
-    save( fullfile( '/Users/Max/Desktop/', save_name ), '-v7.3', ...
+    save( fullfile( save_name ), '-v7.3', ...
         'fnames', ...
         'p', ...
         'experiment_settings',...
@@ -424,7 +417,7 @@
         'box_density_conditioned_1b',...
         'box_density_conditioned_2');
     
-    display(['saved to ' fullfile( '/Users/Max/Desktop/', save_name )]);
+    display(['saved cnn_features_and_IOUs data to ' fullfile( save_name )]);
     
     
          

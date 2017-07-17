@@ -1,0 +1,68 @@
+
+parameter setting experiments (redux)
+	I have them in order of what I think could break the system. Parameters checked later will have to have best-guesses during runs for the parameters being checked earlier, so we should make sure the big stuff is figured out first and the little things are tuned after.
+
+	threshold on internal support for box-adjust model (currently at .2)
+		proposed values: [ .1 .2 .3 .4 .5] 
+		(last time best was between .1 and .2, but it seems like we need it to go up quite a bit given changes, so we might want to do this twice based on what we find)
+
+	total support threshold (currently at .5625)
+		proposed values: [.45 .5 .55 .6 .65] 
+		(last time best was between .56 and .625)
+
+	provisional support threshold (currently not being used)
+		last time we found not using provisional check-ins to be best, so we could just skip this
+
+		it seems like the usefulness of provisional check-ins is obviated by using the box-adjust model, but we could give it another go
+
+	two-toned box-adjust high or low variance model cutoff (currently .5)
+		proposed values: [.2 .3 .4 .5 .6]
+
+		this is currently just set based on the original observation about the two box-adjust models and their training data. 
+
+	probability of uniform when using uniform normal mix (currently at .5)
+		proposed values: [.2 .3 .4 .5 .6]
+		(last time best was between .25 and .5)
+
+	value of post-detection urgency (currently at .25)
+		proposed values: [0 .1 .25 .5 1.0]
+		(last time didn't matter too much, but not sure how many such agents were being generated)
+
+
+
+
+	separately, for local search
+		use above results for: 
+			total support threshold
+			probability of uniform
+			post-detection urgency
+
+		threshold on internal support for generating local agents
+			proposed values: [.5 .6 .65 .7 .8]
+		(	last time best was .65, but want to make sure nothing significant has changed)
+
+
+
+
+
+
+
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

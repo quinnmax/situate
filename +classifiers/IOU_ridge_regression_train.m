@@ -19,11 +19,17 @@ function classifier_model = IOU_ridge_regression_train( p, fnames_in, saved_mode
        models = loaded_data.models;
        display(['loaded ' model_description ' model from: ' selected_model_fname ]);
     else
-        %error('don''t have a training function for the IOU regressor');
-        %display(['training cnnsvm model']);
-        tic
-        models = classifiers.create_IOU_ridge_regression_model_pre_extracted_features( fnames_in, p );
-        toc
+        
+        % see if we have pre-existing features, or if we need to extract them
+        existing_feature_directory = 'pre_extracted_feature_data';
+        temp = dir(fullfile(existing_feature_directory,'*.mat'));
+        if ~isempty(temp)
+            existing_features_fname = fullfile( existing_feature_directory, temp(1).name );
+        else
+            existing_features_fname = cnn_feature_extractor( [], existing_feature_directory, p );
+        end
+        models = classifiers.create_IOU_ridge_regression_model_pre_extracted_features( fnames_in, existing_features_fname, p );
+       
     end
     
     classifier_model.models            = models;

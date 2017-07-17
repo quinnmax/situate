@@ -38,21 +38,21 @@ function model = train( p, fnames_in, saved_models_directory, training_IOU_thres
         display(['box_adjust model loaded from ' model_fname]);
         return;
     end
-
-    
-    
-    
     
     % if not found, build it
     
     tic;
     
-    existing_features_fname = '/Users/Max/Desktop/cnn_features_and_IOUs_nopadding_255.mat';
+    existing_feature_directory = 'pre_extracted_feature_data';
+    temp = dir(fullfile(existing_feature_directory,'*.mat'));
+    if ~isempty(temp)
+        existing_features_fname = fullfile( existing_feature_directory, temp(1).name );
+    else
+        existing_features_fname = cnn_feature_extractor( [], existing_feature_directory, p );
+    end
     data = load(existing_features_fname);
+    
     model_description = 'box_adjust';
-    
-    
-    
     
     model = [];
     model.model_description = model_description;

@@ -58,7 +58,7 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
         else 
 
             % genterate folds
-                data_folds = generate_data_folds( data_path, experiment_settings.num_folds, experiment_settings.testing_data_max );
+                data_folds = generate_data_folds( data_path, length(experiment_settings.folds), experiment_settings.testing_data_max );
 
              % save the splits to files
                 if ~isdir(experiment_settings.results_directory), mkdir(experiment_settings.results_directory); end
@@ -99,7 +99,7 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
         
 %% run the main experiment loop (experimental conditions, images) 
 
-    for fold_ind = 1:experiment_settings.num_folds
+    for fold_ind = experiment_settings.folds
         
         learned_models = []; % contains everything we gather from training data, so is reset at the start of each fold
         learned_models_training_functions = [];
@@ -234,7 +234,7 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
                 % save off results every condition and fold
                 %   current fold and 
                 %   experimental condition
-                save_fname = fullfile(experiment_settings.results_directory, [experiment_settings.title '_split_' num2str(fold_ind,'%02d') '_condition_' num2str(parameters_ind) '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
+                save_fname = fullfile(experiment_settings.results_directory, [experiment_settings.title '_fold_' num2str(fold_ind,'%02d') '_condition_' num2str(parameters_ind) '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
                 
                 p_condition = cur_parameterization;
                 p_condition_description = p_condition.description;

@@ -114,45 +114,54 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
             [agent_pool,d,workspace] = agent_evaluate( agent_pool, agent_index, im, label, d, p, workspace, learned_models );
             current_agent_snapshot   = agent_pool(agent_index);
             
+            
             % update distributions and support for existing workspace objects
             workspace_changed = ~isequal(workspace,workspace_snapshot);
             if workspace_changed
+                
                 % then update each distribution struct
                 for di = 1:length( p.situation_objects )
                     % d(end) is the joint
                     % d(di).interest is the interest for this distribution
-                    % workspace should be the conditioning object
                     if nargin(p.situation_model.update) == 3
                         d(di).distribution = p.situation_model.update( d(end).distribution, d(di).interest, workspace );
                     else
                         d(di).distribution = p.situation_model.update( d(end).distribution, d(di).interest, workspace, im );
                     end
+                    
+                    % update interest priority
+                    if any( strcmp( d(di).interest, workspace.labels ) )
+                        d(di).interest_priority = p.situation_objects_urgency_post.(d(di).interest);
+                    end
                 end
 
-                % update support for existing workspace objects
+                % update external and total support for existing workspace objects
                 for wi = 1:length(workspace.labels)
 
                     cur_box = workspace.boxes_r0rfc0cf(wi,:);
                     dist_index = strcmp( {d.interest}, workspace.labels{wi} );
                     [~,new_density] = p.situation_model.sample( d(dist_index).distribution, workspace.labels{wi}, 1, d(1).image_size, cur_box );
                     
+                    % update external support
                     if length(p.external_support_function) == 1
                         workspace.external_support(wi) = p.external_support_function( new_density );
-                    else
+                    elseif length(p.total_support_function) == length(p.situation_objects) % we have different functions for each object type
                         obj_ind = strcmp( workspace.labels{wi},p.situation_objects);
                         workspace.external_support(wi) = p.external_support_function{obj_ind}( new_density );
+                    else
+                        error('number of external support functions is incompatible with the number of situation objects');
                     end
                     
-                    switch class( p.total_support_function )
-                        case 'function_handle'
-                            workspace.total_support(wi) = p.total_support_function( workspace.internal_support(wi), workspace.external_support(wi) );
-                        case 'cell'
-                            oi = strcmp( p.situation_objects, workspace.labels{wi} );
-                            workspace.total_support(wi) = p.total_support_function{oi}( workspace.internal_support(wi), workspace.external_support(wi) );
-                        otherwise
-                            error(['dunno what to do with ' class(p.total_support_function)]);
+                    % update total support
+                    if length(p.total_support_function) == 1
+                        workspace.total_support(wi) = p.total_support_function( workspace.internal_support(wi), workspace.external_support(wi) );
+                    elseif length(p.total_support_function) == length(p.situation_objects)  % we have different functions for each object type
+                        obj_ind = strcmp( workspace.labels{wi},p.situation_objects);
+                        workspace.total_support(wi) = p.total_support_function{obj_ind}( workspace.internal_support(wi), workspace.external_support(wi) );
+                    else
+                        error('number of total support functions is incompatible with the number of situation objects');
                     end
-
+                   
                 end
                 
             end
@@ -248,12 +257,13 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
                 end
             end
             
-            if rand() < .01
-                agent_pool = agent_initialize(p);
-            end
+%             % random clear out
+%             if rand() < .01
+%                 agent_pool = agent_initialize(p);
+%             end
               
             % refill the pool if we're continuing on and the pool is under size
-            while ~situation_detected && sum( strcmp( 'scout', {agent_pool.type} ) ) < p.num_scouts
+            while sum( strcmp( 'scout', {agent_pool.type} ) ) < p.num_scouts
                 if isempty(agent_pool)
                     agent_pool = agent_initialize(p); 
                 else
@@ -368,7 +378,7 @@ end
 
 %% eval agent (general, just routing) 
 
-function [agent_pool, d, workspace] = agent_evaluate( agent_pool, agent_index, im, label, d, p, workspace, learned_models )
+function [agent_pool, d, workspace, object_was_added] = agent_evaluate( agent_pool, agent_index, im, label, d, p, workspace, learned_models )
 
     object_was_added = false;
 
@@ -455,17 +465,6 @@ function [agent_pool, d, workspace] = agent_evaluate( agent_pool, agent_index, i
             agent_pool(end) = [];
         end
        
-    end
-
-    
-    % for found objects, adjust their priority
-    if object_was_added
-       for wi = 1:length(workspace.labels)
-            if workspace.total_support(wi) >= p.thresholds.total_support_final
-                cur_obj_type_ind = find( strcmp( workspace.labels(wi), p.situation_objects ) );
-                d(cur_obj_type_ind).interest_priority = p.situation_objects_urgency_post.( p.situation_objects{cur_obj_type_ind} );
-            end
-        end
     end
     
 end

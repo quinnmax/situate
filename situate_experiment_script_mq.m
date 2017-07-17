@@ -13,12 +13,11 @@
     experiment_settings = [];
     
     % seed train
-        % split_arg = now;
-        % split_arg = 1;
-        % split_arg = uigetdir(pwd);
-        % split_arg = 'split_default/';
-        split_arg = 'split_holdout_301_400/';
-        % split_arg = 'split_test_301_400/';
+        % split_arg = now; % randomly generated with time-based seed value
+        % split_arg = 1; % randomly generated with seed value 1
+        % split_arg = uigetdir(pwd); % pick one in the gui
+        split_arg = 'split_validation/'; % validation set (hard)
+        % split_arg = 'split_test/';
         
         if ischar(split_arg)
             seed_train = [];
@@ -53,17 +52,17 @@
 % whether or not you want to use the GUI, where to save the experiment
 % results, and how many images for training and testing.
 
-    experiment_settings.title               = 'dogwalking, stopping condition check';
+    experiment_settings.title               = 'dogwalking, checking changes';
     experiment_settings.situations_struct   = situate.situation_definitions();
     experiment_settings.situation           = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
     
     % note: use [] if you want to use all available data
-    experiment_settings.num_folds           = 1;  
-    experiment_settings.testing_data_max    = 100;  % per fold
+    experiment_settings.folds               = [2];  % list the folds, not how many. ie, 2:4
+    experiment_settings.testing_data_max    = 2;    % per fold
     experiment_settings.training_data_max   = []; 
     
     experiment_settings.use_gui                         = false;
-    experiment_settings.use_parallel                    = true;
+    experiment_settings.use_parallel                    = false;
     experiment_settings.run_analysis_after_completion   = true;
     
     % additional visualization options
@@ -141,7 +140,8 @@
                 p.situation_model.draw   = @situation_models.uniform_location_normal_box_draw;
                 
             case 'uniform normal mix'
-                 p.situation_model.learn = @(a,b) situation_models.uniform_normal_mix_fit(a,b,.5);        
+                probability_of_uniform_after_conditioning = .5;
+                p.situation_model.learn = @(a,b) situation_models.uniform_normal_mix_fit(a,b,probability_of_uniform_after_conditioning);        
                     % takes: p, cellstr of training images 
                     % returns: model object
 
@@ -280,7 +280,6 @@
     
         p.num_scouts = 10;
         p.use_direct_scout_to_workspace_pipe             = true; % hides stochastic agent stuff a bit, more comparable to other methods     
-        %p.agent_pool_cleanup.on_workspace_change         = true;
         
     % stopping conditions
     
@@ -418,6 +417,9 @@
                 
                 %p.situation_objects_urgency_pre  = experiment_settings.situations_struct.('dogwalking').object_urgency_pre;
                 %p.situation_objects_urgency_post = experiment_settings.situations_struct.('dogwalking').object_urgency_post;
+                
+                p.situation_objects_urgency_pre  = [];
+                p.situation_objects_urgency_post = [];
                 
                 p.situation_objects_urgency_pre.(  'dogwalker') = 1.00;
                 p.situation_objects_urgency_pre.(  'dog'      ) = 1.00;

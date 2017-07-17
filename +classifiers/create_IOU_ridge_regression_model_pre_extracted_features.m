@@ -1,8 +1,6 @@
-function [models] = create_IOU_ridge_regression_model_pre_extracted_features( fnames_in, p )
-
-    %existing_features_fname = '/Users/Max/Desktop/cnn_features_and_IOUs_padding_0_255.mat';
-    existing_features_fname = '/Users/Max/Desktop/cnn_features_and_IOUs_nopadding_255.mat';
-    data = load(existing_features_fname);
+function [models] = create_IOU_ridge_regression_model_pre_extracted_features( fnames_in, feature_file_fname, p )
+    
+    data = load(feature_file_fname);
     
     if ~exist('fnames_in','var') || isempty(fnames_in)
         fnames_in = data.fnames(1:400);
@@ -19,10 +17,6 @@ function [models] = create_IOU_ridge_regression_model_pre_extracted_features( fn
     box_rows_train = ismember( data.fname_source_index, im_inds_train );
     
     assert(isequal( data.p.situation_objects, p.situation_objects ));
-     
-    
-    
-    
     
     crop_size_threshold_px = 5000;
     box_proposal_wh     = [data.box_proposals_r0rfc0cf(:,2)-data.box_proposals_r0rfc0cf(:,1)+1 data.box_proposals_r0rfc0cf(:,4)-data.box_proposals_r0rfc0cf(:,3)+1];
