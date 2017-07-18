@@ -52,13 +52,13 @@
 % whether or not you want to use the GUI, where to save the experiment
 % results, and how many images for training and testing.
 
-    experiment_settings.title               = 'dogwalking, checking changes';
+    experiment_settings.title               = 'dogwalking, parameter setting, box adjust threshold, with decay';
     experiment_settings.situations_struct   = situate.situation_definitions();
     experiment_settings.situation           = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
     
     % note: use [] if you want to use all available data
-    experiment_settings.folds               = [2];  % list the folds, not how many. ie, 2:4
-    experiment_settings.testing_data_max    = 2;    % per fold
+    experiment_settings.folds               = [1];  % list the folds, not how many. ie, 2:4
+    experiment_settings.testing_data_max    = 100;    % per fold
     experiment_settings.training_data_max   = []; 
     
     experiment_settings.use_gui                         = false;
@@ -92,7 +92,50 @@
     end
     if ~exist(experiment_settings.results_directory,'dir') && ~experiment_settings.use_gui, mkdir(experiment_settings.results_directory); display(['made results directory ' experiment_settings.results_directory]); end
 
+ 
     
+%% Situation definition
+
+ % add the situation information to the p structure
+    
+        p.situation_objects                 = experiment_settings.situations_struct.(experiment_settings.situation).situation_objects;
+        p.situation_objects_possible_labels = experiment_settings.situations_struct.(experiment_settings.situation).situation_objects_possible_labels;
+        switch experiment_settings.situation
+            case 'dogwalking'
+                
+                %p.situation_objects_urgency_pre  = experiment_settings.situations_struct.('dogwalking').object_urgency_pre;
+                %p.situation_objects_urgency_post = experiment_settings.situations_struct.('dogwalking').object_urgency_post;
+                
+                p.situation_objects_urgency_pre  = [];
+                p.situation_objects_urgency_post = [];
+                
+                p.situation_objects_urgency_pre.(  'dogwalker') = 1.00;
+                p.situation_objects_urgency_pre.(  'dog'      ) = 1.00;
+                p.situation_objects_urgency_pre.(  'leash'    ) = 1.00;
+                p.situation_objects_urgency_post.( 'dogwalker') = 0.25;
+                p.situation_objects_urgency_post.( 'dog'      ) = 0.25;
+                p.situation_objects_urgency_post.( 'leash'    ) = 0.25;
+                
+            case 'pingpong' 
+                
+                p.situation_objects_urgency_pre   = experiment_settings.situations_struct.('pingpong').object_urgency_pre;
+                p.situation_objects_urgency_post = experiment_settings.situations_struct.('pingpong').object_urgency_post;
+                
+                % p.situation_objects_urgency_pre.(  'table'  )   = 0.1;
+                % p.situation_objects_urgency_pre.(  'net'    )   = 0.1;
+                % p.situation_objects_urgency_pre.(  'player1')   = 1.0;
+                % p.situation_objects_urgency_pre.(  'player2')   = 1.0;
+                % p.situation_objects_urgency_post.( 'table'  )   = 0.1;
+                % p.situation_objects_urgency_post.( 'net'    )   = 0.1;
+                % p.situation_objects_urgency_post.( 'player1')   = 0.1;
+                % p.situation_objects_urgency_post.( 'player2')   = 0.1;
+                
+            otherwise
+                p.situation_objects_urgency_pre     = experiment_settings.situations_struct.(experiment_settings.situation).object_urgency_pre;
+                p.situation_objects_urgency_post    = experiment_settings.situations_struct.(experiment_settings.situation).object_urgency_post;
+        end
+        
+
     
 %% Situate parameters: situation model 
 %
@@ -208,7 +251,7 @@
                 assert(0==1);
         end
   
-        
+    
         
 %% Situate parameters: classifier 
         
@@ -383,7 +426,7 @@
         
 %% Situate parameters: adjustment model
     
-        adjustment_model_description = 'bounding box regression two-tone';
+        adjustment_model_description = 'bounding box regression two-tone with decay';
     
         switch adjustment_model_description
             
@@ -392,12 +435,27 @@
                 box_adjust_training_threshold       = .1;
                 p.adjustment_model_setup            = @(a,b,c) box_adjust.train(a,b,c,box_adjust_training_threshold);
                 p.adjustment_model_apply            = @box_adjust.apply;
+            case 'bounding box regression two-tone with decay'
+                p.adjustment_model_activation_logic     = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, .3, 1.0 );
+                box_adjust_training_thresholds          = [.1 .6];
+                model_selection_threshold               = .5; % set via validation set experiments
+                p.adjustment_model_setup                = @(a,b,c) box_adjust.two_tone_train(a,b,c,box_adjust_training_thresholds, model_selection_threshold);
+                p.adjustment_model_apply                = @box_adjust.two_tone_apply_w_decay;
             case 'bounding box regression two-tone'
-                p.adjustment_model_activation_logic = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, p.thresholds.internal_support, 1.0 );
-                box_adjust_training_thresholds      = [.1 .6];
-                model_selection_threshold           = .5; % set via validation set experiments
-                p.adjustment_model_setup            = @(a,b,c) box_adjust.two_tone_train(a,b,c,box_adjust_training_thresholds, model_selection_threshold);
-                p.adjustment_model_apply            = @box_adjust.two_tone_apply;
+                p.adjustment_model_activation_logic     = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, p.thresholds.internal_support, 1.0 );
+                box_adjust_training_thresholds          = [.1 .6];
+                model_selection_threshold               = .5; % set via validation set experiments
+                p.adjustment_model_setup                = @(a,b,c) box_adjust.two_tone_train(a,b,c,box_adjust_training_thresholds, model_selection_threshold);
+                p.adjustment_model_apply                = @box_adjust.two_tone_apply;
+            case 'bounding box regression two-tone per-object'
+                p.adjustment_model_activation_logic     = cell(1,length(p.situation_objects));
+                p.adjustment_model_activation_logic{1}  = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, .1, 1.0 );
+                p.adjustment_model_activation_logic{2}  = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, .2, 1.0 );
+                p.adjustment_model_activation_logic{3}  = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, .3, 1.0 );
+                box_adjust_training_thresholds          = [.1 .6];
+                model_selection_threshold               = .5; % set via validation set experiments
+                p.adjustment_model_setup                = @(a,b,c) box_adjust.two_tone_train(a,b,c,box_adjust_training_thresholds, model_selection_threshold);
+                p.adjustment_model_apply                = @box_adjust.two_tone_apply;
             case 'local agent search'
                 p.adjustment_model_activation_logic = @(cur_agent,workspace,p) local_agents.activation_logic( cur_agent, workspace, .65, 1.0 ); % set via validation set experiments                                                                     
                 p.adjustment_model_setup            = @(a,b,c,d) [];
@@ -408,44 +466,7 @@
                 p.adjustment_model_apply            = @(cur_agent) assert(1==0);
         end
         
-    % add the situation information to the p structure
-    
-        p.situation_objects                 = experiment_settings.situations_struct.(experiment_settings.situation).situation_objects;
-        p.situation_objects_possible_labels = experiment_settings.situations_struct.(experiment_settings.situation).situation_objects_possible_labels;
-        switch experiment_settings.situation
-            case 'dogwalking'
-                
-                %p.situation_objects_urgency_pre  = experiment_settings.situations_struct.('dogwalking').object_urgency_pre;
-                %p.situation_objects_urgency_post = experiment_settings.situations_struct.('dogwalking').object_urgency_post;
-                
-                p.situation_objects_urgency_pre  = [];
-                p.situation_objects_urgency_post = [];
-                
-                p.situation_objects_urgency_pre.(  'dogwalker') = 1.00;
-                p.situation_objects_urgency_pre.(  'dog'      ) = 1.00;
-                p.situation_objects_urgency_pre.(  'leash'    ) = 1.00;
-                p.situation_objects_urgency_post.( 'dogwalker') = 0.25;
-                p.situation_objects_urgency_post.( 'dog'      ) = 0.25;
-                p.situation_objects_urgency_post.( 'leash'    ) = 0.25;
-                
-            case 'pingpong' 
-                
-                p.situation_objects_urgency_pre   = experiment_settings.situations_struct.('pingpong').object_urgency_pre;
-                p.situation_objects_urgency_post = experiment_settings.situations_struct.('pingpong').object_urgency_post;
-                
-                % p.situation_objects_urgency_pre.(  'table'  )   = 0.1;
-                % p.situation_objects_urgency_pre.(  'net'    )   = 0.1;
-                % p.situation_objects_urgency_pre.(  'player1')   = 1.0;
-                % p.situation_objects_urgency_pre.(  'player2')   = 1.0;
-                % p.situation_objects_urgency_post.( 'table'  )   = 0.1;
-                % p.situation_objects_urgency_post.( 'net'    )   = 0.1;
-                % p.situation_objects_urgency_post.( 'player1')   = 0.1;
-                % p.situation_objects_urgency_post.( 'player2')   = 0.1;
-                
-            otherwise
-                p.situation_objects_urgency_pre     = experiment_settings.situations_struct.(experiment_settings.situation).object_urgency_pre;
-                p.situation_objects_urgency_post    = experiment_settings.situations_struct.(experiment_settings.situation).object_urgency_post;
-        end
+   
     
     % seed values get saved in p
     
@@ -525,9 +546,23 @@
 %     temp.adjustment_model_apply            = @local_agents.generate_agents;
 %     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
     
-    description = 'situation location and box, box adjust';
+     
+    description = 'box adjust threshold, with decay';
     temp = p;
     temp.description = description;
+    if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+    
+    description = 'box adjust threshold, per object threshold, scout urgency low';
+    temp = p;
+    temp.description = description;
+    temp.adjustment_model_activation_logic     = cell(1,length(p.situation_objects));
+    temp.adjustment_model_activation_logic{1}  = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, .1, 1.0 );
+    temp.adjustment_model_activation_logic{2}  = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, .2, 1.0 );
+    temp.adjustment_model_activation_logic{3}  = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, .3, 1.0 );
+    box_adjust_training_thresholds              = [.1 .6];
+    model_selection_threshold                   = .5; % set via validation set experiments
+    temp.adjustment_model_setup                = @(a,b,c) box_adjust.two_tone_train(a,b,c,box_adjust_training_thresholds, model_selection_threshold);
+    temp.adjustment_model_apply                = @box_adjust.two_tone_apply;
     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
 
 

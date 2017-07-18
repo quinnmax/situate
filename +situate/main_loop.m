@@ -235,8 +235,12 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
             %   do it if we haven't finished yet
             %   OR if we made progress and want to let it keep improving,
             %       even though a situation has been detected
-            if p.adjustment_model_activation_logic(current_agent_snapshot,workspace,p)
+            if length(p.adjustment_model_activation_logic) == 1 && p.adjustment_model_activation_logic(current_agent_snapshot,workspace,p)
                 agent_pool = p.adjustment_model_apply( learned_models.adjustment_model, current_agent_snapshot, agent_pool, im );
+            elseif length(p.adjustment_model_activation_logic) == length(p.situation_objects)
+                if p.adjustment_model_activation_logic{ strcmp( current_agent_snapshot.interest, p.situation_objects ) }( current_agent_snapshot, workspace, p )
+                    agent_pool = p.adjustment_model_apply( learned_models.adjustment_model, current_agent_snapshot, agent_pool, im );
+                end
             end
             
         % check stopping condition

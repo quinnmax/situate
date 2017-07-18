@@ -1,4 +1,4 @@
-function [ agent_pool, adjusted_box_r0rfc0cf, delta_xywh ] = apply( model, current_agent_snapshot, agent_pool, image, cnn_features )
+function [ agent_pool, adjusted_box_r0rfc0cf, delta_xywh ] = apply_w_decay( model, current_agent_snapshot, agent_pool, image, cnn_features )
 
     % [ agent_pool, adjusted_box_r0rfc0cf, delta_xywh ] = apply( model, current_agent_snapshot, agent_pool, image, cnn_features );
 
@@ -62,7 +62,7 @@ function [ agent_pool, adjusted_box_r0rfc0cf, delta_xywh ] = apply( model, curre
     % construct a new agent to add to the pool
     new_agent = current_agent_snapshot;
     new_agent.type = 'scout';
-    new_agent.urgency = 1;
+    new_agent.urgency = current_agent_snapshot.urgency * .9;
     new_agent.support.internal     = 0;
     new_agent.support.external     = 0;
     new_agent.support.total        = 0;

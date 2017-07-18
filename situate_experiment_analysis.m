@@ -54,6 +54,7 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     % now go through each condition
     %   load up related files, combine
     for ci = 1:num_conditions
+    %for ci = 5
         cur_files_inds = find(eq(ci,condition_indices));
         temp_data = cell(1,length(cur_files_inds));
         for fii = 1:length(cur_files_inds)
@@ -166,31 +167,31 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
         
         % record how many scouts were looking for each object type during the run
         
-%         % show what scouts were looking for during the run (with final IOU info in the title)
-%         figure('Name',['scout trace: ' p_conditions_descriptions{ci}]);
-%         num_subplots = min(25,num_images);
-%         for imi = 1:num_subplots
-%             subplot_lazy(num_subplots,imi);
-%             agent_interests = double([agent_records(imi,:).interest]);
-%             plot(agent_interests + .1*randn(size(agent_interests)),'.');
-%             yticks(0:3);
-%             yticklabels(['none' situation_objects]);
-%             ylim([-.5 3.5])
-%             if imi == 1, ylabel('agent interest'); xlabel('iteration'); end  
-%             
-%             gt_ious = zeros(1,num_situation_objects);
-%             for oi = 1:num_situation_objects
-%                 wi = find(strcmp( workspaces_final(imi).labels, situation_objects{oi}));
-%                 if ~isempty(wi) 
-%                     gt_ious(oi) = workspaces_final(imi).GT_IOU(wi); 
-%                 else
-%                     gt_ious(oi) = 0; 
-%                 end
-%             end
-%             
-%             title_string = [sprintf('%10s ',situation_objects{:}) sprintf('\n') sprintf('%10.3f ', gt_ious )];
-%             title(title_string);
-%         end
+        % show what scouts were looking for during the run (with final IOU info in the title)
+        figure('Name',['scout trace: ' p_conditions_descriptions{ci}]);
+        num_subplots = min(25,num_images);
+        for imi = 1:num_subplots
+            subplot_lazy(num_subplots,imi);
+            agent_interests = double([agent_records(imi,:).interest]);
+            plot(agent_interests + .1*randn(size(agent_interests)),'.');
+            yticks(0:3);
+            yticklabels(['none' situation_objects]);
+            ylim([-.5 3.5])
+            if imi == 1, ylabel('agent interest'); xlabel('iteration'); end  
+            
+            gt_ious = zeros(1,num_situation_objects);
+            for oi = 1:num_situation_objects
+                wi = find(strcmp( workspaces_final(imi).labels, situation_objects{oi}));
+                if ~isempty(wi) 
+                    gt_ious(oi) = workspaces_final(imi).GT_IOU(wi); 
+                else
+                    gt_ious(oi) = 0; 
+                end
+            end
+            
+            title_string = [sprintf('%10s ',situation_objects{:}) sprintf('\n') sprintf('%10.3f ', gt_ious )];
+            title(title_string);
+        end
         
         
         
@@ -222,12 +223,7 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
             
         
     end
-    
-    clear temp_data;
-    clear agent_records;
-    clear temp;
-    
-  
+   
 % stack them up over condition
     final_ious = [];
     detections_at_iou = [];
@@ -243,6 +239,13 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
         detections_at_num_proposals(ci,:,:,:) = results_per_condition(ci).detections_at_num_proposals;
             % condition, threshold, object, iteration
     end
+    
+    %%
+    
+    clear temp_data;
+    clear agent_records;
+    clear temp;
+    
     
     
 %% gather data on detection order of objects
