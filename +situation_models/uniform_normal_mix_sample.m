@@ -44,11 +44,13 @@ function [boxes_r0rfc0cf, sample_density] = uniform_normal_mix_sample( model, ob
             % then we just want to return the density with respect to a
             % uniform distribution over location. Because the location
             % distribution is based on a unit square, the density with
-            % respect to location is always 1, meaning we can just
-            % marginalize out the location and return the density with
+            % respect to a uniform distribution over location is always 1,
+            % so we can just marginalize out the location information from 
+            % the normal distribution and return the density with
             % respect to the shape, size, width, and heigth parameters.
             
             % row_description = {'r0' 'rc' 'rf' 'c0' 'cc' 'cf' 'log w' 'log h' 'log aspect ratio' 'log area ratio'};
+            % so we'll want entries 7, 8, 9, 10
             
             num_vars_per_obj = length(model.mu)/length(model.situation_objects);
             obj_ind          = find( strcmp( object_type, model.situation_objects ), 1, 'first' );
@@ -56,8 +58,8 @@ function [boxes_r0rfc0cf, sample_density] = uniform_normal_mix_sample( model, ob
             inds_of_interest = sub_ind_0 - 1 + [ 7 8 9 10 ];
             [mu_marginalized, Sigma_marginalized] = mvn_marginalize_and_condition( model.mu, model.Sigma, inds_of_interest, [], [] );
             box_vect_limited = box_vect([7 8 9 10]);
-            sample_density = mvnpdf( box_vect_limited, mu_marginalized, Sigma_marginalized );
-            boxes_r0rfc0cf = existing_box_r0rfc0cf;
+            sample_density   = mvnpdf( box_vect_limited, mu_marginalized, Sigma_marginalized );
+            boxes_r0rfc0cf   = existing_box_r0rfc0cf;
         end
         
         return;

@@ -26,7 +26,7 @@ function [classifier_output, iou] = IOU_ridge_regression_apply( classifier_struc
     classifier_output = [1 cnn_features'] * classifier_struct.models{model_ind};
     
     if classifier_output > 5 || classifier_output < -1
-       display('bloop'); 
+       warning('classifiers.IOU_ridge_regression_apply is giving some extreme values'); 
     end
     
     if exist('lb','var')

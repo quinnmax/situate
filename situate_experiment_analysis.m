@@ -34,7 +34,7 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     % fn{end+1} = '/Users/Max/Dropbox/Projects/situate/situate_experiment_mm_1_results2016.05.06.10.11.53.mat';
 
 
-%% reshaping the data 
+%% group on condition
    
     % just get the description for grouping
     p_conditions_temp = cell(1,length(fn));
@@ -51,7 +51,8 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     
     results_per_condition = [];
     
-    % now go through each condition
+%% reshape the data
+
     %   load up related files, combine
     for ci = 1:num_conditions
     %for ci = 5

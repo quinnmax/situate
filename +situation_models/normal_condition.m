@@ -19,7 +19,11 @@ function model_out = normal_condition( model_in, object_type, workspace )
     
     num_parameters = length(model_in.mu)/length(model_in.situation_objects);
     
-    oi = find( strcmp( model_in.situation_objects, object_type ) );
+    if ~isnumeric(object_type)
+        oi = find( strcmp( model_in.situation_objects, object_type ) );
+    else
+        oi = object_type;
+    end
     
     known_inds     = false( 1, length(model_in.mu) );
     known_values   = nan(   1, length(model_in.mu) );

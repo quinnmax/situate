@@ -62,8 +62,8 @@
     experiment_settings.training_data_max   = []; 
     
     experiment_settings.use_gui                         = false;
-    experiment_settings.use_parallel                    = false;
-    experiment_settings.run_analysis_after_completion   = true;
+    experiment_settings.use_parallel                    = true;
+    experiment_settings.run_analysis_after_completion   = false;
     
     % additional visualization options
     
@@ -440,7 +440,7 @@
                 box_adjust_training_thresholds          = [.1 .6];
                 model_selection_threshold               = .5; % set via validation set experiments
                 p.adjustment_model_setup                = @(a,b,c) box_adjust.two_tone_train(a,b,c,box_adjust_training_thresholds, model_selection_threshold);
-                p.adjustment_model_apply                = @box_adjust.two_tone_apply_w_decay;
+                p.adjustment_model_apply                = @box_adjust.two_tone_w_decay_apply;
             case 'bounding box regression two-tone'
                 p.adjustment_model_activation_logic     = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, p.thresholds.internal_support, 1.0 );
                 box_adjust_training_thresholds          = [.1 .6];
@@ -550,6 +550,11 @@
     description = 'box adjust threshold, with decay';
     temp = p;
     temp.description = description;
+    temp.adjustment_model_activation_logic     = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, .3, 1.0 );
+    box_adjust_training_thresholds             = [.1 .6];
+    model_selection_threshold                  = .5; % set via validation set experiments
+    temp.adjustment_model_setup                = @(a,b,c) box_adjust.two_tone_train(a,b,c,box_adjust_training_thresholds, model_selection_threshold);
+    temp.adjustment_model_apply                = @box_adjust.two_tone_w_decay_apply;
     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
     
     description = 'box adjust threshold, per object threshold, scout urgency low';

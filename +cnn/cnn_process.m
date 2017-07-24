@@ -21,16 +21,7 @@ function data = cnn_process( image, image_size, layer_in )
             layer = 18;
         end
         net.layers = net.layers(1:layer);
-        
-%         try
-%             net = vl_simplenn_move(net, 'gpu');
-%         catch
-%         end
-        
-%         net = dagnn.DagNN.loadobj(load('+cnn/imagenet-resnet-152-dag.mat')) ;
-%         net.mode = 'test' ;
-%         net.conserveMemory = false;
-%         layer = 502;
+     
     end
     
     if ~exist('image_size','var') || isempty(image_size)

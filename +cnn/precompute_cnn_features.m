@@ -4,9 +4,6 @@ function data = precompute_cnn_features( image, resolution )
     persistent net layer;
     if ~exist('net', 'var') || isa(net, 'double')
         run matconvnet/matlab/vl_setupnn
-%         net = dagnn.DagNN.loadobj(load('imagenet-resnet-152-dag.mat'));
-%         net.mode = 'test';
-%         net.conserveMemory = false;
         net = vl_simplenn_tidy(load('+cnn/imagenet-vgg-f.mat'));
         layer = 13;
         net.layers = net.layers(1:layer);
