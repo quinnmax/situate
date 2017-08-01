@@ -1,6 +1,6 @@
-function classifier_model = cnnsvm_train( p, fnames_in, saved_models_directory )
+function classifier_struct = cnnsvm_train( p, fnames_in, saved_models_directory )
 
-    % classifier_model = cnnsvm_train( p, fnames_in, saved_models_directory );
+    % classifier_struct = cnnsvm_train( p, fnames_in, saved_models_directory );
 
     model_description = 'cnnsvm';
     possible_paths = { saved_models_directory };
@@ -26,10 +26,10 @@ function classifier_model = cnnsvm_train( p, fnames_in, saved_models_directory )
         toc
     end
     
-    classifier_model.models            = models;
-    classifier_model.classes           = p.situation_objects;
-    classifier_model.fnames_lb_train   = fnames_in_pathless;
-    classifier_model.model_description = model_description;
+    classifier_struct.models            = models;
+    classifier_struct.classes           = p.situation_objects;
+    classifier_struct.fnames_lb_train   = fnames_in_pathless;
+    classifier_struct.model_description = model_description;
     
     if ~model_already_existed
         saved_model_fname = fullfile( saved_models_directory, [model_description '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat'] );

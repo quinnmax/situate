@@ -1,4 +1,4 @@
-function [classifier_output, iou] = IOU_ridge_regression_apply( classifier_struct, target_class, im, box_r0rfc0cf, lb )
+function [classifier_output, gt_iou] = IOU_ridge_regression_apply( classifier_struct, target_class, im, box_r0rfc0cf, lb )
 % [classifier_output, ground_truth_iou] = IOU_ridge_regression_apply( classifier_struct, target_class, im, box_r0rfc0cf, [lb] )
 
     % should be in 0-255
@@ -31,7 +31,7 @@ function [classifier_output, iou] = IOU_ridge_regression_apply( classifier_struc
     
     if exist('lb','var')
         gt_box_r0rfc0cf = lb.boxes_r0rfc0cf( strcmp(target_class,lb.labels_adjusted), : );
-        iou = intersection_over_union( box_r0rfc0cf, gt_box_r0rfc0cf, 'r0rfc0cf' );
+        gt_iou = intersection_over_union( box_r0rfc0cf, gt_box_r0rfc0cf, 'r0rfc0cf' );
     end
 
 end

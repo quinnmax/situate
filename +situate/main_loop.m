@@ -30,7 +30,11 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
         d = [];
         for dist_index = 1:length(p.situation_objects)
             d(dist_index).interest          = p.situation_objects{dist_index};
-            d(dist_index).interest_priority = p.situation_objects_urgency_pre.(p.situation_objects{dist_index});
+            if numel(p.situation_objects_urgency_pre) == 1
+                d(dist_index).interest_priority = p.situation_objects_urgency_pre;
+            else
+                d(dist_index).interest_priority = p.situation_objects_urgency_pre.(p.situation_objects{dist_index});
+            end
             d(dist_index).distribution      = learned_models.situation_model.joint;
             if nargin(p.situation_model.update) == 3 % see if it wants the image for updating
                 d(dist_index).distribution      = p.situation_model.update( d(dist_index).distribution, p.situation_objects{dist_index}, workspace );
@@ -131,7 +135,11 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
                     
                     % update interest priority
                     if any( strcmp( d(di).interest, workspace.labels ) )
-                        d(di).interest_priority = p.situation_objects_urgency_post.(d(di).interest);
+                        if numel(p.situation_objects_urgency_post) == 1
+                            d(di).interest_priority = p.situation_objects_urgency_post;
+                        else
+                            d(di).interest_priority = p.situation_objects_urgency_post.(d(di).interest);
+                        end
                     end
                 end
 

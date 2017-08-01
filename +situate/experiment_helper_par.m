@@ -189,7 +189,7 @@ function [] = experiment_helper_par(experiment_settings, parameterization_condit
                 % save off results every condition and fold
                 %   current fold and 
                 %   experimental condition
-                save_fname = fullfile(experiment_settings.results_directory, [experiment_settings.title '_fold_' num2str(fold_ind,'%02d') '_condition_' num2str(parameters_ind) '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
+                save_fname = fullfile(experiment_settings.results_directory, [cur_parameterization.description '_fold_' num2str(fold_ind,'%02d') '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
                 
                 p_condition = cur_parameterization;
                 p_condition_description = p_condition.description;

@@ -79,9 +79,7 @@ function [boxes_r0rfc0cf, sample_density] = uniform_normal_mix_sample( model, ob
     
     if model.is_conditional
         obj_samples = raw_samples;
-        
         resample_from_uniform = rand() < model.probability_of_uniform_after_conditioning;
-        
     else
         % get the columns associated with the object of interest
         num_vars_per_obj = length(model.mu)/length(model.situation_objects);
@@ -91,7 +89,6 @@ function [boxes_r0rfc0cf, sample_density] = uniform_normal_mix_sample( model, ob
         obj_samples = raw_samples(:, sub_ind_0:sub_ind_f );
         
         resample_from_uniform = true;
-        
     end
     
     if resample_from_uniform

@@ -1,11 +1,16 @@
 
 % load cnn data
 
-    fn = '/Users/Max/Dropbox/Projects/situate/cnn_features_and_IOUs2017.07.23.16.50.08.mat';
+    fn = '/Users/Max/Desktop/cnn_features_and_IOUs2017.07.23.16.50.08.mat';
     load(fn);
     
     num_situation_objects = length(p.situation_objects);
     num_crops = size(box_proposals_r0rfc0cf,1);
+
+    
+    
+   
+
 
 % setup
 
@@ -53,38 +58,38 @@
     
     figure;
     for oi = 1:num_situation_objects
-        subplot(1,num_situation_objects,oi)
+        display_ratio = .05;
         cur_inds = eq( oi, box_source_obj_type );
+        cur_inds = cur_inds & rand(size(cur_inds))<display_ratio;
+        
+        subplot(1,num_situation_objects,oi)
         plot( box_proposal_gt_IOUs(cur_inds), internal_support(cur_inds),'.');
+        ylim([-.2,1.2]);
+        xlabel('gt iou');
+        ylabel('internal support');
+        title(p.situation_objects{oi});
     end
     
     
     
 %% visualize external support
 
-    
     for oi = 1:num_situation_objects
-        figure;
+        
+        display_ratio = .05;
         cur_inds = eq( oi, box_source_obj_type );
+        cur_inds = cur_inds & rand(size(cur_inds))<display_ratio;
+        
         a = external_support_function( box_density_prior(cur_inds) );
         b = external_support_function( box_density_conditioned_1a(cur_inds) );
         c = external_support_function( box_density_conditioned_1b(cur_inds) );
         d = external_support_function( box_density_conditioned_2(cur_inds) );
-        %subplot(1,num_situation_objects,oi)
-        %plot( a, b, '.' );
-        plotmatrix([a,b,c,d]);
-    end
-    
-    for oi = 1:num_situation_objects
+        
         figure;
-        cur_inds = eq( oi, box_source_obj_type );
-        a = external_support_function( box_density_prior(cur_inds) );
-        b = external_support_function( box_density_conditioned_1a(cur_inds) );
-        c = external_support_function( box_density_conditioned_1b(cur_inds) );
-        d = external_support_function( box_density_conditioned_2(cur_inds) );
-        %subplot(1,num_situation_objects,oi)
-        %plot( a, b, '.' );
         plotmatrix([a,b,c,d]);
+        title(p.situation_objects{oi});
+        xlabel({'prior','conditioned 1a','conditioned 1b','conditioned 2'});
+        
     end
        
     
@@ -102,102 +107,157 @@
         num_weights = 3;
     end
     
-    b_prior = zeros( num_situation_objects, num_weights);
+%     b_prior = zeros( num_situation_objects, num_weights);
+%     for oi = 1:num_situation_objects
+%         cur_box_inds = eq( oi, box_source_obj_type );
+%         internal_support_cur = internal_support(cur_box_inds);
+%         external_support_cur = external_support_function( box_density_prior( cur_box_inds ) );
+%         if use_mixing
+%             x = [internal_support_cur, external_support_cur, internal_support_cur .* external_support_cur];
+%         else
+%             x = [internal_support_cur, external_support_cur ];
+%         end
+%         y = box_proposal_gt_IOUs(cur_box_inds);
+%         k = 1000;
+%         b_prior(oi,:) = ridge( y, x, k, 0 );
+%     end
+%     
+%     b_conditioned_1a = zeros( num_situation_objects, num_weights);
+%     for oi = 1:num_situation_objects
+%         cur_box_inds = eq( oi, box_source_obj_type );
+%         internal_support_cur = internal_support(cur_box_inds);
+%         external_support_cur = external_support_function( box_density_conditioned_1a( cur_box_inds ) );
+%         if use_mixing
+%             x = [internal_support_cur, external_support_cur, internal_support_cur .* external_support_cur];
+%         else
+%             x = [internal_support_cur, external_support_cur ];
+%         end
+%         y = box_proposal_gt_IOUs(cur_box_inds);
+%         k = 1000;
+%         b_conditioned_1a(oi,:) = ridge( y, x, k, 0 );
+%     end
+%     
+%     b_conditioned_1b = zeros( num_situation_objects, num_weights);
+%     for oi = 1:num_situation_objects
+%         cur_box_inds = eq( oi, box_source_obj_type );
+%         internal_support_cur = internal_support(cur_box_inds);
+%         external_support_cur = external_support_function( box_density_conditioned_1b( cur_box_inds ) );
+%         if use_mixing
+%             x = [internal_support_cur, external_support_cur, internal_support_cur .* external_support_cur];
+%         else
+%             x = [internal_support_cur, external_support_cur ];
+%         end
+%         y = box_proposal_gt_IOUs(cur_box_inds);
+%         k = 1000;
+%         b_conditioned_1b(oi,:) = ridge( y, x, k, 0 );
+%     end
+%     
+%     b_conditioned_2 = zeros( num_situation_objects, num_weights);
+%     for oi = 1:num_situation_objects
+%         cur_box_inds = eq( oi, box_source_obj_type );
+%         internal_support_cur = internal_support(cur_box_inds);
+%         external_support_cur = external_support_function( box_density_conditioned_2( cur_box_inds ) );
+%         if use_mixing
+%             x = [internal_support_cur, external_support_cur, internal_support_cur .* external_support_cur];
+%         else
+%             x = [internal_support_cur, external_support_cur ];
+%         end
+%         y = box_proposal_gt_IOUs(cur_box_inds);
+%         k = 1000;
+%         b_conditioned_2(oi,:) = ridge( y, x, k, 0 );
+%     end
+%    
+%     % try logistic regression for >.5 iou
+%     b_mnr_prior = zeros( num_situation_objects, num_weights);
+%     for oi = 1:num_situation_objects
+%         cur_box_inds = eq( oi, box_source_obj_type );
+%         internal_support_cur = internal_support(cur_box_inds);
+%         external_support_cur = external_support_function( box_density_prior( cur_box_inds ) );
+%         
+%         if use_mixing
+%             x = [internal_support_cur, external_support_cur, internal_support_cur .* external_support_cur];
+%         else
+%             x = [internal_support_cur, external_support_cur ];
+%         end
+%         y = ge( box_proposal_gt_IOUs(cur_box_inds), .5 ) + 1;
+%         b_mnr_prior(oi,:) = mnrfit( x, y );
+%         
+%     end
+%     
+%     % try logistic regression for >.5 iou
+%     b_mnr_conditioned_2 = zeros( num_situation_objects, num_weights);
+%     for oi = 1:num_situation_objects
+%         cur_box_inds = eq( oi, box_source_obj_type );
+%         internal_support_cur = internal_support(cur_box_inds);
+%         external_support_cur = external_support_function( box_density_prior( cur_box_inds ) );
+%         
+%         if use_mixing
+%             x = [internal_support_cur, external_support_cur, internal_support_cur .* external_support_cur];
+%         else
+%             x = [internal_support_cur, external_support_cur ];
+%         end
+%         y = ge( box_proposal_gt_IOUs(cur_box_inds), .5 ) + 1;
+%         b_mnr_conditioned_2(oi,:) = mnrfit( x, y );
+%         
+%     end
+    
+
+    % try a big jumble
+    b_conditioned_combo = zeros( num_situation_objects, num_weights);
     for oi = 1:num_situation_objects
         cur_box_inds = eq( oi, box_source_obj_type );
         internal_support_cur = internal_support(cur_box_inds);
-        external_support_cur = external_support_function( box_density_prior( cur_box_inds ) );
+        internal_support_cur = repmat(internal_support_cur,4,1);
+        external_support_cur_0  = external_support_function( box_density_prior( cur_box_inds ) );
+        external_support_cur_1a = external_support_function( box_density_conditioned_1a( cur_box_inds ) );
+        external_support_cur_1b = external_support_function( box_density_conditioned_1b( cur_box_inds ) );
+        external_support_cur_2  = external_support_function( box_density_conditioned_2(  cur_box_inds ) );
+        external_support_cur = [external_support_cur_0;external_support_cur_1a;external_support_cur_1b;external_support_cur_2];
         if use_mixing
-            x = [internal_support_cur, external_support_cur, internal_support_cur .* external_support_cur];
+            x = [internal_support_cur, external_support_cur, internal_support_cur.*external_support_cur];
         else
-            x = [internal_support_cur, external_support_cur ];
+            x = [internal_support_cur, external_support_cur];
         end
-        y = box_proposal_gt_IOUs(cur_box_inds);
+        y = repmat( box_proposal_gt_IOUs(cur_box_inds), 4, 1 );
+        %y = box_proposal_gt_IOUs(cur_box_inds);
         k = 1000;
-        b_prior(oi,:) = ridge( y, x, k, 0 );
+        b_conditioned_combo(oi,:) = ridge( y, x, k, 0 );
     end
     
-    b_conditioned_1a = zeros( num_situation_objects, num_weights);
+    figure
     for oi = 1:num_situation_objects
         cur_box_inds = eq( oi, box_source_obj_type );
         internal_support_cur = internal_support(cur_box_inds);
-        external_support_cur = external_support_function( box_density_conditioned_1a( cur_box_inds ) );
+        internal_support_cur = repmat(internal_support_cur,4,1);
+        external_support_cur_0  = external_support_function( box_density_prior( cur_box_inds ) );
+        external_support_cur_1a = external_support_function( box_density_conditioned_1a( cur_box_inds ) );
+        external_support_cur_1b = external_support_function( box_density_conditioned_1b( cur_box_inds ) );
+        external_support_cur_2  = external_support_function( box_density_conditioned_2(  cur_box_inds ) );
+        external_support_cur = [external_support_cur_0;external_support_cur_1a;external_support_cur_1b;external_support_cur_2];
         if use_mixing
-            x = [internal_support_cur, external_support_cur, internal_support_cur .* external_support_cur];
+            x = [internal_support_cur, external_support_cur, internal_support_cur.*external_support_cur];
         else
-            x = [internal_support_cur, external_support_cur ];
+            x = [internal_support_cur, external_support_cur];
         end
-        y = box_proposal_gt_IOUs(cur_box_inds);
-        k = 1000;
-        b_conditioned_1a(oi,:) = ridge( y, x, k, 0 );
-    end
-    
-    b_conditioned_1b = zeros( num_situation_objects, num_weights);
-    for oi = 1:num_situation_objects
-        cur_box_inds = eq( oi, box_source_obj_type );
-        internal_support_cur = internal_support(cur_box_inds);
-        external_support_cur = external_support_function( box_density_conditioned_1b( cur_box_inds ) );
-        if use_mixing
-            x = [internal_support_cur, external_support_cur, internal_support_cur .* external_support_cur];
-        else
-            x = [internal_support_cur, external_support_cur ];
-        end
-        y = box_proposal_gt_IOUs(cur_box_inds);
-        k = 1000;
-        b_conditioned_1b(oi,:) = ridge( y, x, k, 0 );
-    end
-    
-    b_conditioned_2 = zeros( num_situation_objects, num_weights);
-    for oi = 1:num_situation_objects
-        cur_box_inds = eq( oi, box_source_obj_type );
-        internal_support_cur = internal_support(cur_box_inds);
-        external_support_cur = external_support_function( box_density_conditioned_2( cur_box_inds ) );
-        if use_mixing
-            x = [internal_support_cur, external_support_cur, internal_support_cur .* external_support_cur];
-        else
-            x = [internal_support_cur, external_support_cur ];
-        end
-        y = box_proposal_gt_IOUs(cur_box_inds);
-        k = 1000;
-        b_conditioned_2(oi,:) = ridge( y, x, k, 0 );
-    end
-    
-    % try logistic regression for >.5 iou
-    b_mnr_prior = zeros( num_situation_objects, num_weights);
-    for oi = 1:num_situation_objects
-        cur_box_inds = eq( oi, box_source_obj_type );
-        internal_support_cur = internal_support(cur_box_inds);
-        external_support_cur = external_support_function( box_density_prior( cur_box_inds ) );
+        a = repmat( box_proposal_gt_IOUs(cur_box_inds), 4, 1 );
+        b = total_support_func( internal_support_cur, external_support_cur, oi, b_conditioned_combo );
         
-        if use_mixing
-            x = [internal_support_cur, external_support_cur, internal_support_cur .* external_support_cur];
-        else
-            x = [internal_support_cur, external_support_cur ];
-        end
-        y = ge( box_proposal_gt_IOUs(cur_box_inds), .5 ) + 1;
-        b_mnr_prior(oi,:) = mnrfit( x, y );
-        
+        cc = corrcoef(a,b);
+        subplot2(1,num_situation_objects,1,oi);
+        plot(a,b,'.');
+        xlabel('gt iou');
+        if oi == 1, ylabel({'mixed conditioning';'estimated iou'}); else, ylabel('estimated iou'); end
+        legend(['cc: ' num2str(cc(1,2))],'location','southeast');
     end
     
-    % try logistic regression for >.5 iou
-    b_mnr_conditioned_2 = zeros( num_situation_objects, num_weights);
-    for oi = 1:num_situation_objects
-        cur_box_inds = eq( oi, box_source_obj_type );
-        internal_support_cur = internal_support(cur_box_inds);
-        external_support_cur = external_support_function( box_density_prior( cur_box_inds ) );
-        
-        if use_mixing
-            x = [internal_support_cur, external_support_cur, internal_support_cur .* external_support_cur];
-        else
-            x = [internal_support_cur, external_support_cur ];
-        end
-        y = ge( box_proposal_gt_IOUs(cur_box_inds), .5 ) + 1;
-        b_mnr_conditioned_2(oi,:) = mnrfit( x, y );
-        
-    end
+   
     
-  
     
+    
+   
+    
+
+
 %% see how the different estimates look
 
     figure();

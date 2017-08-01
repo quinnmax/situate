@@ -1,0 +1,69 @@
+
+
+
+description
+
+situation
+	description
+	objects
+		label
+		description
+		possible_object_labels
+		urgency_pre
+		urgency_post
+	
+pipeline
+	image_redim_px
+	num_iterations
+	num_scouts
+	agent_urgency_defaults
+	use_direct_scout_to_workspace_pipe
+	seed_train
+	seed_test
+
+stopping_condition
+
+situation_model
+	train
+	update
+	sample
+	density of sample
+
+support
+	external
+		apply
+		threshold
+	total
+		apply
+		threshold_provisional
+		threshold_final
+
+classifier
+	saved_models_directory
+	load_or_train
+	apply
+	
+adjustment_model
+	activation_logic
+	saved_models_directory
+	load_or_train
+	apply
+
+
+
+
+external_support_function
+total_support_function
+thresholds
+situation_objects_urgency_pre
+situation_objects_urgency_post
+temperature
+viz_options
+situation_objects
+situation_objects_possible_labels
+seed_test
+seed_train
+
+
+
+

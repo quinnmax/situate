@@ -49,23 +49,40 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     [p_conditions_descriptions,~,condition_indices] = unique(p_conditions_descriptions_temp);
     num_conditions = length(p_conditions_descriptions);
     
-    results_per_condition = [];
+    
     
 %% reshape the data
 
-    %   load up related files, combine
+    results_per_condition = [];
+    results_per_condition.condition = '';
+    results_per_condition.iou_thresholds = [];
+    results_per_condition.detections_at_iou = [];
+    results_per_condition.first_iteration_over_threshold = [];
+    results_per_condition.first_iteration_over_threshold_desc = '';
+    results_per_condition.final_ious = [];
+    results_per_condition.final_ious_desc = '';
+    results_per_condition.support_record.internal = [];
+    results_per_condition.support_record.external = [];
+    results_per_condition.support_record.total    = [];
+    results_per_condition.support_record.gt_iou   = [];
+    results_per_condition = repmat( results_per_condition, 1, num_conditions);
+    
+    % load up related files, combine
     for ci = 1:num_conditions
-    %for ci = 5
+        
         cur_files_inds = find(eq(ci,condition_indices));
         temp_data = cell(1,length(cur_files_inds));
         for fii = 1:length(cur_files_inds)
-            fi = cur_files_inds(fii);
+            fi = cur_files_inds(fii); % indx for file associated with current condition
             cur_fname = fn{fi};
             fprintf('condition: %i trial: %i fname: %s \n', ci,fii,cur_fname);
             temp_data{fii} = load(cur_fname);
         end
         
-        p_condition = temp_data{1}.p_condition;
+        p_condition = temp_data{1}.p_condition; % because they should have the same conditions, just use the first one
+        situation_objects = p_condition.situation_objects;
+        num_situation_objects = length(situation_objects );
+        
         
         workspaces_final = cellfun( @(x) x.workspaces_final, temp_data, 'UniformOutput', false);
         workspaces_final = cellfun( @(x) [x{:}], workspaces_final, 'UniformOutput', false);
@@ -83,13 +100,127 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
         
         
         
+        
+        
+        % take a look at external support function
+        
+        recompute_external_support_function = false;
+        
+        if recompute_external_support_function
+            
+            % hand drawn activation function for external support
+            % allow for eventual saturation, ignore the bottom half of values
+            figure;
+            resampling_bins = 10;
+            temp = agent_records(:);
+            for oi = 1:num_situation_objects
+                
+                obj_inds = eq(oi,[temp.interest]);
+                support_temp  = [temp(obj_inds).support];
+                density_temp  = [support_temp.sample_densities];
+                external_temp = [support_temp.external     ];
+                gt_iou_temp   = [support_temp.GROUND_TRUTH ];
+
+                [inds_out] = resample_to_uniform( gt_iou_temp, [], resampling_bins );
+                gt_iou_resampled   = gt_iou_temp(inds_out)';
+                density_resampled  = density_temp(inds_out)';
+                external_resampled = external_temp(inds_out)';
+                
+                x = sort(density_resampled);
+                num_samples = length(x);
+                
+                x_hand = [ 0  .5  .9   1 ];
+                y_hand = [ 0   0   1   1 ];
+                y_interp = interp1(x_hand,y_hand,linspace(0,1,num_samples));
+                y_interp = y_interp';
+
+                activation_function = @(x,b) b(1) + b(2) * atan( b(3) * (x-b(4)) );
+                b0 = [ 0.0480    0.5567    3.6761e-11   -0.0514]; % based on old findings
+
+                bf = fminsearch( @(b) sum( (y_interp - activation_function(x,b)) .^2 ), b0 );
+
+                updated_external_support = activation_function( x, bf );
+
+                subplot2(2,num_situation_objects,1,oi);
+                hist(external_resampled);
+                xlim([-.1 1.1]);
+                subplot2(2,num_situation_objects,2,oi);
+                hist(updated_external_support);
+                xlim([-.1 1.1]);
+                
+                display(bf);
+                
+            end
+            
+        end
+        
+        
+        
+        
+        
+        % take a look at total support function
+        
+        recompute_total_support_function = false;
+        
+        if recompute_total_support_function
+            
+            resampling_bins = 10;
+            use_mixing = true;
+            
+            if use_mixing
+                total_support_func = @(b, internal, external) b(1) + b(2) .* internal + b(3) .* external + b(4) .* internal .* external;
+                num_coeffs = 4;
+            else
+                total_support_func = @(b, internal, external) b(1) + b(2) .* internal + b(3) .* external;
+                num_coeffs = 5;
+            end
+
+            temp = agent_records(:);
+            figure;
+            total_support_b = zeros( num_situation_objects, num_coeffs );
+            for oi = 1:num_situation_objects
+                obj_inds = eq(oi,[temp.interest]);
+                support_temp  = [temp(obj_inds).support];
+                internal_temp = [support_temp.internal     ];
+                external_temp = [support_temp.external     ];
+                total_temp    = [support_temp.total        ];
+                gt_iou_temp   = [support_temp.GROUND_TRUTH ];
+
+                [inds_out] = resample_to_uniform( gt_iou_temp, [], resampling_bins );
+                internal_resampled = internal_temp(inds_out)';
+                external_resampled = external_temp(inds_out)';
+                total_resampled    = total_temp(inds_out)';
+                gt_iou_resampled   = gt_iou_temp(inds_out)';
+
+                if use_mixing
+                    total_support_b(oi,:) = ridge( gt_iou_resampled, [internal_resampled, external_resampled, internal_resampled .* external_resampled ], 1000, 0 );
+                else
+                    total_support_b(oi,:) = ridge( gt_iou_resampled, [internal_resampled, external_resampled ], 1000, 0 );
+                end
+                updated_total_support = total_support_func( total_support_b(oi,:), internal_resampled, external_resampled );
+
+                subplot(1,num_situation_objects,oi);
+                plot(gt_iou_resampled,updated_total_support,'.');
+                title(situation_objects{oi});
+                xlabel('gt iou (resampled to uniform)');
+                ylabel('total support (updated)');
+                
+            end
+            
+            display(total_support_b);
+
+        end
+        
+        
+        
+        
+        
         % detections at threshold, iteration
-        num_thresholds = 11;
-        iou_thresholds = sort(unique([linspace(0,1,num_thresholds) .5])); % make sure .5 is in there
+        num_thresholds = 10;
+        iou_thresholds = sort(unique([linspace(0,1,num_thresholds+1) .5])); % make sure .5 is in there
+        iou_thresholds = iou_thresholds(2:end);
         num_thresholds = length(iou_thresholds);
         num_images = length(fnames_test);
-        situation_objects = p_condition.situation_objects;
-        num_situation_objects = length(situation_objects );
         
         % final IOUs for objects
         final_ious = zeros( num_images, num_situation_objects );
@@ -101,8 +232,8 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
             end
         end
         end
-        results_per_condition(ci).iou_thresholds = iou_thresholds;
-        results_per_condition(ci).final_ious = final_ious;
+        results_per_condition(ci).iou_thresholds  = iou_thresholds;
+        results_per_condition(ci).final_ious      = final_ious;
         results_per_condition(ci).final_ious_desc = 'image index, iou per object in situation_objects ordering';
         
         
@@ -120,7 +251,7 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
         
         
         
-        % time of first detections (over GT IOU threshold )
+        % time of first detections ( over GT IOU threshold + over .5 total support )
         first_iteration_over_threshold = zeros( num_images, num_situation_objects+1, num_thresholds );
 
         for ii = 1:num_images
@@ -132,6 +263,7 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
                 temp             = [agent_records(ii,:).support];
                 temp             = temp(iterations_of_interest);
                 internal_support = [temp.internal];
+                external_support = [temp.external];
                 total_support    = [temp.total];
                 gt_iou           = [temp.GROUND_TRUTH];
 
