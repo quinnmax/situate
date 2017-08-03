@@ -306,10 +306,16 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
         for imi = 1:num_subplots
             subplot_lazy(num_subplots,imi);
             agent_interests = double([agent_records(imi,:).interest]);
-            plot(agent_interests + .1*randn(size(agent_interests)),'.');
-            yticks(0:3);
-            yticklabels(['none' situation_objects]);
+            perturbation = .1 * randn(size(agent_interests));
+            perturbation( eq( agent_interests, 0 ) ) = 0;
+            plot(agent_interests + perturbation,'.');
+            
+            %yticks(0:3);
+            %yticklabels(['none' situation_objects]);
             ylim([-.5 3.5])
+            set( gca, 'YTick', 0:3);
+            set( gca, 'YTickLabel', ['none' situation_objects] );
+            
             if imi == 1, ylabel('agent interest'); xlabel('iteration'); end  
             
             gt_ious = zeros(1,num_situation_objects);
@@ -427,36 +433,22 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
 %     fprintf('.');
     
 
-%% define conditions to include, color and line specifications 
+%% define display order of conditions, color and line specifications 
 
     proposals_display_limit = p_condition.num_iterations;
     % proposals_display_limit = 1000;
 
-    include_conditions = find(true(1,num_conditions));
-    %include_conditions = find([1 1 0, 0 0 1, 0 0 0, 1 1 1, 1]);
-    
     linespec = {'-','--','-.',':'};
-    linespec = repmat(linespec,1,ceil(length(include_conditions)/length(linespec)));
+    linespec = repmat(linespec,1,ceil(num_conditions/length(linespec)));
 
     % figure out a display order that emphasizes completed situation detections
     iou_threshold_index = find(eq(min(abs(iou_thresholds-.5)),abs(iou_thresholds-.5)));
     full_situation_index = num_situation_objects + 1;
-    [~,sort_order] = sort( detections_at_num_proposals(:,iou_threshold_index,full_situation_index,proposals_display_limit), 'descend' );
-    
-    display_order = [];
-    for ci = 1:length(sort_order)
-        if ismember( sort_order(ci), include_conditions)
-            display_order = [display_order sort_order(ci)];
-        end
-    end
+    [~,display_order] = sort( detections_at_num_proposals(:,iou_threshold_index,full_situation_index,proposals_display_limit), 'descend' );
     
     % define color space
-    % colors = cool(length(include_conditions));
-    % colors = color_fade([1 0 1; 0 0 0; 0 .75 0], length(include_conditions ) );
-    colors = zeros( length(include_conditions),3);
-    colors = sqrt(colors);
-
-
+    colors = zeros( num_conditions,3); % all black
+    
     
     
     
@@ -466,9 +458,11 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     h2.Color = [1 1 1];
     hold on;
     
+    detection_rate_at_num_proposals = detections_at_num_proposals / num_images;
+    
     for i = 1:length(display_order)
         ci = display_order(i);
-        cur_data = detections_at_num_proposals(ci,iou_threshold_index,num_situation_objects+1,:);
+        cur_data = detection_rate_at_num_proposals(ci,iou_threshold_index,num_situation_objects+1,:);
         cur_data = squeeze(cur_data);
         plot( cur_data, 'Color', colors(i,:), 'LineWidth', 1.25, 'LineStyle', linespec{i} );
         % condition, threshold, object, iteration
@@ -482,12 +476,12 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     box(h2.CurrentAxes,'on');
     
     xlabel(  'Iterations' );
-    ylabel({ 'Completed Situation Detections', '(Cumulative)' });
+    ylabel({ 'Situation Detection Rate', ['(Cumulative, ' num2str(num_images) 'images)'] });
  
     xlim([0 proposals_display_limit]);
-    ylim([0 1.1*num_images]);
+    ylim([0 1.1]);
     
-    % legend(unique_descriptions(sort_order),'Location','Northeast');
+    % legend(unique_descriptions(display_order),'Location','Northeast');
     title_string = 'Situation recognition method';
     h_temp = legend(p_conditions_descriptions(display_order),'Location','eastoutside','FontName','FixedWidth');
     h_temp.FontSize = 8;
@@ -499,8 +493,7 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     print(h2,fullfile(results_directory,'situate_experiment_figure'),'-r300', '-dpdf','-bestfit' );
     saveas(h2,fullfile(results_directory,'situate_experiment_figure detections at iteration'),'png');
     
-    ylim([0, 1.1*max([1; max(reshape(detections_at_num_proposals(:,iou_threshold_index,num_situation_objects+1,:),1,[]))]) ]);
-    ylabel({ 'Completed Situation Detections', ['(Cumulative, max: ' num2str(num_images) ')'] });
+    ylim([0, 1.1*max([.01; max(reshape(detection_rate_at_num_proposals(:,iou_threshold_index,num_situation_objects+1,:),1,[]))]) ]);
     print(h2,fullfile(results_directory,'situate_experiment_figure_zoomed'),'-r300', '-dpdf','-bestfit' );
     saveas(h2,fullfile(results_directory,'situate_experiment_figure detections at iteration zoomed'),'png');
     
@@ -594,8 +587,8 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     set(h3,'position',[50 529 1400 450])
     for oi = 1:num_situation_objects+1
         subplot(1,num_situation_objects+1,oi);
-        plot(iou_thresholds, detections_at_iou(sort_order,:,oi) );
-        legend(p_conditions_descriptions(sort_order),'location','southoutside');
+        plot(iou_thresholds, detections_at_iou(display_order,:,oi) );
+        legend(p_conditions_descriptions(display_order),'location','southoutside');
         if oi <= length(situation_objects)
             title([situation_objects{oi} ' detections']);
         else
@@ -612,8 +605,8 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     set(h3b,'position',[50 529 1400 450])
     for oi = 1:length(situation_objects)+1
         subplot(1,num_situation_objects+1,oi);
-        plot(iou_thresholds, detections_at_iou(sort_order,:,oi) );
-        legend(p_conditions_descriptions(sort_order),'location','southoutside');
+        plot(iou_thresholds, detections_at_iou(display_order,:,oi) );
+        legend(p_conditions_descriptions(display_order),'location','southoutside');
         if oi <= length(situation_objects)
             title([situation_objects{oi} ' detections']);
         else
@@ -678,20 +671,33 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
     
 %% figure: object detections vs time at fixed IOU threshold    
     
-    
+    fig_title = 'detection iteration by method and object';
     ti = iou_threshold_index;
-    h4 = figure('color','white');
-    for ci = 1:num_conditions
+    h4 = figure('color','white','Name',fig_title);
     for oi = 1:num_situation_objects
-        subplot2( num_situation_objects, num_conditions, oi, ci )
-        hist( first_iteration_over_threshold(ci,:,oi,ti), 50 );
-        if oi == 1, title( p_conditions_descriptions{ci} ); end
-        if ci == 1, ylabel( situation_objects{oi} ); end
-        xlabel('iteration number');
-        %xlim([0 max(first_iteration_over_threshold(:))]);
-        %ylim([0 100]);
+        max_bin_height_for_object_type = 0;
+        for ci = 1:num_conditions
+            subplot2( num_situation_objects, num_conditions, oi, ci )
+            hist( first_iteration_over_threshold(ci,:,oi,ti), 50 );
+            if oi == 1, title( p_conditions_descriptions{ci} ); end
+            if ci == 1, ylabel( situation_objects{oi} ); end
+            xlabel('iteration number');
+            %xlim([0 max(first_iteration_over_threshold(:))]);
+            %ylim([0 100]);
+
+            % store bin heights
+            temp = get(gca,'YLim');
+            if temp(2) > max_bin_height_for_object_type, max_bin_height_for_object_type = temp(2); end
+        end
+        % set all plots for same obj type to have same y scale
+        for ci = 1:num_conditions
+            subplot2( num_situation_objects, num_conditions, oi, ci );
+            ylim([0 max_bin_height_for_object_type]);
+        end
     end
-    end
+    
+    saveas(h4,fullfile(results_directory,fig_title),'png')
+    
     
     
     

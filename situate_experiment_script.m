@@ -17,6 +17,7 @@
         % split_arg = 1; % randomly generated with seed value 1
         % split_arg = uigetdir(pwd); % pick one in the gui
         split_arg = 'split_validation/'; % validation set (hard)
+        % split_arg = 'split_test_stanford/';
         % split_arg = 'split_test/';
         
         if ischar(split_arg)
@@ -58,12 +59,12 @@
     
     % note: use [] if you want to use all available data
     experiment_settings.folds               = [1];  % list the folds, not how many. ie, 2:4
-    experiment_settings.testing_data_max    = 2;    % per fold
+    experiment_settings.testing_data_max    = [1];   % per fold, empty is all available
     experiment_settings.training_data_max   = []; 
     
     experiment_settings.use_gui                         = false;
     experiment_settings.use_parallel                    = false;
-    experiment_settings.run_analysis_after_completion   = true;
+    experiment_settings.run_analysis_after_completion   = false;
     
     % additional visualization options
     
@@ -84,9 +85,9 @@
     % lazy output results directory setting
     
     if strcmp(computer,'GLNXA64')
-        experiment_settings.results_directory = fullfile('/home/',char(java.lang.System.getProperty('user.name')),'/Desktop/',[experiment_settings.title '_' datestr(now,'yyyy.mm.dd.HH.MM.SS')]);                                                                                          
+        experiment_settings.results_directory = fullfile('results',[experiment_settings.title '_' datestr(now,'yyyy.mm.dd.HH.MM.SS')]);                                                                                          
     elseif strcmp(computer,'MACI64')
-        experiment_settings.results_directory = fullfile('/Users/',char(java.lang.System.getProperty('user.name')),'/Desktop/', [experiment_settings.title '_' datestr(now,'yyyy.mm.dd.HH.MM.SS')]);
+        experiment_settings.results_directory = fullfile('results', [experiment_settings.title '_' datestr(now,'yyyy.mm.dd.HH.MM.SS')]);
     else
         error('don''t know the machine');
     end
@@ -537,36 +538,36 @@
     temp.description = description;
     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
     
-    description = 'uniform location and box, no box adjust';
-    temp = p;
-    temp.description = description;
-    temp.situation_model.learn  = @situation_models.uniform_fit;
-    temp.situation_model.update = @situation_models.uniform_condition;
-    temp.situation_model.sample = @situation_models.uniform_sample;
-    temp.situation_model.draw   = @situation_models.uniform_draw;
-    temp.adjustment_model_activation_logic = @(cur_agent,a,b) false;
-    temp.adjustment_model_setup            = @(a,b,c,d) [];
-    temp.adjustment_model_apply            = @(cur_agent) assert(1==0);
-    temp.total_support_function            = @(internal,external) 1.0 * internal + 0 * external;
-    if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
-    
-    description = 'uniform location and box, box adjust';
-    temp = p;
-    temp.description = description;
-    temp.situation_model.learn  = @situation_models.uniform_fit;
-    temp.situation_model.update = @situation_models.uniform_condition;
-    temp.situation_model.sample = @situation_models.uniform_sample;
-    temp.situation_model.draw   = @situation_models.uniform_draw;
-    temp.total_support_function = @(internal,external) 1.0 * internal + 0 * external;
-    if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
-    
-    description = 'normal location and box, no box adjust';
-    temp = p;
-    temp.description = description;
-    temp.adjustment_model_activation_logic = @(cur_agent,a,b) false;
-    temp.adjustment_model_setup            = @(a,b,c,d) [];
-    temp.adjustment_model_apply            = @(cur_agent) assert(1==0);
-    if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+%     description = 'uniform location and box, no box adjust';
+%     temp = p;
+%     temp.description = description;
+%     temp.situation_model.learn  = @situation_models.uniform_fit;
+%     temp.situation_model.update = @situation_models.uniform_condition;
+%     temp.situation_model.sample = @situation_models.uniform_sample;
+%     temp.situation_model.draw   = @situation_models.uniform_draw;
+%     temp.adjustment_model_activation_logic = @(cur_agent,a,b) false;
+%     temp.adjustment_model_setup            = @(a,b,c,d) [];
+%     temp.adjustment_model_apply            = @(cur_agent) assert(1==0);
+%     temp.total_support_function            = @(internal,external) 1.0 * internal + 0 * external;
+%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+%     
+%     description = 'uniform location and box, box adjust';
+%     temp = p;
+%     temp.description = description;
+%     temp.situation_model.learn  = @situation_models.uniform_fit;
+%     temp.situation_model.update = @situation_models.uniform_condition;
+%     temp.situation_model.sample = @situation_models.uniform_sample;
+%     temp.situation_model.draw   = @situation_models.uniform_draw;
+%     temp.total_support_function = @(internal,external) 1.0 * internal + 0 * external;
+%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+%     
+%     description = 'normal location and box, no box adjust';
+%     temp = p;
+%     temp.description = description;
+%     temp.adjustment_model_activation_logic = @(cur_agent,a,b) false;
+%     temp.adjustment_model_setup            = @(a,b,c,d) [];
+%     temp.adjustment_model_apply            = @(cur_agent) assert(1==0);
+%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
     
   
     
@@ -580,7 +581,7 @@
 
     try
         possible_path_ind = find(cellfun( @(x) exist(x,'dir'), experiment_settings.situations_struct.(experiment_settings.situation).possible_paths ),1,'first');
-        data_path = experiment_settings.situations_struct.(experiment_settings.situation).possible_paths{ possible_path_ind };
+        data_path = experiment_settings.situations_struct.(experiment_settings.situation).possible_paths{ possible_path_ind };s
     catch
         while ~exist('data_path','var') || isempty(data_path) || isequal(data_path,0) || ~isdir(data_path)
             h = msgbox( ['Select directory containing images of ' experiment_settings.situation] );
