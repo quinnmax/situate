@@ -1,7 +1,7 @@
 
     
-function [] = experiment_helper(experiment_settings, parameterization_conditions, data_path, split_arg)
-% experiment_helper(experiment_settings, p_conditions, data_path, split_arg)
+function [] = experiment_helper(experiment_settings, parameterization_conditions, split_arg)
+% experiment_helper(experiment_settings, p_conditions, split_arg)
 
 
   
@@ -9,29 +9,32 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
   
     % process the split arg
 
-        if exist('split_arg','var') && ~isempty(split_arg)
+        if exist('split_arg','var') ...
+        && ~isempty(split_arg)
+    
             if isnumeric(split_arg)
                 % we'll interpret it as a seed value
                 rng(split_arg);
             elseif ischar(split_arg) && isdir(split_arg)
-                % then it's a directory, we'll look for split_files to use
+                % then it's a directory, we'll look for files that give file names to use as the splits
                 split_file_directory = split_arg;
             else
                 % don't rightly know
                 error('don''t know what to do with that split_arg');
             end
+            
         else
-            warning('split_arg_was empty, using current time as rng seed for testing');
+            warning('split_arg_was empty, using current time as rng seed for defining training-testing split');
             rng(now);
         end
-
+       
     % load or generate splits
     %   if the split_arg was a directory, load splits from them
     %   if it was numeric, make up new training/testing splits
 
         if exist('split_file_directory','var') && isdir(split_file_directory)
 
-            % Load the folds rather than generating new ones
+            % Load the folds from files rather than generating new ones
 
             fnames_splits_train = dir(fullfile(split_file_directory, '*_fnames_split_*_train.txt'));
             fnames_splits_test  = dir(fullfile(split_file_directory, '*_fnames_split_*_test.txt' ));
@@ -57,8 +60,16 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
 
         else 
 
+            % this really only makes sense if there's a single directory that will be used for
+            % validation, so we're just going to split up the experiment_settings.data_path_train data and use that
+            
+                if ~isequal(experiment_settings.data_path_train,experiment_settings.data_path_test)
+                    warning('ignoring experiment_settings.data_path_test variable and generating splits using just experiment_settings.data_path_train');
+                    experiment_settings.data_path_test = experiment_settings.data_path_train;
+                end
+            
             % genterate folds
-                data_folds = generate_data_folds( data_path, length(experiment_settings.folds), experiment_settings.testing_data_max );
+                data_folds = generate_data_folds( experiment_settings.data_path_train, length(experiment_settings.folds), experiment_settings.testing_data_max );
 
              % save the splits to files
                 if ~isdir(experiment_settings.results_directory), mkdir(experiment_settings.results_directory); end
@@ -75,7 +86,31 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
                 end
 
         end 
+        
+    % make sure the split fnames and the specified directories led to actual images
+    % if not, replace training images with those in the training directory
+    % if not, replace testing  images with those in the testing  directory
     
+        if ~all( cellfun( @(x) exist(fullfile(experiment_settings.data_path_train,x),'file'), unique(vertcat(data_folds.fnames_lb_train)) ) )
+            warning('training images from split file do not all exist. using files in the training image directory');
+            temp = dir( fullfile( experiment_settings.data_path_train, '*.labl' ) );
+            found_fnames = {temp.name}';
+            for fi = 1:length(data_folds)
+                data_folds(fi).fnames_lb_train = found_fnames;
+                data_folds(fi).fnames_im_train = cellfun( @(x) [x(1:end-4) 'jpg'], found_fnames, 'UniformOutput', false );
+            end
+        end
+        
+        if ~all( cellfun( @(x) exist(fullfile(experiment_settings.data_path_test,x),'file'), unique(vertcat(data_folds.fnames_im_test)) ) )
+            warning('testing images from split file do not all exist. using files in the testing image directory');
+            temp = dir( fullfile( experiment_settings.data_path_test, '*.jpg' ) );
+            found_fnames = {temp.name}';
+            for fi = 1:length(data_folds)
+                data_folds(fi).fnames_im_test  = found_fnames;
+                data_folds(fi).fnames_im_train = cellfun( @(x) [x(1:end-3) 'labl'], found_fnames, 'UniformOutput', false );
+            end
+        end
+        
     % apply limits to training/testing set sizes
     %   if there was a limit on the number of testing images (which is interpretted as per-fold),
     %   or on the number of training images,
@@ -94,7 +129,8 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
                 data_folds(i).fnames_im_train = data_folds(i).fnames_im_train(1:experiment_settings.training_data_max);
             end
         end
-
+        
+    
         
         
 %% run the main experiment loop (experimental conditions, images) 
@@ -106,11 +142,9 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
 
         % get training and testing file names for the current fold (and validate)
         %   (although not used, these are saved into results that are saved off)
-            fnames_im_train = cellfun( @(x) fullfile(data_path, x), data_folds(fold_ind).fnames_im_train, 'UniformOutput', false );
-            fnames_im_test  = cellfun( @(x) fullfile(data_path, x), data_folds(fold_ind).fnames_im_test,  'UniformOutput', false );
-            fnames_lb_train = cellfun( @(x) fullfile(data_path, x), data_folds(fold_ind).fnames_lb_train, 'UniformOutput', false );
-            fnames_lb_test  = cellfun( @(x) fullfile(data_path, x), data_folds(fold_ind).fnames_lb_test,  'UniformOutput', false );
-
+            fnames_lb_train = cellfun( @(x) fullfile(experiment_settings.data_path_train, x), data_folds(fold_ind).fnames_lb_train, 'UniformOutput', false );
+            fnames_im_test  = cellfun( @(x) fullfile(experiment_settings.data_path_test,  x), data_folds(fold_ind).fnames_im_test,  'UniformOutput', false );
+            
             [~,~,~,failed_inds] = situate.validate_training_data( fnames_lb_train, parameterization_conditions(1) );
             if any(failed_inds)
                 display('the following training images failed validation');
@@ -126,6 +160,39 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
                 cur_parameterization = parameterization_conditions(parameters_ind);
                 rng( cur_parameterization.seed_test );
 
+                % load or learn the situation model
+                if ~isfield( learned_models, 'situation_model') ...
+                || ~isequal( learned_models_training_functions.situation, cur_parameterization.situation_model.learn )
+                    learned_models_training_functions.situation = cur_parameterization.situation_model.learn;
+                    learned_models.situation_model.joint = ...
+                        cur_parameterization.situation_model.learn( ...
+                            cur_parameterization, ...
+                            fnames_lb_train );
+                end
+
+                % load or learn the classification models
+                if ~isfield( learned_models, 'classifier_model') ...
+                || ~isequal( learned_models_training_functions.classifier, cur_parameterization.classifier.train )
+                    learned_models_training_functions.classifier = cur_parameterization.classifier.train;
+                    learned_models.classifier_model = ...
+                        cur_parameterization.classifier.train( ...
+                            cur_parameterization, ...
+                            fnames_lb_train, ...
+                            cur_parameterization.classifier.directory );
+                end
+
+                % load or learn the adjustment model
+                % train( fnames_in, saved_models_directory, IOU_threshold_for_training )
+                if ~isfield(learned_models, 'adjustment_model') ...
+                || ~isequal( learned_models_training_functions.adjustment, cur_parameterization.adjustment_model.train )
+                    learned_models_training_functions.adjustment = cur_parameterization.adjustment_model.train;
+                    learned_models.adjustment_model = ...
+                        cur_parameterization.adjustment_model.train( ...
+                            cur_parameterization, ...
+                            fnames_lb_train, ...
+                            cur_parameterization.adjustment_model.directory);
+                end
+                
                 progress( 0, length(fnames_im_test),cur_parameterization.description); 
 
                 % loop through images
@@ -135,45 +202,6 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
                 keep_going = true;
                 cur_image_ind = 1;
                 while keep_going
-                    
-                    % load or learn the situation model
-                    if ~isfield( learned_models, 'situation_model') ...
-                    || ~isequal( learned_models_training_functions.situation, cur_parameterization.situation_model.learn )
-                    
-                        learned_models_training_functions.situation = cur_parameterization.situation_model.learn;
-                
-                        learned_models.situation_model.joint = ...
-                            cur_parameterization.situation_model.learn( ...
-                                cur_parameterization, ...
-                                fnames_lb_train );
-                    end
-                    
-                    % load or learn the classification models
-                    if ~isfield( learned_models, 'classifier_model') ...
-                    || ~isequal( learned_models_training_functions.classifier, cur_parameterization.classifier_load_or_train )
-                    
-                        learned_models_training_functions.classifier = cur_parameterization.classifier_load_or_train;
-                
-                        learned_models.classifier_model = ...
-                            cur_parameterization.classifier_load_or_train( ...
-                                cur_parameterization, ...
-                                fnames_lb_train, ...
-                                cur_parameterization.classifier_saved_models_directory );
-                    end
-                    
-                    % load or learn the adjustment model
-                    % train( fnames_in, saved_models_directory, IOU_threshold_for_training )
-                    if ~isfield(learned_models, 'adjustment_model') ...
-                    || ~isequal( learned_models_training_functions.adjustment, cur_parameterization.adjustment_model_setup )
-                     
-                        learned_models_training_functions.adjustment = cur_parameterization.adjustment_model_setup;
-                
-                        learned_models.adjustment_model = ...
-                            cur_parameterization.adjustment_model_setup( ...
-                                cur_parameterization, ...
-                                fnames_lb_train, ...
-                                cur_parameterization.classifier_saved_models_directory );
-                    end
                     
                     % run on the current image
                     cur_fname_im = fnames_im_test{cur_image_ind};
@@ -243,10 +271,9 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
                 'p_condition', ...
                 'workspaces_final', ...
                 'agent_records', ...
-                'fnames_im_train', ...
-                'fnames_im_test',...
                 'fnames_lb_train', ...
-                'fnames_lb_test' );
+                'fnames_im_test' );
+                
 
                 display(['saved to ' save_fname]);
                     

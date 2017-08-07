@@ -29,9 +29,11 @@ function [classifier_output, gt_iou] = IOU_ridge_regression_apply( classifier_st
        warning('classifiers.IOU_ridge_regression_apply is giving some extreme values'); 
     end
     
-    if exist('lb','var')
+    if exist('lb','var') && ~isempty(lb)
         gt_box_r0rfc0cf = lb.boxes_r0rfc0cf( strcmp(target_class,lb.labels_adjusted), : );
         gt_iou = intersection_over_union( box_r0rfc0cf, gt_box_r0rfc0cf, 'r0rfc0cf' );
+    else
+        gt_iou = nan;
     end
 
 end

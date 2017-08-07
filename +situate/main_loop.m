@@ -22,21 +22,21 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
         % passed around.
         workspace = workspace_initialize(p,im_size);
         
-        situation_detected = false;
-        
     % initialize distributions struct, which keeps track of distribution during a run, including:
     %   obj urgency, 
     %   conditional distributions
         d = [];
         for dist_index = 1:length(p.situation_objects)
             d(dist_index).interest          = p.situation_objects{dist_index};
-            if numel(p.situation_objects_urgency_pre) == 1
+            if isstruct(p.situation_objects_urgency_pre)
+                d(dist_index).interest_priority = p.situation_objects_urgency_pre.(p.situation_objects{dist_index});
+            elseif numel(p.situation_objects_urgency_pre) == 1
                 d(dist_index).interest_priority = p.situation_objects_urgency_pre;
             else
-                d(dist_index).interest_priority = p.situation_objects_urgency_pre.(p.situation_objects{dist_index});
+                error('multiple values but don''t know to which objects to assign them');
             end
             d(dist_index).distribution      = learned_models.situation_model.joint;
-            if nargin(p.situation_model.update) == 3 % see if it wants the image for updating
+            if nargin(p.situation_model.update) < 4 % see if it wants the image for updating
                 d(dist_index).distribution      = p.situation_model.update( d(dist_index).distribution, p.situation_objects{dist_index}, workspace );
             else
                 d(dist_index).distribution      = p.situation_model.update( d(dist_index).distribution, p.situation_objects{dist_index}, workspace, im );
@@ -135,10 +135,12 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
                     
                     % update interest priority
                     if any( strcmp( d(di).interest, workspace.labels ) )
-                        if numel(p.situation_objects_urgency_post) == 1
+                        if isstruct(p.situation_objects_urgency_post)
+                            d(di).interest_priority = p.situation_objects_urgency_post.(d(di).interest);
+                        elseif numel( p.situation_objects_urgency_post ) == 1
                             d(di).interest_priority = p.situation_objects_urgency_post;
                         else
-                            d(di).interest_priority = p.situation_objects_urgency_post.(d(di).interest);
+                            error('trouble matching value to object');
                         end
                     end
                 end
@@ -243,11 +245,11 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
             %   do it if we haven't finished yet
             %   OR if we made progress and want to let it keep improving,
             %       even though a situation has been detected
-            if length(p.adjustment_model_activation_logic) == 1 && p.adjustment_model_activation_logic(current_agent_snapshot,workspace,p)
-                agent_pool = p.adjustment_model_apply( learned_models.adjustment_model, current_agent_snapshot, agent_pool, im );
-            elseif length(p.adjustment_model_activation_logic) == length(p.situation_objects)
-                if p.adjustment_model_activation_logic{ strcmp( current_agent_snapshot.interest, p.situation_objects ) }( current_agent_snapshot, workspace, p )
-                    agent_pool = p.adjustment_model_apply( learned_models.adjustment_model, current_agent_snapshot, agent_pool, im );
+            if length(p.adjustment_model.activation_logic) == 1 && p.adjustment_model.activation_logic(current_agent_snapshot,workspace,p)
+                agent_pool = p.adjustment_model.apply( learned_models.adjustment_model, current_agent_snapshot, agent_pool, im );
+            elseif length(p.adjustment_model.activation_logic) == length(p.situation_objects)
+                if p.adjustment_model.activation_logic{ strcmp( current_agent_snapshot.interest, p.situation_objects ) }( current_agent_snapshot, workspace, p )
+                    agent_pool = p.adjustment_model.apply( learned_models.adjustment_model, current_agent_snapshot, agent_pool, im );
                 end
             end
             
@@ -547,21 +549,22 @@ function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, p, d, i
             cur_agent.support.sample_densities = sample_density;
         end
         
-    % figure out GROUND_TRUTH support. this is the oracle response. getting
-    % it for tracking, or if we're using IOU-oracle as our eval method
+    % figure out GROUND_TRUTH support. this is the oracle response. 
+    % getting it for displaying progress during a run, or if we're using IOU-oracle as our eval method
     
-        try
+        if ~isempty(label)
             relevant_label_ind = find(strcmp(cur_agent.interest,label.labels_adjusted),1,'first');
             ground_truth_box_xywh = label.boxes_xywh(relevant_label_ind,:);
             cur_agent.support.GROUND_TRUTH = intersection_over_union( cur_agent.box.xywh, ground_truth_box_xywh, 'xywh' );
             cur_agent.GT_label_raw = label.labels_raw{relevant_label_ind};
-        catch
-           warning('couldn''t find the relevent objects in the label file, so GROUND_TRUTH_IOU won''t work');
+        else
+            cur_agent.support.GROUND_TRUTH = nan;
+            cur_agent.GT_label_raw = '';
         end
 
     % figure out the internal support
     
-        classification_score = p.classifier_apply(  ...
+        classification_score = p.classifier.apply(  ...
             learned_models.classifier_model, ...
             cur_agent.interest, ...
             im, ...

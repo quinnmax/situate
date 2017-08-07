@@ -298,7 +298,7 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
         
         
         
-        % record how many scouts were looking for each object type during the run
+        % trace of what scouts were looking for at each iteration (25 images per method)
         
         % show what scouts were looking for during the run (with final IOU info in the title)
         figure('Name',['scout trace: ' p_conditions_descriptions{ci}]);
@@ -308,7 +308,16 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
             agent_interests = double([agent_records(imi,:).interest]);
             perturbation = .1 * randn(size(agent_interests));
             perturbation( eq( agent_interests, 0 ) ) = 0;
-            plot(agent_interests + perturbation,'.');
+            
+            tempsupport = [agent_records(imi,:).support];
+            agent_total_support = [tempsupport.total];
+            agent_total_support(end+1:length(agent_interests)) = 0;
+            inds_under = find(agent_total_support' <  p_condition.thresholds.total_support_final);
+            inds_over  = find(agent_total_support' >= p_condition.thresholds.total_support_final);
+            
+            plot( inds_under, agent_interests(inds_under) + perturbation(inds_under), '.', 'Color', [.5 .5 1]);
+            hold on;
+            plot( inds_over, agent_interests(inds_over) + perturbation(inds_over), '.r');
             
             %yticks(0:3);
             %yticklabels(['none' situation_objects]);

@@ -9,10 +9,123 @@
     run( fullfile(script_directory, 'matconvnet', 'matlab', 'vl_setupnn.m' ) );
     addpath( genpath( fullfile(script_directory, 'tools') ) );
     
-    p = situate.parameters_initialize();
-    experiment_settings = [];
     
-    % seed train
+    
+%% Experiment settings ( situation, experiment parameters )
+    
+    
+    % situation, experiment title
+    
+        experiment_settings = [];
+        experiment_settings.title               = 'dogwalking, debug';
+        experiment_settings.situations_struct   = situate.situation_definitions();
+        experiment_settings.situation           = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
+        %experiment_settings.situation           = 'dogwalking_stanford';  % look in experiment_settings.situations_struct to see the options
+        
+    % running limits
+    
+        experiment_settings.training_data_max   = []; 
+        experiment_settings.testing_data_max    = [];   % per fold, all images if empty
+        experiment_settings.folds               = [1];  % list the folds, not how many. ie, 2:4
+        
+    % running parameters
+    
+        experiment_settings.use_gui                         = true;
+        experiment_settings.use_parallel                    = false;
+        experiment_settings.run_analysis_after_completion   = false;
+
+        % visualization specifics
+
+            if experiment_settings.use_gui
+                viz_options.on_iteration          = true;
+                viz_options.on_iteration_mod      = 1;
+                viz_options.on_workspace_change   = false;
+                viz_options.on_end                = true;
+                viz_options.start_paused          = true;
+            else
+                viz_options.on_iteration          = false;
+                viz_options.on_iteration_mod      = 1;
+                viz_options.on_workspace_change   = false;
+                viz_options.on_end                = false;
+                viz_options.start_paused          = false;
+            end
+            
+    % results directory
+    
+        experiment_settings.results_directory = fullfile('results',[experiment_settings.title '_' datestr(now,'yyyy.mm.dd.HH.MM.SS')]);                                                                                          
+        if ~exist(experiment_settings.results_directory,'dir') && ~experiment_settings.use_gui, mkdir(experiment_settings.results_directory); display(['made results directory ' experiment_settings.results_directory]); end
+
+        
+
+%% Data directory and splits 
+%
+% experiment_settings.data_path_train should point to a directory containing images and label files
+% for your training images
+%
+% experiment_settings.data_path_test should pooint to a directory containing images and (optionally)
+% label files for your testing images
+%
+% situate.situation_definitions contains some defaults. 
+% worst case, you point them out in the gui
+          
+    % training testing sources
+   
+    experiment_settings.data_path_train = '';
+    %experiment_settings.data_path_test  = '';
+    experiment_settings.data_path_test = '/Users/Max/Documents/MATLAB/data/situate_images/StanfordSimpleDogWalking_no_labels/';
+    
+    if isempty(experiment_settings.data_path_train) || ~exist( experiment_settings.data_path_train, 'dir' )
+        try
+            possible_path_train_ind = find(cellfun( @(x) exist(x,'dir'), experiment_settings.situations_struct.(experiment_settings.situation).possible_paths_train ),1,'first');
+            experiment_settings.data_path_train = experiment_settings.situations_struct.(experiment_settings.situation).possible_paths_train{ possible_path_train_ind };
+        catch
+            while ~exist('data_path_train','var') || isempty(data_path_train) || isequal(data_path_train,0) || ~isdir(data_path_train)
+                h = msgbox( ['Select directory containing TRAINING images for ' experiment_settings.situation] );
+                uiwait(h);
+                experiment_settings.data_path_train = uigetdir(pwd); 
+            end
+        end
+    end
+            
+    if  isempty(experiment_settings.data_path_test) || ~exist( experiment_settings.data_path_test, 'dir' )   
+        try
+            possible_path_test_ind  = find(cellfun( @(x) exist(x,'dir'), experiment_settings.situations_struct.(experiment_settings.situation).possible_paths_test ),1,'first');
+            experiment_settings.data_path_test = experiment_settings.situations_struct.(experiment_settings.situation).possible_paths_test{ possible_path_test_ind };
+        catch
+            while ~exist('data_path_test','var') || isempty(data_path_test) || isequal(data_path_test,0) || ~isdir(data_path_test)
+                h = msgbox( ['Select directory containing TESTING images for ' experiment_settings.situation] );
+                uiwait(h);
+                experiment_settings.data_path_train = uigetdir(pwd); 
+            end
+        end
+    end
+    
+    % split_arg
+    %
+    %   This defines how we get our training/testing splits.
+    %   The split arg can take on a few different values for differing behaviors.
+    %
+    %   If the directories for training/testing are different, then all training data is used and
+    %   all testing data is used and this does nothing.
+    %
+    %   If the directories are the same, there are two modes
+    %
+    %       split arg is numeric: 
+    %           the value will be the seed value in generating a random split of the data
+    %
+    %       split arg is a directory string: 
+    %           will look in the directory for some files that define specific, pre-existing splits. 
+    %           this is useful if you want to use an already trained classifier and want to remain 
+    %           consistent with its training set. The naming convention for the files in this directory
+    %           are:
+    %               *_split_01_test.txt, *_split_01_train.txt
+    %               *_split_02_test.txt, *_split_02_train.txt ...
+    %           The file names for label files in the split file are line separated and contain 
+    %           no path. for example:
+    %               image_1.labl
+    %               image_2.labl
+    %               image_3.labl
+    
         % split_arg = now; % randomly generated with time-based seed value
         % split_arg = 1; % randomly generated with seed value 1
         % split_arg = uigetdir(pwd); % pick one in the gui
@@ -26,118 +139,38 @@
             seed_train = split_arg;
         end
         
-        % re: split_arg
-        %   This defines how we get our training/testing splits will be generated.
-        %   The split arg can take on a few different values for differing behaviors.
-        %
-        %   numeric: will be the seed value in generating a random split
-        %
-        %   directory string: will look in the directory for some files that define
-        %       some specific, pre-existing splits. this is useful if you want to use
-        %       an already trained classifier and want to remain consistent with its
-        %       training set. The naming convention for the files in this directory
-        %       are:
-        %           *_split_01_test.txt, *_split_01_train.txt
-        %           *_split_02_test.txt, *_split_02_train.txt ...
-        %       The file names in the split file are line separated and contain no path
+    % validate that the specified splits and images actually exist
+    % blerg, this has to happen in the helper script, because that actually does the directory work
 
-    % seed test
-        seed_test = RandStream.shuffleSeed;  % generates a seed based on current time, stores it into p_structures
-        %seed_test = 1;
-    
-      
+     
         
-%% Experiment settings ( title, viz, num images,folds ) 
-%
-% These are some basic settings for the experimental run, relating to
-% whether or not you want to use the GUI, where to save the experiment
-% results, and how many images for training and testing.
+%% Situate parameters: initialize, iterations, pipeline
 
-    experiment_settings.title               = 'dogwalking, validation set experiment';
-    experiment_settings.situations_struct   = situate.situation_definitions();
-    experiment_settings.situation           = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
+    p = situate.parameters_initialize;
+    % add viz parameters
+    p.viz_options = viz_options;
+    % add seeds
+    p.seed_test  = RandStream.shuffleSeed;  % generates a seed based on current time, stores it into p_structures
+    p.seed_train = seed_train;
+    % add situation info
+    p.situation_objects                 = experiment_settings.situations_struct.(experiment_settings.situation).situation_objects;
+    p.situation_objects_possible_labels = experiment_settings.situations_struct.(experiment_settings.situation).situation_objects_possible_labels;
+       
+    % pipeline
     
-    % note: use [] if you want to use all available data
-    experiment_settings.folds               = [1];  % list the folds, not how many. ie, 2:4
-    experiment_settings.testing_data_max    = [1];   % per fold, empty is all available
-    experiment_settings.training_data_max   = []; 
+        p.num_iterations = 1000; % maximum, will stop after this many no matter what the specified stopping condition     
+        p.use_direct_scout_to_workspace_pipe = true; % hides stochastic agent stuff a bit     
+        
+    % stopping conditions
     
-    experiment_settings.use_gui                         = false;
-    experiment_settings.use_parallel                    = false;
-    experiment_settings.run_analysis_after_completion   = false;
+        % [stop_now?] = stopping_condition_function(  workspace, agent_pool, p );
     
-    % additional visualization options
-    
-        if experiment_settings.use_gui
-            p.viz_options.on_iteration          = true;
-            p.viz_options.on_iteration_mod      = 1;
-            p.viz_options.on_workspace_change   = false;
-            p.viz_options.on_end                = true;
-            p.viz_options.start_paused          = true;
-        else
-            p.viz_options.on_iteration          = false;
-            p.viz_options.on_iteration_mod      = 1;
-            p.viz_options.on_workspace_change   = false;
-            p.viz_options.on_end                = false;
-            p.viz_options.start_paused          = false;
-        end
-      
-    % lazy output results directory setting
-    
-    if strcmp(computer,'GLNXA64')
-        experiment_settings.results_directory = fullfile('results',[experiment_settings.title '_' datestr(now,'yyyy.mm.dd.HH.MM.SS')]);                                                                                          
-    elseif strcmp(computer,'MACI64')
-        experiment_settings.results_directory = fullfile('results', [experiment_settings.title '_' datestr(now,'yyyy.mm.dd.HH.MM.SS')]);
-    else
-        error('don''t know the machine');
-    end
-    if ~exist(experiment_settings.results_directory,'dir') && ~experiment_settings.use_gui, mkdir(experiment_settings.results_directory); display(['made results directory ' experiment_settings.results_directory]); end
-
- 
-    
-%% Situation definition
-
- % add the situation information to the p structure
-    
-        p.situation_objects                 = experiment_settings.situations_struct.(experiment_settings.situation).situation_objects;
-        p.situation_objects_possible_labels = experiment_settings.situations_struct.(experiment_settings.situation).situation_objects_possible_labels;
-        switch experiment_settings.situation
-            case 'dogwalking'
-                
-                % p.situation_objects_urgency_pre  = experiment_settings.situations_struct.('dogwalking').object_urgency_pre;
-                % p.situation_objects_urgency_post = experiment_settings.situations_struct.('dogwalking').object_urgency_post;
-                
-                p.situation_objects_urgency_pre  = 1.00;
-                p.situation_objects_urgency_post = 0.25;
-                
-                % p.situation_objects_urgency_pre.(  'dogwalker') = 1.00;
-                % p.situation_objects_urgency_pre.(  'dog'      ) = 1.00;
-                % p.situation_objects_urgency_pre.(  'leash'    ) = 1.00;
-                % p.situation_objects_urgency_post.( 'dogwalker') = 0.25;
-                % p.situation_objects_urgency_post.( 'dog'      ) = 0.25;
-                % p.situation_objects_urgency_post.( 'leash'    ) = 0.25;
-
-            case 'pingpong' 
-                
-                p.situation_objects_urgency_pre   = experiment_settings.situations_struct.('pingpong').object_urgency_pre;
-                p.situation_objects_urgency_post = experiment_settings.situations_struct.('pingpong').object_urgency_post;
-                
-                % p.situation_objects_urgency_pre.(  'table'  )   = 0.1;
-                % p.situation_objects_urgency_pre.(  'net'    )   = 0.1;
-                % p.situation_objects_urgency_pre.(  'player1')   = 1.0;
-                % p.situation_objects_urgency_pre.(  'player2')   = 1.0;
-                % p.situation_objects_urgency_post.( 'table'  )   = 0.1;
-                % p.situation_objects_urgency_post.( 'net'    )   = 0.1;
-                % p.situation_objects_urgency_post.( 'player1')   = 0.1;
-                % p.situation_objects_urgency_post.( 'player2')   = 0.1;
-                
-            otherwise
-                p.situation_objects_urgency_pre     = experiment_settings.situations_struct.(experiment_settings.situation).object_urgency_pre;
-                p.situation_objects_urgency_post    = experiment_settings.situations_struct.(experiment_settings.situation).object_urgency_post;
-        end
+        %p.stopping_condition = @situate.stopping_condition_null;                % use all iterations, don't stop on detection
+        %p.stopping_condition = @situate.stopping_condition_situation_found;     % stop once the situation is checked-in
+        p.stopping_condition = @situate.stopping_condition_finish_up_pool;      % stop once the situation is checked-in and residual agents have been evaluated
         
 
-    
+        
 %% Situate parameters: situation model 
 %
 % These are the shared settings across the different experimental
@@ -147,9 +180,9 @@
     
     % situation model
     
-        situation_model_description = 'uniform normal mix';
+        p.situation_model.description = 'uniform normal mix';
         
-        switch situation_model_description
+        switch p.situation_model.description
             
             case 'normal'
                 p.situation_model.learn = @situation_models.normal_fit;        
@@ -251,33 +284,57 @@
             otherwise
                 assert(0==1);
         end
-  
+        
+        
+        
+        % object urgency pre and post detection
+
+            p.situation_objects_urgency_pre  = experiment_settings.situations_struct.(experiment_settings.situation).object_urgency_pre;
+            p.situation_objects_urgency_post = experiment_settings.situations_struct.(experiment_settings.situation).object_urgency_post;
+
+            switch experiment_settings.situation
+                case 'dogwalking'
+                    % p.situation_objects_urgency_pre.(  'dogwalker') = 1.00;
+                    % p.situation_objects_urgency_pre.(  'dog'      ) = 1.00;
+                    % p.situation_objects_urgency_pre.(  'leash'    ) = 1.00;
+                    % p.situation_objects_urgency_post.( 'dogwalker') = 0.25;
+                    % p.situation_objects_urgency_post.( 'dog'      ) = 0.25;
+                    % p.situation_objects_urgency_post.( 'leash'    ) = 0.25;
+                case 'pingpong' 
+                    % p.situation_objects_urgency_pre.(  'table'  )   = 0.1;
+                    % p.situation_objects_urgency_pre.(  'net'    )   = 0.1;
+                    % p.situation_objects_urgency_pre.(  'player1')   = 1.0;
+                    % p.situation_objects_urgency_pre.(  'player2')   = 1.0;
+                    % p.situation_objects_urgency_post.( 'table'  )   = 0.1;
+                    % p.situation_objects_urgency_post.( 'net'    )   = 0.1;
+                    % p.situation_objects_urgency_post.( 'player1')   = 0.1;
+                    % p.situation_objects_urgency_post.( 'player2')   = 0.1;
+            end
+
     
         
 %% Situate parameters: classifier 
         
-        classifier_description = 'IOU ridge regression';
+        p.classifier.description = 'IOU ridge regression';
         
-        switch classifier_description
+        switch p.classifier.description
             case 'noisy oracle'
-                p.classifier_load_or_train          = @classifiers.oracle_train; 
-                p.classifier_apply                  = @classifiers.oracle_apply;
-                p.classifier_saved_models_directory = 'default_models/';
+                p.classifier.train     = @classifiers.oracle_train; 
+                p.classifier.apply     = @classifiers.oracle_apply;
+                p.classifier.directory = 'default_models/';
             case 'cnn svm'
-                p.classifier_load_or_train          = @classifiers.cnnsvm_train; 
-                p.classifier_apply                  = @classifiers.cnnsvm_apply;
-                p.classifier_saved_models_directory = 'default_models/';
+                p.classifier.train     = @classifiers.cnnsvm_train; 
+                p.classifier.apply     = @classifiers.cnnsvm_apply;
+                p.classifier.directory = 'default_models/';
             case 'IOU ridge regression'
-                p.classifier_load_or_train = @classifiers.IOU_ridge_regression_train;
-                p.classifier_apply = @classifiers.IOU_ridge_regression_apply;
-                p.classifier_saved_models_directory = 'default_models/';
+                p.classifier.train     = @classifiers.IOU_ridge_regression_train;
+                p.classifier.apply     = @classifiers.IOU_ridge_regression_apply;
+                p.classifier.directory = 'default_models/';
             otherwise
                 assert(1==0);
         end
         
-        
-        
-        % classifier_struct = classifier_load_or_train( p, fnames_in, saved_models_directory )
+        % classifier_struct = classifier.train( p, fnames_in, saved_models_directory )
         %
         % inputs
         %   p: 
@@ -295,7 +352,7 @@
 
         
         
-        % [classifier_score, gt_iou] = classifier_apply( classifier_struct, target_class_string, image, box_r0rfc0cf, label_file );
+        % [classifier_score, gt_iou] = classifier.apply( classifier_struct, target_class_string, image, box_r0rfc0cf, label_file );
         %
         % inputs
         %   classifier_struct:
@@ -325,31 +382,10 @@
      
         
         
-%% Situate parameters: iterations, pipeline
-
-% some basic parameters that define how Situate runs. How many iterations (max), how many scouts are
-% being used, how Situate will decide when to stop.
-
-    % pipeline
-    
-        p.num_iterations = 1000;         
-        p.num_scouts = 10;
-        p.use_direct_scout_to_workspace_pipe = true; % hides stochastic agent stuff a bit     
-        
-    % stopping conditions
-    
-        % [stop_now] = stopping_condition_function(  workspace, agent_pool, p );
-    
-        %p.stopping_condition = @situate.stopping_condition_null;                % use all iterations, don't stop on detection
-        %p.stopping_condition = @situate.stopping_condition_situation_found;     % stop once the situation is checked-in
-        p.stopping_condition = @situate.stopping_condition_finish_up_pool;      % stop once the situation is checked-in and residual agents have been evaluated
-        
-        
-        
 %% Situate parameters: support functions 
     
-        external_support_function = 'atan fit';
-        total_support_function    = 'regression experiment';
+        p.external_support_function_description = 'atan fit';
+        p.total_support_function_description = 'regression experiment';
         
         % define how to calculate external support (ie, compatibility between a proposed entry to
         % the workspace and the existing entries) and total support (a combination of the internal
@@ -365,7 +401,7 @@
         %   samples after conditioning could be below the value from unconditioned samples
         %   samples after conditioning should have an effective range that differentiates between 
         
-        switch external_support_function
+        switch p.external_support_function_description
             case 'atan fit'
                 % bootstrapped and fit to the following target function of density percentile: 
                 %   x_target_function = [ 0  .5  .9   1 ];
@@ -400,15 +436,13 @@
                 error('unrecognized external support function');
         end
         
-        switch total_support_function
+        switch p.total_support_function_description
             case 'internal_only'
                 p.total_support_function    = @(internal,external) 1.0 * internal + 0.0 * external;
             case 'even'
                 p.total_support_function    = @(internal,external) 0.5 * internal + 0.5 * external;
             case 'mostly internal'
                 p.total_support_function    = @(internal,external) 0.8 * internal + 0.2 * external;
-            case 'product'
-                p.total_support_function    = @(internal,external) internal * external;
             case 'regression experiment'
                 % bootstrap re-estimation based on validation set run
                 b = [   0.1210    0.8053   -0.0033    0.0220; ...
@@ -433,7 +467,7 @@
            
         
         
-%% Situate parameters: thresholds
+%% Situate parameters: support thresholds
     
         check_in_thresholds = 'parameter experiment findings';
         
@@ -464,55 +498,54 @@
         
 %% Situate parameters: adjustment model
     
-        adjustment_model_description = 'bounding box regression two-tone per-object';
+        p.adjustment_model.description = 'bounding box regression two-tone per-object';
     
-        switch adjustment_model_description
+        switch p.adjustment_model.description
             
             case 'bounding box regression'
-                p.adjustment_model_activation_logic     = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, p.thresholds.internal_support, 1.0 );
+                p.adjustment_model.activation_logic     = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, p.thresholds.internal_support, 1.0 );
                 box_adjust_training_threshold           = .1;
-                p.adjustment_model_setup                = @(a,b,c) box_adjust.train(a,b,c,box_adjust_training_threshold);
-                p.adjustment_model_apply                = @box_adjust.apply;
+                p.adjustment_model.train                = @(a,b,c) box_adjust.train(a,b,c,box_adjust_training_threshold);
+                p.adjustment_model.apply                = @box_adjust.apply;
+                p.adjustment_model.directory            = 'default_models/';
             case 'bounding box regression two-tone with decay'
-                p.adjustment_model_activation_logic     = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, .3, 1.0 );
+                p.adjustment_model.activation_logic     = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, .3, 1.0 );
                 box_adjust_training_thresholds          = [.1 .6];
                 model_selection_threshold               = .5; % set via validation set experiments
-                p.adjustment_model_setup                = @(a,b,c) box_adjust.two_tone_train(a,b,c,box_adjust_training_thresholds, model_selection_threshold);
-                p.adjustment_model_apply                = @box_adjust.two_tone_w_decay_apply; % decay value of .9 is hard coded in box_adjust.apply_w_decay 
+                p.adjustment_model.train                = @(a,b,c) box_adjust.two_tone_train(a,b,c,box_adjust_training_thresholds, model_selection_threshold);
+                p.adjustment_model.apply                = @box_adjust.two_tone_w_decay_apply; % decay value of .9 is hard coded in box_adjust.apply_w_decay 
+                p.adjustment_model.directory            = 'default_models/';
             case 'bounding box regression two-tone'
-                p.adjustment_model_activation_logic     = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, p.thresholds.internal_support, 1.0 );
+                p.adjustment_model.activation_logic     = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, p.thresholds.internal_support, 1.0 );
                 box_adjust_training_thresholds          = [.1 .6];
                 model_selection_threshold               = .5; % set via validation set experiments
-                p.adjustment_model_setup                = @(a,b,c) box_adjust.two_tone_train(a,b,c,box_adjust_training_thresholds, model_selection_threshold);
-                p.adjustment_model_apply                = @box_adjust.two_tone_apply;
+                p.adjustment_model.train                = @(a,b,c) box_adjust.two_tone_train(a,b,c,box_adjust_training_thresholds, model_selection_threshold);
+                p.adjustment_model.apply                = @box_adjust.two_tone_apply;
+                p.adjustment_model.directory            = 'default_models/';
             case 'bounding box regression two-tone per-object'
                 % set via validation set experiment
-                p.adjustment_model_activation_logic     = cell(1,length(p.situation_objects));
-                p.adjustment_model_activation_logic{1}  = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, .1, 1.0 );
-                p.adjustment_model_activation_logic{2}  = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, .2, 1.0 );
-                p.adjustment_model_activation_logic{3}  = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, .3, 1.0 );
+                p.adjustment_model.activation_logic     = cell(1,length(p.situation_objects));
+                p.adjustment_model.activation_logic{1}  = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, .1, 1.0 );
+                p.adjustment_model.activation_logic{2}  = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, .2, 1.0 );
+                p.adjustment_model.activation_logic{3}  = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, .3, 1.0 );
                 box_adjust_training_thresholds          = [.1 .6];
                 model_selection_threshold               = .5; % set via validation set experiments
-                p.adjustment_model_setup                = @(a,b,c) box_adjust.two_tone_train(a,b,c,box_adjust_training_thresholds, model_selection_threshold);
-                p.adjustment_model_apply                = @box_adjust.two_tone_apply;
+                p.adjustment_model.train                = @(a,b,c) box_adjust.two_tone_train(a,b,c,box_adjust_training_thresholds, model_selection_threshold);
+                p.adjustment_model.apply                = @box_adjust.two_tone_apply;
+                p.adjustment_model.directory            = 'default_models/';
             case 'local agent search'
-                p.adjustment_model_activation_logic     = @(cur_agent,workspace,p) local_agents.activation_logic( cur_agent, workspace, .65, 1.0 ); % set via validation set experiments                                                                     
-                p.adjustment_model_setup                = @(a,b,c,d) [];
-                p.adjustment_model_apply                = @local_agents.generate_agents;
+                p.adjustment_model.activation_logic     = @(cur_agent,workspace,p) local_agents.activation_logic( cur_agent, workspace, .65, 1.0 ); % set via validation set experiments                                                                     
+                p.adjustment_model.train                = @(a,b,c,d) [];
+                p.adjustment_model.apply                = @local_agents.generate_agents;
+                p.adjustment_model.directory            = 'default_models/';
             case 'none'
-                p.adjustment_model_activation_logic     = @(cur_agent,a,b) false;
-                p.adjustment_model_setup                = @(a,b,c,d) [];
-                p.adjustment_model_apply                = @(cur_agent) assert(1==0);
+                p.adjustment_model.activation_logic     = @(cur_agent,a,b) false;
+                p.adjustment_model.train                = @(a,b,c,d) [];
+                p.adjustment_model.apply                = @(cur_agent) assert(1==0);
+                p.adjustment_model.directory            = 'default_models/';
         end
         
-   
     
-    % seed values get saved in p
-    
-        p.seed_test  = seed_test;
-        p.seed_train = seed_train;
-        
-        
         
 %% Situate parameters: temperature stuff (nothing yet) ) 
 
@@ -538,66 +571,50 @@
     temp.description = description;
     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
     
-%     description = 'uniform location and box, no box adjust';
-%     temp = p;
-%     temp.description = description;
-%     temp.situation_model.learn  = @situation_models.uniform_fit;
-%     temp.situation_model.update = @situation_models.uniform_condition;
-%     temp.situation_model.sample = @situation_models.uniform_sample;
-%     temp.situation_model.draw   = @situation_models.uniform_draw;
-%     temp.adjustment_model_activation_logic = @(cur_agent,a,b) false;
-%     temp.adjustment_model_setup            = @(a,b,c,d) [];
-%     temp.adjustment_model_apply            = @(cur_agent) assert(1==0);
-%     temp.total_support_function            = @(internal,external) 1.0 * internal + 0 * external;
-%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
-%     
-%     description = 'uniform location and box, box adjust';
-%     temp = p;
-%     temp.description = description;
-%     temp.situation_model.learn  = @situation_models.uniform_fit;
-%     temp.situation_model.update = @situation_models.uniform_condition;
-%     temp.situation_model.sample = @situation_models.uniform_sample;
-%     temp.situation_model.draw   = @situation_models.uniform_draw;
-%     temp.total_support_function = @(internal,external) 1.0 * internal + 0 * external;
-%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
-%     
-%     description = 'normal location and box, no box adjust';
-%     temp = p;
-%     temp.description = description;
-%     temp.adjustment_model_activation_logic = @(cur_agent,a,b) false;
-%     temp.adjustment_model_setup            = @(a,b,c,d) [];
-%     temp.adjustment_model_apply            = @(cur_agent) assert(1==0);
-%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+    description = 'uniform location and box, no box adjust';
+    temp = p;
+    temp.description = description;
+    temp.situation_model.description    = 'uniform';
+    temp.situation_model.learn          = @situation_models.uniform_fit;
+    temp.situation_model.update         = @situation_models.uniform_condition;
+    temp.situation_model.sample         = @situation_models.uniform_sample;
+    temp.situation_model.draw           = @situation_models.uniform_draw;
+    temp.adjustment_model.description      = 'none';
+    temp.adjustment_model.activation_logic = @(cur_agent,a,b) false;
+    temp.adjustment_model.train            = @(a,b,c,d) [];
+    temp.adjustment_model.apply            = @(cur_agent) assert(1==0);
+    temp.total_support_function_description = 'all internal';
+    temp.total_support_function             = @(internal,external) 1.0 * internal + 0 * external;
+    if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+    
+    description = 'uniform location and box, box adjust';
+    temp = p;
+    temp.description = description;
+    temp.situation_model.description    = 'uniform';
+    temp.situation_model.learn          = @situation_models.uniform_fit;
+    temp.situation_model.update         = @situation_models.uniform_condition;
+    temp.situation_model.sample         = @situation_models.uniform_sample;
+    temp.situation_model.draw           = @situation_models.uniform_draw;
+    temp.total_support_function_description = 'all internal';
+    temp.total_support_function = @(internal,external) 1.0 * internal + 0 * external;
+    if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+    
+    description = 'normal location and box, no box adjust';
+    temp = p;
+    temp.description = description;
+    temp.adjustment_model.activation_logic = @(cur_agent,a,b) false;
+    temp.adjustment_model.train            = @(a,b,c,d) [];
+    temp.adjustment_model.apply            = @(cur_agent) assert(1==0);
+    if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
     
   
-    
-%% Data directory 
-%
-% situate_data_path should point to a directory containing the images and label 
-% files for your experiment. 
-%
-% situate.situation_definitions contains the default paths that situate
-% will search. if it doesn't find anything, it'll ask in a popup
-
-    try
-        possible_path_ind = find(cellfun( @(x) exist(x,'dir'), experiment_settings.situations_struct.(experiment_settings.situation).possible_paths ),1,'first');
-        data_path = experiment_settings.situations_struct.(experiment_settings.situation).possible_paths{ possible_path_ind };s
-    catch
-        while ~exist('data_path','var') || isempty(data_path) || isequal(data_path,0) || ~isdir(data_path)
-            h = msgbox( ['Select directory containing images of ' experiment_settings.situation] );
-            uiwait(h);
-            data_path = uigetdir(pwd); 
-        end
-    end
-
-    
 
 %% Run the experiment 
 
     if experiment_settings.use_gui || ~experiment_settings.use_parallel
-        situate.experiment_helper(experiment_settings, p_conditions, data_path, split_arg);
+        situate.experiment_helper(experiment_settings, p_conditions, split_arg);
     else
-        situate.experiment_helper_par(experiment_settings, p_conditions, data_path, split_arg);
+        situate.experiment_helper_par(experiment_settings, p_conditions, split_arg);
     end
 
 

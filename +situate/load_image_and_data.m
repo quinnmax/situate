@@ -81,8 +81,12 @@ function [im_data,im] = load_image_and_data( fname_in, p, use_resize )
     end
     
     % get the image data
-    im_data_a = situate.image_data(lb_fname);
-    im_data_b = situate.image_data_label_adjust( im_data_a, p );
+    if exist(lb_fname,'file')
+        im_data_a = situate.image_data(lb_fname);
+        im_data_b = situate.image_data_label_adjust( im_data_a, p );
+    else
+        im_data_b = [];
+    end
     
     % do we need to resize the image data?
     if use_resize
@@ -94,7 +98,11 @@ function [im_data,im] = load_image_and_data( fname_in, p, use_resize )
         ratio = sqrt( p.image_redim_px / (rows*cols) );
         new_rows = round( rows * ratio );
         new_cols = round( cols * ratio );
-        im_data   = situate.image_data_rescale( im_data_b, new_rows, new_cols );
+        if ~isempty(im_data_b)
+            im_data   = situate.image_data_rescale( im_data_b, new_rows, new_cols );
+        else
+            im_data = [];
+        end
     else
         im_data = im_data_b;
     end
