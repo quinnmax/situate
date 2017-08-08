@@ -12,11 +12,10 @@ function x_out = padarray_to( x, out_size, method )
     %   'symmetric'   Pads array with mirror reflections of itself. 
     
     demo_mode = false;
-    if ~exist('x','var') || isempty(x)
+    if nargin == 0
         x = imread('lincoln.jpg');
         x = imresize(x,.25);
         out_size = [2*size(x,1) 2*size(x,2)];
-        
         demo_mode = true;
         display('padarray_to is in DEMO MODE');
     end

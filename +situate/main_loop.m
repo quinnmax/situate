@@ -88,8 +88,10 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
     global visualizer_run_status;
     visualizer_run_status = 'unstarted'; % this does need to be here. it is looked at from within the visualizer
     if p.viz_options.on_iteration || p.viz_options.on_workspace_change || p.viz_options.on_end
+        
         [~,visualization_description] = fileparts(im_fname);
         [h, visualizer_run_status] = situate.visualize( [], im, p, d, workspace, [], records.population_count, records.agent_record, visualization_description );
+        
         % see if an exit command came from the GUI
         if ~ishandle(h), visualizer_run_status = 'stop'; end
         if any( strcmp( visualizer_run_status, {'next_image','restart','stop'} ) )
@@ -101,7 +103,7 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
 
 
     %% the iteration loop 
-    broke_for = [];
+    
     for iteration = 1:p.num_iterations
             
         % select an agent
@@ -175,6 +177,11 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
                 end
                 
             end
+            
+            % update situation grounding
+            total_support_values = padarray_to( workspace.total_support, [1 length(p.situation_objects)] );
+            cur_grounding = p.situation_grounding_function(total_support_values, iteration, p.num_iterations);
+            workspace.situation_support = cur_grounding;
                 
             % update temperature
             if isfield(p,'temperature')
@@ -186,13 +193,13 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
             % update record of scouting behavior
             records.workspace_record(iteration) = workspace_snapshot;
             current_agent_snapshot_lean = [];
-            current_agent_snapshot_lean.type = uint8( find(strcmp(current_agent_snapshot.type, agent_types ) ) );
-            current_agent_snapshot_lean.interest = uint8( find( strcmp( current_agent_snapshot.interest, p.situation_objects )));
-            current_agent_snapshot_lean.box.r0rfc0cf = current_agent_snapshot.box.r0rfc0cf;
-            current_agent_snapshot_lean.support = current_agent_snapshot.support;
+            current_agent_snapshot_lean.type            = uint8( find(strcmp(current_agent_snapshot.type, agent_types ) ) );
+            current_agent_snapshot_lean.interest        = uint8( find( strcmp( current_agent_snapshot.interest, p.situation_objects )));
+            current_agent_snapshot_lean.box.r0rfc0cf    = current_agent_snapshot.box.r0rfc0cf;
+            current_agent_snapshot_lean.support         = current_agent_snapshot.support;
             current_agent_snapshot_lean.workspace.objects = cellfun( @(x) find(strcmp(x,p.situation_objects)), workspace.labels );
             current_agent_snapshot_lean.workspace.total_support = workspace.total_support;
-            records.agent_record(iteration)     = current_agent_snapshot_lean;
+            records.agent_record(iteration)                     = current_agent_snapshot_lean;
             
             % population of agent types
             if iteration == 1
@@ -217,8 +224,7 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
             || ( p.viz_options.on_workspace_change && workspace_changed )
                 
                 [~,fname_no_path] = fileparts(im_fname); 
-                visualization_description = {fname_no_path; [num2str(iteration) '/' num2str(p.num_iterations)] };
-
+                visualization_description = {fname_no_path; ['iteration: ' num2str(iteration) '/' num2str(p.num_iterations)]; ['situation grounding: ' num2str(workspace.situation_support)] };
                 [h, visualizer_run_status] = situate.visualize( h, im, p, d, workspace, current_agent_snapshot, records.population_count, records.agent_record, visualization_description );
                 
                 % see if an exit command came from the GUI
@@ -227,13 +233,6 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
                     visualizer_return_status = visualizer_run_status;
                     return; 
                 end 
-            end
-            
-        % check situation detection status
-        
-            if isequal( sort(workspace.labels), sort(p.situation_objects) ) ...
-            && all( workspace.total_support >= p.thresholds.total_support_final )
-                situation_detected = true;
             end
             
         % update agent pool
@@ -302,12 +301,9 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
             if ~exist('h','var'), h = []; end
             [~,fname_no_path] = fileparts(im_fname);
 
-            visualization_description = {fname_no_path; [num2str(iteration) '/' num2str(p.num_iterations)] };
-            if isfield(p,'temperature') && isfield(workspace,'temperature')
-                visualization_description = {fname_no_path; [num2str(iteration) '/' num2str(p.num_iterations)]; ['temp: ' num2str(workspace.temperature)]; broke_for};
-            end
-
+            visualization_description = {fname_no_path; [num2str(iteration) '/' num2str(p.num_iterations)]; ['situation grounding: ' num2str(workspace.situation_support)] };
             [h, visualizer_run_status] = situate.visualize( h, im, p, d, workspace, [], records.population_count, records.agent_record, visualization_description );
+            
             % interpret closing the window as 'no thank you'
             if ~ishandle(h)
                 visualizer_run_status = 'stop'; 

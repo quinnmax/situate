@@ -46,6 +46,9 @@ function p = parameters_initialize()
         p.total_support_function{2} = @(internal,external) b(2,1) + b(2,2) * internal + b(2,3) * external + b(2,4) * internal * external;
         p.total_support_function{3} = @(internal,external) b(3,1) + b(3,2) * internal + b(3,3) * external + b(3,4) * internal * external;
         
+        p.situation_grounding_function_description = 'none';
+        p.situation_grounding_function = @(a,b,c) nan;
+        
     % thresholds
         p.thresholds.internal_support          = .2;    % scout -> reviewer threshold
         p.thresholds.total_support_provisional = inf;   % workspace entry, provisional (search continues)

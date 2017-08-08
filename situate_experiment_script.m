@@ -84,26 +84,28 @@
     if isempty(experiment_settings.data_path_train)
         possible_path_train_ind = find(cellfun( @(x) exist(x,'dir'), experiment_settings.situations_struct.(experiment_settings.situation).possible_paths_train ),1,'first');
         if ~isempty(possible_path_train_ind)
-            experiment_settings.data_path_train = experiment_settings.situations_struct.(experiment_settings.situation).possible_paths_train{ possible_path_train_ind };
+            data_path_train = experiment_settings.situations_struct.(experiment_settings.situation).possible_paths_train{ possible_path_train_ind };
         end
     end
     while ~exist('data_path_train','var') || isempty(data_path_train) || isequal(data_path_train,0) || ~isdir(data_path_train)
         h = msgbox( ['Select directory containing TRAINING images for ' experiment_settings.situation] );
         uiwait(h);
-        experiment_settings.data_path_train = uigetdir(pwd); 
+        data_path_train = uigetdir(pwd); 
     end
+    experiment_settings.data_path_train = data_path_train;
             
     if isempty(experiment_settings.data_path_test) 
         possible_path_test_ind  = find(cellfun( @(x) exist(x,'dir'), experiment_settings.situations_struct.(experiment_settings.situation).possible_paths_test ),1,'first');
         if ~isempty(possible_path_test_ind)
-            experiment_settings.data_path_test = experiment_settings.situations_struct.(experiment_settings.situation).possible_paths_test{ possible_path_test_ind };
+            data_path_test = experiment_settings.situations_struct.(experiment_settings.situation).possible_paths_test{ possible_path_test_ind };
         end
     end
     while ~exist('data_path_test','var') || isempty(data_path_test) || isequal(data_path_test,0) || ~isdir(data_path_test)
         h = msgbox( ['Select directory containing TESTING images for ' experiment_settings.situation] );
         uiwait(h);
-        experiment_settings.data_path_test = uigetdir(pwd); 
+        data_path_test = uigetdir(pwd); 
     end
+    experiment_settings.data_path_test = data_path_test;
       
     % split_arg
     %
@@ -389,8 +391,9 @@
         
 %% Situate parameters: support functions 
     
-        p.external_support_function_description = 'atan fit';
-        p.total_support_function_description = 'regression experiment';
+        p.external_support_function_description    = 'atan fit';
+        p.total_support_function_description       = 'regression experiment';
+        p.situation_grounding_function_description = 'geometric mean padded';
         
         % define how to calculate external support (ie, compatibility between a proposed entry to
         % the workspace and the existing entries) and total support (a combination of the internal
@@ -469,7 +472,20 @@
             otherwise
                 error('unrecognized total support function');
         end
-           
+        
+        switch p.situation_grounding_function_description
+            case 'geometric mean'
+                p.situation_grounding_function = @(total_support_values, iterations, iterations_total ) prod(total_support_values).^(1/length(total_support_values));
+            case 'geometric mean padded'
+                p.situation_grounding_function = @(total_support_values, iterations, iterations_total ) prod(total_support_values + .01).^(1/length(total_support_values));
+            case 'geometric mean prior'
+                p.situation_grounding_function = @(total_support_values, iterations, iterations_total ) prod(total_support_values + .2*(1 - (iterations/iterations_total))).^(1/length(total_support_values));
+            case 'none'
+                p.situation_grounding_function = @(total_support_values, iterations, iterations_total ) nan;
+            otherwise
+                error('unrecognized situation grounding function');
+        end
+        
         
         
 %% Situate parameters: support thresholds
