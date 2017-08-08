@@ -1,7 +1,7 @@
 
 
 
-%% Initial setup (path, how to define splits, rng seed values )
+%% Initial setup (path, how to define splits, rng seed values ) 
 
     script_directory = fileparts(mfilename('fullpath'));
     if isempty(script_directory), script_directory = fileparts(which('situate_experiment_script')); end
@@ -11,16 +11,14 @@
     
     
     
-%% Experiment settings ( situation, experiment parameters )
-    
+%% Experiment settings ( situation, experiment parameters ) 
     
     % situation, experiment title
     
         experiment_settings = [];
-        experiment_settings.title               = 'dogwalking, no label debug';
+        experiment_settings.title               = 'dogwalking debug';
         experiment_settings.situations_struct   = situate.situation_definitions();
         experiment_settings.situation           = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
-        %experiment_settings.situation           = 'dogwalking_stanford';  % look in experiment_settings.situations_struct to see the options
         
     % running limits
     
@@ -70,9 +68,8 @@
           
     % training testing sources
    
-    experiment_settings.data_path_train = ''; % empty means use a default
-    %experiment_settings.data_path_test  = '';
-    experiment_settings.data_path_test = 'dummydirectory';
+    data_path_train = ''; % empty means use a default
+    data_path_test = '/Users/Max/Desktop/dog_other/';
     
     % first see if the specified folder is empty
     % if empty
@@ -81,7 +78,7 @@
     % or we couldn't find a default 
     %   then just ask the user to specify the folder
     
-    if isempty(experiment_settings.data_path_train)
+    if isempty(data_path_train)
         possible_path_train_ind = find(cellfun( @(x) exist(x,'dir'), experiment_settings.situations_struct.(experiment_settings.situation).possible_paths_train ),1,'first');
         if ~isempty(possible_path_train_ind)
             data_path_train = experiment_settings.situations_struct.(experiment_settings.situation).possible_paths_train{ possible_path_train_ind };
@@ -94,8 +91,8 @@
     end
     experiment_settings.data_path_train = data_path_train;
             
-    if isempty(experiment_settings.data_path_test) 
-        possible_path_test_ind  = find(cellfun( @(x) exist(x,'dir'), experiment_settings.situations_struct.(experiment_settings.situation).possible_paths_test ),1,'first');
+    if isempty(data_path_test) 
+        possible_path_test_ind  = find(cellfun( @(x) exist(x,'dir'), situations_struct.(experiment_settings.situation).possible_paths_test ),1,'first');
         if ~isempty(possible_path_test_ind)
             data_path_test = experiment_settings.situations_struct.(experiment_settings.situation).possible_paths_test{ possible_path_test_ind };
         end
@@ -151,7 +148,7 @@
 
      
         
-%% Situate parameters: initialize, iterations, pipeline
+%% Situate parameters: initialize, iterations, pipeline 
 
     p = situate.parameters_initialize;
     % add viz parameters
@@ -488,7 +485,7 @@
         
         
         
-%% Situate parameters: support thresholds
+%% Situate parameters: support thresholds 
     
         check_in_thresholds = 'parameter experiment findings';
         
@@ -517,7 +514,7 @@
      
         
         
-%% Situate parameters: adjustment model
+%% Situate parameters: adjustment model 
     
         p.adjustment_model.description = 'bounding box regression two-tone per-object';
     
@@ -568,7 +565,7 @@
         
     
         
-%% Situate parameters: temperature stuff (nothing yet) ) 
+%% Situate parameters: temperature stuff (nothing yet) 
 
     p.temperature = [];
     p.temperature.initial = 100;

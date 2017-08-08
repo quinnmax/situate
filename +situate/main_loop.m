@@ -548,7 +548,7 @@ function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, p, d, i
     % figure out GROUND_TRUTH support. this is the oracle response. 
     % getting it for displaying progress during a run, or if we're using IOU-oracle as our eval method
     
-        if ~isempty(label)
+        if ~isempty(label) && ismember( cur_agent.interest, label.labels_adjusted )
             relevant_label_ind = find(strcmp(cur_agent.interest,label.labels_adjusted),1,'first');
             ground_truth_box_xywh = label.boxes_xywh(relevant_label_ind,:);
             cur_agent.support.GROUND_TRUTH = intersection_over_union( cur_agent.box.xywh, ground_truth_box_xywh, 'xywh' );

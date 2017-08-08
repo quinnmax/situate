@@ -7,6 +7,8 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
   
 %% training and testing sets
   
+    generate_new_splits = false;
+
     % process the split arg
 
         if exist('split_arg','var') ...
@@ -15,6 +17,7 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
             if isnumeric(split_arg)
                 % we'll interpret it as a seed value
                 rng(split_arg);
+                generate_new_splits = true;
             elseif ischar(split_arg) && isdir(split_arg)
                 % then it's a directory, we'll look for files that give file names to use as the splits
                 split_file_directory = split_arg;
@@ -33,64 +36,16 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
     %   if it was numeric, make up new training/testing splits
 
         if exist('split_file_directory','var') && isdir(split_file_directory)
-
-            % Load the folds from files rather than generating new ones
-
-            fnames_splits_train = dir(fullfile(split_file_directory, '*_fnames_split_*_train.txt'));
-            fnames_splits_test  = dir(fullfile(split_file_directory, '*_fnames_split_*_test.txt' ));
-            fnames_splits_train = cellfun( @(x) fullfile(split_file_directory, x), {fnames_splits_train.name}, 'UniformOutput', false );
-            fnames_splits_test  = cellfun( @(x) fullfile(split_file_directory, x), {fnames_splits_test.name},  'UniformOutput', false );
-
-            assert( length(fnames_splits_train) > 0 );
-            assert( length(fnames_splits_train) == length(fnames_splits_test) );
-
-            fprintf('using training splits from: \t%s\n', fnames_splits_train{:});
-            fprintf('using testing  splits from: \t%s\n', fnames_splits_test{:} );
-
-            temp = [];
-            temp.fnames_lb_train = cellfun( @(x) importdata(x, '\n'), fnames_splits_train, 'UniformOutput', false );
-            temp.fnames_lb_test  = cellfun( @(x) importdata(x, '\n'), fnames_splits_test,  'UniformOutput', false );
-            data_folds = [];
-            for i = 1:length(temp.fnames_lb_train)
-                data_folds(i).fnames_lb_train = temp.fnames_lb_train{i};
-                data_folds(i).fnames_lb_test  = temp.fnames_lb_test{i};
-                data_folds(i).fnames_im_train = cellfun( @(x) [x(1:end-4) 'jpg'], temp.fnames_lb_train{i}, 'UniformOutput', false );
-                data_folds(i).fnames_im_test  = cellfun( @(x) [x(1:end-4) 'jpg'], temp.fnames_lb_test{i},  'UniformOutput', false );
-            end
-
+            data_folds = generate_data_splits_from_directory( split_file_directory );
         else 
-
-            % this really only makes sense if there's a single directory that will be used for
-            % validation, so we're just going to split up the experiment_settings.data_path_train data and use that
-            
-                if ~isequal(experiment_settings.data_path_train,experiment_settings.data_path_test)
-                    warning('ignoring experiment_settings.data_path_test variable and generating splits using just experiment_settings.data_path_train');
-                    experiment_settings.data_path_test = experiment_settings.data_path_train;
-                end
-            
-            % genterate folds
-                data_folds = generate_data_folds( experiment_settings.data_path_train, length(experiment_settings.folds), experiment_settings.testing_data_max );
-
-             % save the splits to files
-                if ~isdir(experiment_settings.results_directory), mkdir(experiment_settings.results_directory); end
-                for i = 1:length(data_folds)
-                    fname_train_out = fullfile(experiment_settings.results_directory, [experiment_settings.title '_fnames_split_' num2str(i,'%02d') '_train.txt']);
-                    fid_train = fopen(fname_train_out,'w+');
-                    fprintf(fid_train,'%s\n',data_folds(i).fnames_lb_train{:});
-                    fclose(fid_train);
-
-                    fname_test_out  = fullfile(experiment_settings.results_directory, [experiment_settings.title '_fnames_split_' num2str(i,'%02d') '_test.txt' ]);
-                    fid_test  = fopen(fname_test_out, 'w+');
-                    fprintf(fid_test, '%s\n',data_folds(i).fnames_lb_test{:} );
-                    fclose(fid_test);
-                end
-
-        end 
+            generate_new_splits = true;
+        end
         
     % make sure the split fnames and the specified directories led to actual images
     % if not, replace training images with those in the training directory
     % if not, replace testing  images with those in the testing  directory
     
+        needed_to_adjust_file_list_train = false;
         if ~all( cellfun( @(x) exist(fullfile(experiment_settings.data_path_train,x),'file'), unique(vertcat(data_folds.fnames_lb_train)) ) )
             warning('training images from split file do not all exist in the training directory. using all files in the training image directory');
             temp = dir( fullfile( experiment_settings.data_path_train, '*.labl' ) );
@@ -99,8 +54,10 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
                 data_folds(fi).fnames_lb_train = found_fnames;
                 data_folds(fi).fnames_im_train = cellfun( @(x) [x(1:end-4) 'jpg'], found_fnames, 'UniformOutput', false );
             end
+            needed_to_adjust_file_list_train = true;
         end
         
+        needed_to_adjust_file_list_test = false;
         if ~all( cellfun( @(x) exist(fullfile(experiment_settings.data_path_test,x),'file'), unique(vertcat(data_folds.fnames_im_test)) ) )
             warning('testing images from split file do not all exist in the testing directory. using all files in the testing image directory');
             temp = dir( fullfile( experiment_settings.data_path_test, '*.jpg' ) );
@@ -109,7 +66,43 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
                 data_folds(fi).fnames_im_test  = found_fnames;
                 data_folds(fi).fnames_im_train = cellfun( @(x) [x(1:end-3) 'labl'], found_fnames, 'UniformOutput', false );
             end
+            needed_to_adjust_file_list_test = true;
         end
+        
+        if (needed_to_adjust_file_list_train || needed_to_adjust_file_list_test) ...
+        && isequal( experiment_settings.data_path_test, experiment_settings.data_path_train )
+            generate_new_splits = true;
+        end
+        
+    % this logic is ridiculous
+        
+    % generate new splits
+    if generate_new_splits
+        % this really only makes sense if there's a single directory that will be used for
+        % validation, so we're just going to split up the experiment_settings.data_path_train data and use that
+
+            if ~isequal(experiment_settings.data_path_train,experiment_settings.data_path_test)
+                warning('ignoring experiment_settings.data_path_test variable and generating splits using just experiment_settings.data_path_train');
+                experiment_settings.data_path_test = experiment_settings.data_path_train;
+            end
+
+        % genterate folds
+            data_folds = generate_data_folds( experiment_settings.data_path_train, length(experiment_settings.folds), experiment_settings.testing_data_max );
+
+         % save the splits to files
+            if ~isdir(experiment_settings.results_directory), mkdir(experiment_settings.results_directory); end
+            for i = 1:length(data_folds)
+                fname_train_out = fullfile(experiment_settings.results_directory, [experiment_settings.title '_fnames_split_' num2str(i,'%02d') '_train.txt']);
+                fid_train = fopen(fname_train_out,'w+');
+                fprintf(fid_train,'%s\n',data_folds(i).fnames_lb_train{:});
+                fclose(fid_train);
+
+                fname_test_out  = fullfile(experiment_settings.results_directory, [experiment_settings.title '_fnames_split_' num2str(i,'%02d') '_test.txt' ]);
+                fid_test  = fopen(fname_test_out, 'w+');
+                fprintf(fid_test, '%s\n',data_folds(i).fnames_lb_test{:} );
+                fclose(fid_test);
+            end 
+    end
         
     % apply limits to training/testing set sizes
     %   if there was a limit on the number of testing images (which is interpretted as per-fold),
@@ -338,6 +331,34 @@ function data_folds = generate_data_folds( data_path, num_folds, testing_data_ma
             
 end
 
+
+function data_folds = generate_data_splits_from_directory( split_file_directory )
+
+       % Load the folds from files rather than generating new ones
+
+        fnames_splits_train = dir(fullfile(split_file_directory, '*_fnames_split_*_train.txt'));
+        fnames_splits_test  = dir(fullfile(split_file_directory, '*_fnames_split_*_test.txt' ));
+        fnames_splits_train = cellfun( @(x) fullfile(split_file_directory, x), {fnames_splits_train.name}, 'UniformOutput', false );
+        fnames_splits_test  = cellfun( @(x) fullfile(split_file_directory, x), {fnames_splits_test.name},  'UniformOutput', false );
+
+        assert( length(fnames_splits_train) > 0 );
+        assert( length(fnames_splits_train) == length(fnames_splits_test) );
+
+        fprintf('using training splits from: \t%s\n', fnames_splits_train{:});
+        fprintf('using testing  splits from: \t%s\n', fnames_splits_test{:} );
+
+        temp = [];
+        temp.fnames_lb_train = cellfun( @(x) importdata(x, '\n'), fnames_splits_train, 'UniformOutput', false );
+        temp.fnames_lb_test  = cellfun( @(x) importdata(x, '\n'), fnames_splits_test,  'UniformOutput', false );
+        data_folds = [];
+        for i = 1:length(temp.fnames_lb_train)
+            data_folds(i).fnames_lb_train = temp.fnames_lb_train{i};
+            data_folds(i).fnames_lb_test  = temp.fnames_lb_test{i};
+            data_folds(i).fnames_im_train = cellfun( @(x) [x(1:end-4) 'jpg'], temp.fnames_lb_train{i}, 'UniformOutput', false );
+            data_folds(i).fnames_im_test  = cellfun( @(x) [x(1:end-4) 'jpg'], temp.fnames_lb_test{i},  'UniformOutput', false );
+        end
+
+end
        
            
 
