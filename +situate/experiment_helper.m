@@ -92,7 +92,7 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
     % if not, replace testing  images with those in the testing  directory
     
         if ~all( cellfun( @(x) exist(fullfile(experiment_settings.data_path_train,x),'file'), unique(vertcat(data_folds.fnames_lb_train)) ) )
-            warning('training images from split file do not all exist. using files in the training image directory');
+            warning('training images from split file do not all exist in the training directory. using all files in the training image directory');
             temp = dir( fullfile( experiment_settings.data_path_train, '*.labl' ) );
             found_fnames = {temp.name}';
             for fi = 1:length(data_folds)
@@ -102,7 +102,7 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
         end
         
         if ~all( cellfun( @(x) exist(fullfile(experiment_settings.data_path_test,x),'file'), unique(vertcat(data_folds.fnames_im_test)) ) )
-            warning('testing images from split file do not all exist. using files in the testing image directory');
+            warning('testing images from split file do not all exist in the testing directory. using all files in the testing image directory');
             temp = dir( fullfile( experiment_settings.data_path_test, '*.jpg' ) );
             found_fnames = {temp.name}';
             for fi = 1:length(data_folds)

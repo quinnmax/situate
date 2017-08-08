@@ -17,7 +17,7 @@
     % situation, experiment title
     
         experiment_settings = [];
-        experiment_settings.title               = 'dogwalking, debug';
+        experiment_settings.title               = 'dogwalking, no label debug';
         experiment_settings.situations_struct   = situate.situation_definitions();
         experiment_settings.situation           = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
         %experiment_settings.situation           = 'dogwalking_stanford';  % look in experiment_settings.situations_struct to see the options
@@ -57,7 +57,7 @@
 
         
 
-%% Data directory and splits 
+%% Data directories and splits 
 %
 % experiment_settings.data_path_train should point to a directory containing images and label files
 % for your training images
@@ -70,36 +70,41 @@
           
     % training testing sources
    
-    experiment_settings.data_path_train = '';
+    experiment_settings.data_path_train = ''; % empty means use a default
     %experiment_settings.data_path_test  = '';
-    experiment_settings.data_path_test = '/Users/Max/Documents/MATLAB/data/situate_images/StanfordSimpleDogWalking_no_labels/';
+    experiment_settings.data_path_test = 'dummydirectory';
     
-    if isempty(experiment_settings.data_path_train) || ~exist( experiment_settings.data_path_train, 'dir' )
-        try
-            possible_path_train_ind = find(cellfun( @(x) exist(x,'dir'), experiment_settings.situations_struct.(experiment_settings.situation).possible_paths_train ),1,'first');
+    % first see if the specified folder is empty
+    % if empty
+    %   try to use a default folder
+    % if it wasn't empty, but the folder doesn't exist
+    % or we couldn't find a default 
+    %   then just ask the user to specify the folder
+    
+    if isempty(experiment_settings.data_path_train)
+        possible_path_train_ind = find(cellfun( @(x) exist(x,'dir'), experiment_settings.situations_struct.(experiment_settings.situation).possible_paths_train ),1,'first');
+        if ~isempty(possible_path_train_ind)
             experiment_settings.data_path_train = experiment_settings.situations_struct.(experiment_settings.situation).possible_paths_train{ possible_path_train_ind };
-        catch
-            while ~exist('data_path_train','var') || isempty(data_path_train) || isequal(data_path_train,0) || ~isdir(data_path_train)
-                h = msgbox( ['Select directory containing TRAINING images for ' experiment_settings.situation] );
-                uiwait(h);
-                experiment_settings.data_path_train = uigetdir(pwd); 
-            end
         end
+    end
+    while ~exist('data_path_train','var') || isempty(data_path_train) || isequal(data_path_train,0) || ~isdir(data_path_train)
+        h = msgbox( ['Select directory containing TRAINING images for ' experiment_settings.situation] );
+        uiwait(h);
+        experiment_settings.data_path_train = uigetdir(pwd); 
     end
             
-    if  isempty(experiment_settings.data_path_test) || ~exist( experiment_settings.data_path_test, 'dir' )   
-        try
-            possible_path_test_ind  = find(cellfun( @(x) exist(x,'dir'), experiment_settings.situations_struct.(experiment_settings.situation).possible_paths_test ),1,'first');
+    if isempty(experiment_settings.data_path_test) 
+        possible_path_test_ind  = find(cellfun( @(x) exist(x,'dir'), experiment_settings.situations_struct.(experiment_settings.situation).possible_paths_test ),1,'first');
+        if ~isempty(possible_path_test_ind)
             experiment_settings.data_path_test = experiment_settings.situations_struct.(experiment_settings.situation).possible_paths_test{ possible_path_test_ind };
-        catch
-            while ~exist('data_path_test','var') || isempty(data_path_test) || isequal(data_path_test,0) || ~isdir(data_path_test)
-                h = msgbox( ['Select directory containing TESTING images for ' experiment_settings.situation] );
-                uiwait(h);
-                experiment_settings.data_path_train = uigetdir(pwd); 
-            end
         end
     end
-    
+    while ~exist('data_path_test','var') || isempty(data_path_test) || isequal(data_path_test,0) || ~isdir(data_path_test)
+        h = msgbox( ['Select directory containing TESTING images for ' experiment_settings.situation] );
+        uiwait(h);
+        experiment_settings.data_path_test = uigetdir(pwd); 
+    end
+      
     % split_arg
     %
     %   This defines how we get our training/testing splits.
