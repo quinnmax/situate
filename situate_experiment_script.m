@@ -70,6 +70,7 @@
    
     data_path_train = ''; % empty means use a default
     data_path_test = '/Users/Max/Desktop/dog_other/';
+    %data_path_test = '';
     
     % first see if the specified folder is empty
     % if empty
@@ -92,7 +93,7 @@
     experiment_settings.data_path_train = data_path_train;
             
     if isempty(data_path_test) 
-        possible_path_test_ind  = find(cellfun( @(x) exist(x,'dir'), situations_struct.(experiment_settings.situation).possible_paths_test ),1,'first');
+        possible_path_test_ind  = find(cellfun( @(x) exist(x,'dir'), experiment_settings.situations_struct.(experiment_settings.situation).possible_paths_test ),1,'first');
         if ~isempty(possible_path_test_ind)
             data_path_test = experiment_settings.situations_struct.(experiment_settings.situation).possible_paths_test{ possible_path_test_ind };
         end
