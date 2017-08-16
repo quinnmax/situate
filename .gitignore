@@ -44,6 +44,7 @@ Thumbs.db
 *.mat
 
 
+
 # Results files #
 #################
 *.pdf
@@ -53,5 +54,4 @@ results/*
 # Do not ignore #
 #################
 !+cnn/imagenet-vgg-f.mat
-!default_models/*
 

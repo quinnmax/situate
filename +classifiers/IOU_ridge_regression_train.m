@@ -11,8 +11,7 @@ function classifier_struct = IOU_ridge_regression_train( p, fnames_in, saved_mod
         fnames_in_pathless{fi} = [name ext];
     end
     
-    selected_model_fname = situate.check_for_existing_model( possible_paths, 'fnames_lb_train', fnames_in_pathless, 'model_description', model_description );
-    
+    selected_model_fname = situate.check_for_existing_model( possible_paths, 'fnames_lb_train', fnames_in_pathless, 'model_description', model_description, 'classes', p.situation_objects );
     model_already_existed = ~isempty(selected_model_fname);
     if model_already_existed
        loaded_data = load( selected_model_fname );
@@ -20,15 +19,21 @@ function classifier_struct = IOU_ridge_regression_train( p, fnames_in, saved_mod
        display(['loaded ' model_description ' model from: ' selected_model_fname ]);
     else
         
+        display('training IOU ridge regression model');
+        
         % see if we have pre-existing features, or if we need to extract them
         existing_feature_directory = 'pre_extracted_feature_data';
-        temp = dir(fullfile(existing_feature_directory,'*.mat'));
-        if ~isempty(temp)
-            existing_features_fname = fullfile( existing_feature_directory, temp(1).name );
+        
+        selected_datafile_fname = situate.check_for_existing_model( existing_feature_directory, 'object_labels', sort(p.situation_objects) );
+        
+        if ~isempty(selected_datafile_fname)
+            display(['loaded cnn feature data from ' selected_datafile_fname]);
+            existing_features_fname = selected_datafile_fname;
         else
-            existing_features_fname = cnn_feature_extractor( [], existing_feature_directory, p );
+            display('extracting cnn feature data');
+            existing_features_fname = cnn_feature_extractor( fileparts(fnames_in{1}), existing_feature_directory, p );
         end
-        models = classifiers.create_IOU_ridge_regression_model_pre_extracted_features( fnames_in, existing_features_fname, p );
+        [models,AUROCs] = classifiers.create_IOU_ridge_regression_model_pre_extracted_features( fnames_in, existing_features_fname, p );
        
     end
     
@@ -36,11 +41,12 @@ function classifier_struct = IOU_ridge_regression_train( p, fnames_in, saved_mod
     classifier_struct.classes           = p.situation_objects;
     classifier_struct.fnames_lb_train   = fnames_in_pathless;
     classifier_struct.model_description = model_description;
+    classifier_struct.AUROCs            = AUROCs;
     
     if ~model_already_existed
-        saved_model_fname = fullfile( saved_models_directory, [model_description '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat'] );
-        save(saved_model_fname,'-struct','classifier_model');
-        display(['saved cnnsvm model to: ' saved_model_fname ]);
+        saved_model_fname = fullfile( saved_models_directory, [model_description '_' [p.situation_objects{:}]  '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat'] );
+        save(saved_model_fname,'-struct','classifier_struct');
+        display(['saved ' model_description ' model to: ' saved_model_fname ]);
     end
 
 end

@@ -1,4 +1,5 @@
-function [models] = create_IOU_ridge_regression_model_pre_extracted_features( fnames_in, feature_file_fname, p )
+function [models, AUROCs] = create_IOU_ridge_regression_model_pre_extracted_features( fnames_in, feature_file_fname, p )
+%[models, model_AUROCs] = create_IOU_ridge_regression_model_pre_extracted_features( fnames_in, feature_file_fname, p )
     
     data = load(feature_file_fname);
     
@@ -23,30 +24,39 @@ function [models] = create_IOU_ridge_regression_model_pre_extracted_features( fn
     source_crop_size_px = box_proposal_wh(:,1) .* box_proposal_wh(:,2);
     small_source_inds   =  source_crop_size_px < crop_size_threshold_px ;
     
-    num_boost_replications = 1;
-    models = cell( length(p.situation_objects), num_boost_replications );
+    models = cell( length(p.situation_objects), 1 );
     
     tic
-    for bi = 1:num_boost_replications
     for oi = 1:length(p.situation_objects )
-        
         obj_inds = data.box_source_obj_type == oi;
-        
         inds_train = find( box_rows_train & obj_inds & ~small_source_inds );
-        inds_train = inds_train(bi:num_boost_replications:end);
-        
         x = data.box_proposal_cnn_features( inds_train, : );
         y = data.IOUs_with_source( inds_train );
-        
-        models{oi,bi} = ridge( y, x, 1000, 0 );
+        models{oi} = ridge( y, x, 1000, 0 );
         fprintf('.');
-        
-    end
     end
     toc
     
-    display('IOU ridge regression model training done');
     
+    % get classifier scores on training images
+    classifier_scores = zeros( size(data.box_source_obj_type,1), length(p.situation_objects) );
+    num_boxes = size(data.box_sources_r0rfc0cf,1);
+    for oi = 1:length(p.situation_objects)
+        classifier_scores(:,oi) = [ones(num_boxes,1) data.box_proposal_cnn_features] * models{oi};
+    end
+    
+    % get AUROC for each trained model
+    % (over under .5 IOU)
+    AUROCs = zeros(1,length(p.situation_objects));
+    for oi = 1:length(p.situation_objects)
+
+        label = data.IOUs_with_each_gt_obj(:,oi) > .5;
+        AUROCs(oi) = ROC( classifier_scores(:,oi), label );
+
+    end
+    
+    
+    display('IOU ridge regression model training done');
     
     % validate the newly generated models
     

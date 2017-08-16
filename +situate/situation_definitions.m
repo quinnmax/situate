@@ -31,27 +31,6 @@ function situations_struct = situation_definitions()
     cur_situation.possible_paths_test = cur_situation.possible_paths_train;
     situations_struct.(desc) = cur_situation;
     
-    desc = 'dogwalking_stanford';
-    cur_situation.situation_objects =  { 'dogwalker', 'dog', 'leash' };
-    object_urgency_pre  = [1 1 1];
-    object_urgency_post = [.25 .25 .25];
-    for i = 1:length(cur_situation.situation_objects ), cur_situation.object_urgency_pre.( cur_situation.situation_objects{i}) = object_urgency_pre(i);  end
-    for i = 1:length(cur_situation.situation_objects ), cur_situation.object_urgency_post.(cur_situation.situation_objects{i}) = object_urgency_post(i); end
-    cur_situation.situation_objects_possible_labels = {...
-        {'dog-walker back', 'dog-walker front', 'dog-walker my-left', 'dog-walker my-right'},...
-        {'dog back', 'dog front', 'dog my-left', 'dog my-right'},...
-        {'leash-/', 'leash-\'}};
-    cur_situation.possible_paths_train = { ...
-        '/Users/mm/Desktop/PortlandSimpleDogWalking/', ...
-        '/stash/mm-group/evan/crop_learn/data/PortlandSimpleDogWalking/', ...
-        '/Users/Max/Documents/MATLAB/data/situate_images/PortlandSimpleDogWalking/', ...
-        '/home/rsoiffer/Desktop/Matlab/DogWalkingData/PortlandSimpleDogWalking/',...
-        '/home/maxq/Documents/MATLAB/data/PortlandSimpleDogWalking/'};
-    cur_situation.possible_paths_test = { ...
-        '/Users/Max/Documents/MATLAB/data/situate_images/StanfordSimpleDogWalking/', ...
-        '/home/maxq/Documents/MATLAB/data/StanfordSimpleDogWalking/'};
-    situations_struct.(desc) = cur_situation;
-    
     desc = 'dogwalking_holding';
     cur_situation.situation_objects =  { 'dogwalker', 'dog', 'leash', 'holding', 'attached' };
     object_urgency_pre  = [1  1 .5 .1 .1];
@@ -92,7 +71,7 @@ function situations_struct = situation_definitions()
     desc = 'handshaking';
     cur_situation.situation_objects = { 'left', 'handshake', 'right' };
     object_urgency_pre  = [1 1 1];
-    object_urgency_post = [0 0 0];
+    object_urgency_post = [.25 .25 .25];
     for i = 1:length(cur_situation.situation_objects ), cur_situation.object_urgency_pre.( cur_situation.situation_objects{i}) = object_urgency_pre(i);  end
     for i = 1:length(cur_situation.situation_objects ), cur_situation.object_urgency_post.(cur_situation.situation_objects{i}) = object_urgency_post(i); end
     cur_situation.situation_objects_possible_labels = {...
@@ -100,16 +79,14 @@ function situations_struct = situation_definitions()
         {'handshake'}, ...
         {'person-my-right'}};
     cur_situation.possible_paths_train = { ...
-        '/Users/Max/Documents/MATLAB/data/situate_images/HandshakeLabeled/', ...
-        'C:\Users\LiFamily\Desktop\2016 ASE\HandshakeLabeled',...
-        '/fakepath/justchecking'};
+        '/Users/Max/Documents/MATLAB/data/situate_images/HandshakeLabeled/train/' };
     cur_situation.possible_paths_test = cur_situation.possible_paths_train;
     situations_struct.(desc) = cur_situation;
     
     desc = 'pingpong';
     cur_situation.situation_objects =  { 'table','net','player1','player2' };
     object_urgency_pre  = [1 1 1 1];
-    object_urgency_post = [0 0 0 0];
+    object_urgency_post = [.25 .25 .25 .25];
     for i = 1:length(cur_situation.situation_objects ), cur_situation.object_urgency_pre.( cur_situation.situation_objects{i}) = object_urgency_pre(i);  end
     for i = 1:length(cur_situation.situation_objects ), cur_situation.object_urgency_post.(cur_situation.situation_objects{i}) = object_urgency_post(i); end
     cur_situation.situation_objects_possible_labels = {...
@@ -118,8 +95,7 @@ function situations_struct = situation_definitions()
         {'player-front','player-back','player-my-left','player-my-right'}, ...
         {'player-front','player-back','player-my-left','player-my-right'}};
     cur_situation.possible_paths_train = { ...
-        '/Users/Max/Documents/MATLAB/data/situate_images/PingPongLabeled/Labels/', ...
-        'C:\Users\LiFamily\Desktop\2016 ASE\PingPongLabeled'};
+        '/Users/Max/Documents/MATLAB/data/situate_images/PingPongLabeled/Labels/train/'};
     cur_situation.possible_paths_test = cur_situation.possible_paths_train;
     situations_struct.(desc) = cur_situation;
     

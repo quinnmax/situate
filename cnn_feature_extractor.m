@@ -16,19 +16,7 @@ function [fname_out] = cnn_feature_extractor( directory_in, directory_out, p )
     
     
 %% initialize the situate structures
-    
-    if ~exist('p','var')
-        p = situate.parameters_initialize();
-    end
-        
-    experiment_settings = [];
-    experiment_settings.title               = 'feature extraction';
-    experiment_settings.situations_struct   = situate.situation_definitions();
-    experiment_settings.situation           = 'dogwalking'; 
-    
-    temp = experiment_settings.situations_struct.(experiment_settings.situation);
-    p.situation_objects = temp.situation_objects;
-    p.situation_objects_possible_labels = temp.situation_objects_possible_labels;
+   
     situation_objects = p.situation_objects;
     num_situation_objects = length(situation_objects);
     
@@ -50,7 +38,7 @@ function [fname_out] = cnn_feature_extractor( directory_in, directory_out, p )
         end
     end
     
-    d = dir([data_path '*.labl']);
+    d = dir(fullfile(data_path, '*.labl'));
     
     fnames = cellfun(@(x) fullfile(data_path, x), {d.name}, 'UniformOutput', false )';
     num_images = length(fnames);
@@ -139,9 +127,7 @@ function [fname_out] = cnn_feature_extractor( directory_in, directory_out, p )
     fname_source_index         = cell(num_images,num_situation_objects);
     box_deltas_xywh            = cell(num_images,num_situation_objects);
     box_density_prior          = cell(num_images,num_situation_objects);
-    box_density_conditioned_1a = cell(num_images,num_situation_objects);
-    box_density_conditioned_1b = cell(num_images,num_situation_objects);
-    box_density_conditioned_2  = cell(num_images,num_situation_objects);
+    box_density_conditioned    = cell(num_images,num_situation_objects);
     
     for imi = 1:num_images
         
@@ -211,34 +197,34 @@ function [fname_out] = cnn_feature_extractor( directory_in, directory_out, p )
                 new_boxes_to_eval_IOU(end+1:end+length(sampled_bin_inds)) = new_boxes_to_eval_IOU_prelim(sampled_bin_inds);
             end
             
-            % for density estimation, make dummy workspaces using the other gt objects
-            workspace_temp_1a = [];
-                workspace_temp_1a.labels = conditioning_objects(1);
-                workspace_temp_1a.boxes_r0rfc0cf = im_data(imi).boxes_r0rfc0cf( strcmp(conditioning_objects(1),im_data(imi).labels_adjusted), : );
-                workspace_temp_1a.im_size(1) = im_h;
-                workspace_temp_1a.im_size(2) = im_w;
-                situation_model_1a = p.situation_model.update( situation_model, p.situation_objects{oi}, workspace_temp_1a );
-            workspace_temp_1b = [];
-                workspace_temp_1b.labels = conditioning_objects(2);
-                workspace_temp_1b.boxes_r0rfc0cf = im_data(imi).boxes_r0rfc0cf( strcmp(conditioning_objects(2),im_data(imi).labels_adjusted), : );
-                workspace_temp_1b.im_size(1) = im_h;
-                workspace_temp_1b.im_size(2) = im_w;
-                situation_model_1b = p.situation_model.update( situation_model, p.situation_objects{oi}, workspace_temp_1b );
-            workspace_temp_2  = [];
-                workspace_temp_2.labels = conditioning_objects;
-                workspace_temp_2.boxes_r0rfc0cf = im_data(imi).boxes_r0rfc0cf( logical(strcmp(conditioning_objects(1),im_data(imi).labels_adjusted) + strcmp(conditioning_objects(2),im_data(imi).labels_adjusted)), : );
-                workspace_temp_2.im_size(1) = im_h;
-                workspace_temp_2.im_size(2) = im_w;
-                situation_model_2 = p.situation_model.update( situation_model, p.situation_objects{oi}, workspace_temp_2 );
+            % make dummy workspaces for combinations of the conditioning objects
+            % make dummy situation models
+            workspace_combinations_boolean_indices = all_combinations(length(conditioning_objects));
+            dummy_conditioning_objects = cell(1,size(workspace_combinations_boolean_indices,1)-1);
+            dummy_workspaces = cell(1,size(workspace_combinations_boolean_indices,1)-1);
+            dummy_situation_models = cell(1,size(workspace_combinations_boolean_indices,1)-1);
+            dummy_workspaces_to_remove = false(1,length(dummy_workspaces));
+            for dwi = 1:length(dummy_workspaces)
+                cur_conditioning_objects = conditioning_objects( workspace_combinations_boolean_indices(dwi,:) );
+                dummy_conditioning_objects{dwi} = cur_conditioning_objects;
+                if all(ismember(cur_conditioning_objects,im_data(imi).labels_adjusted))
+                    dummy_workspaces{dwi}.labels = cur_conditioning_objects;
+                    dummy_workspaces{dwi}.im_size(1)     = im_h;
+                    dummy_workspaces{dwi}.im_size(2)     = im_w;
+                    [~,workspace_inds] = ismember(cur_conditioning_objects,im_data(imi).labels_adjusted);
+                    dummy_workspaces{dwi}.boxes_r0rfc0cf = im_data(imi).boxes_r0rfc0cf( workspace_inds, : );                   
+                    dummy_situation_models{dwi} = p.situation_model.update( situation_model, p.situation_objects{oi}, dummy_workspaces{dwi} );
+                else
+                    dummy_workspaces_to_remove(dwi) = true;
+                end
+            end
+            
                     
             num_new_boxes = size(new_box_proposals_r0rfc0cf,1);
             
             new_box_deltas_xywh               = nan( num_new_boxes, 4 );
-            
             new_box_density_prior             = nan( num_new_boxes, 1 );
-            new_box_density_conditioned_1a    = nan( num_new_boxes, 1 );
-            new_box_density_conditioned_1b    = nan( num_new_boxes, 1 );
-            new_box_density_conditioned_2     = nan( num_new_boxes, 1 );
+            new_box_density_conditioned       = nan( num_new_boxes, length(dummy_situation_models) );
             
             for bi = 1:num_new_boxes
                 
@@ -269,10 +255,10 @@ function [fname_out] = cnn_feature_extractor( directory_in, directory_out, p )
                 new_box_deltas_xywh(bi,:) = [x_delta y_delta w_delta h_delta];
               
                 [~, new_box_density_prior(bi)]          = p.situation_model.sample( situation_model,    cur_obj_type, 1, [im_h im_w], [r0 rf c0 cf] );
-                [~, new_box_density_conditioned_1a(bi)] = p.situation_model.sample( situation_model_1a, cur_obj_type, 1, [im_h im_w], [r0 rf c0 cf] );
-                [~, new_box_density_conditioned_1b(bi)] = p.situation_model.sample( situation_model_1b, cur_obj_type, 1, [im_h im_w], [r0 rf c0 cf] );
-                [~, new_box_density_conditioned_2(bi)]  = p.situation_model.sample( situation_model_2,  cur_obj_type, 1, [im_h im_w], [r0 rf c0 cf] );
-            
+                for si = 1:length(dummy_situation_models)
+                    [~,new_box_density_conditioned(bi,si)] = p.situation_model.sample( dummy_situation_models{si}, cur_obj_type, 1, [im_h im_w], [r0 rf c0 cf] );
+                end
+                
             end
             
             box_proposals_r0rfc0cf{imi,oi}     = new_box_proposals_r0rfc0cf;
@@ -282,9 +268,8 @@ function [fname_out] = cnn_feature_extractor( directory_in, directory_out, p )
             fname_source_index{imi,oi}         = repmat( imi, size(new_box_proposals_r0rfc0cf,1), 1 );
             box_deltas_xywh{imi,oi}            = new_box_deltas_xywh;
             box_density_prior{imi,oi}          = new_box_density_prior;
-            box_density_conditioned_1a{imi,oi} = new_box_density_conditioned_1a;
-            box_density_conditioned_1b{imi,oi} = new_box_density_conditioned_1b;
-            box_density_conditioned_2{imi,oi}  = new_box_density_conditioned_2;
+            box_density_conditioned{imi,oi}    = new_box_density_conditioned;
+            
             
         end
         
@@ -300,9 +285,8 @@ function [fname_out] = cnn_feature_extractor( directory_in, directory_out, p )
     box_proposal_gt_IOUs        = cell(num_images,num_situation_objects);
     
     tic;
-    parfor imi = 1:num_images
-        
-    for oi = 1:num_situation_objects
+    for imi = 1:num_images
+    for oi  = 1:num_situation_objects
         
         [cur_im_data,im_temp] = situate.load_image_and_data( fnames(imi), p, use_resize );
         im = im_temp{1};
@@ -324,16 +308,6 @@ function [fname_out] = cnn_feature_extractor( directory_in, directory_out, p )
                     box_proposals_r0rfc0cf{imi,oi}(bi,:), ...
                     cur_im_data.boxes_r0rfc0cf(wi,:), ...
                     'r0rfc0cf','r0rfc0cf');
-            
-%             % get IOU with each object (in situation_objects order)
-%             for oj = 1:num_situation_objects
-%                 oi_label_ind = strcmp( situation_objects{oj},cur_im_data.labels_adjusted);
-%                 box_proposal_gt_IOUs{imi,oi}(bi,oj) = ...
-%                     intersection_over_union( ...
-%                         box_proposals_r0rfc0cf{imi,oi}(bi,:), ...
-%                         cur_im_data.boxes_r0rfc0cf(oi_label_ind,:), ...
-%                         'r0rfc0cf', 'r0rfc0cf' );
-%             end
             
             r0 = round(r0);
             rf = round(rf);
@@ -365,39 +339,53 @@ function [fname_out] = cnn_feature_extractor( directory_in, directory_out, p )
     fname_source_index          = vertcat( fname_source_index{:} );
     box_deltas_xywh             = vertcat( box_deltas_xywh{:} );
     box_density_prior           = vertcat( box_density_prior{:} );
-    box_density_conditioned_1a  = vertcat( box_density_conditioned_1a{:} );
-    box_density_conditioned_1b  = vertcat( box_density_conditioned_1b{:} );
-    box_density_conditioned_2   = vertcat( box_density_conditioned_2{:} );
+    box_density_conditioned     = vertcat( box_density_conditioned{:} );
     box_proposal_cnn_features   = vertcat( box_proposal_cnn_features{:} );
     box_proposal_gt_IOUs        = vertcat( box_proposal_gt_IOUs{:} );
-    %box_proposal_size_px        = vertcat( box_proposal_size_px{:} );
     
+    
+    % get IOU between each proposal and each gt box in its image
+    % (this is appended, could probably be done more efficiently up above)
+    oi_inds = zeros( size(box_source_obj_type,1), num_situation_objects );
+    for oi = 1:num_situation_objects
+        oi_inds(:,oi) = eq( oi, box_source_obj_type );
+    end
+    IOUs_with_each_gt_obj = zeros( size(box_source_obj_type,1), num_situation_objects );
+    imi_list = unique(fname_source_index);
+    for imii = 1:length(imi_list)
+        imi = imi_list(imii);
+        cur_im_inds = eq(imi, fname_source_index);
+        for oi = 1:num_situation_objects
+            cur_im_ob_inds = cur_im_inds & oi_inds(:,oi);
+            cur_gt_box = box_sources_r0rfc0cf( find( cur_im_ob_inds, 1, 'first' ), : );
+            IOUs_with_each_gt_obj(cur_im_inds,oi) = intersection_over_union( cur_gt_box, box_proposals_r0rfc0cf(cur_im_inds,:), 'r0rfc0cf', 'r0rfc0cf' );
+        end
+    end
     
     if exist('directory_out','var') && ~isempty(directory_out) && exist(directory_out,'dir')
-        fname_out = fullfile(directory_out, ['cnn_features_and_IOUs' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat' ]);
+        fname_out = fullfile(directory_out, [ [p.situation_objects{:}] '_cnn_features_and_IOUs' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat' ]);
     else
         % just save it to the working directory then
-        fname_out = ['cnn_features_and_IOUs' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat' ];
+        fname_out = [ [p.situation_objects{:}] '_cnn_features_and_IOUs' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat' ];
     end
+    
+    object_labels = p.situation_objects;
     
     save( fname_out, '-v7.3', ...
         'fnames', ...
+        'object_labels',...
         'p', ...
-        'experiment_settings',...
         'box_proposals_r0rfc0cf',...
         'box_sources_r0rfc0cf',...
         'box_source_obj_type',...
         'IOUs_with_source',...
+        'IOUs_with_each_gt_obj',...
         'box_proposal_gt_IOUs',...
         'fname_source_index',...
         'box_proposal_cnn_features',...
         'box_deltas_xywh',...
         'box_density_prior',...
-        'box_density_conditioned_1a',...
-        'box_density_conditioned_1b',...
-        'box_density_conditioned_2');
-    % 'box_proposal_size_px', ...
-    % 'box_proposal_thumbnail', ...
+        'box_density_conditioned');
     
     display(['saved cnn_features_and_IOUs data to ' fname_out]);
     

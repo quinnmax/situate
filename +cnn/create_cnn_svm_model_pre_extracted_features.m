@@ -1,4 +1,4 @@
-function [models] = create_cnn_svm_model_pre_extracted_features( fnames_in, p )
+function [models,AUROCs] = create_cnn_svm_model_pre_extracted_features( fnames_in, p )
 
     %existing_features_fname = '/Users/Max/Desktop/cnn_features_and_IOUs_padding_255.mat';
     existing_features_fname = '/Users/Max/Desktop/cnn_features_and_IOUs_nopadding_255.mat';
@@ -78,6 +78,22 @@ function [models] = create_cnn_svm_model_pre_extracted_features( fnames_in, p )
         fprintf('.');
         
     end
+    
+%     % get classifier scores on training images
+%     classifier_scores = zeros( size(data.box_source_obj_type,1), length(p.situation_objects) );
+%     for oi = 1:length(p.situation_objects)
+%         classifier_scores(:,oi) = [ones(num_boxes,1) data.box_proposal_cnn_features] * models_struct.models{oi};
+%     end
+%     
+%     % get AUROC for each trained model
+%     % (over under .5 IOU)
+%     AUROCs = zeros(1,length(objects));
+%     for oi = 1:length(objects)
+% 
+%         label = data.IOUs_with_each_gt_obj(:,oi) > .5;
+%         AUROCs(oi) = ROC( classifier_scores(:,oi), label );
+% 
+%     end
     
     display('cnn svm model training done');
     

@@ -83,7 +83,6 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
         situation_objects = p_condition.situation_objects;
         num_situation_objects = length(situation_objects );
         
-        
         workspaces_final = cellfun( @(x) x.workspaces_final, temp_data, 'UniformOutput', false);
         workspaces_final = cellfun( @(x) [x{:}], workspaces_final, 'UniformOutput', false);
         workspaces_final = [workspaces_final{:}];
@@ -220,7 +219,7 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
         iou_thresholds = sort(unique([linspace(0,1,num_thresholds+1) .5])); % make sure .5 is in there
         iou_thresholds = iou_thresholds(2:end);
         num_thresholds = length(iou_thresholds);
-        num_images = length(fnames_test);
+        num_images = numel(fnames_test);
         
         % final IOUs for objects
         final_ious = zeros( num_images, num_situation_objects );
@@ -297,7 +296,6 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
         results_per_condition(ci).first_iteration_over_threshold_desc = {'image index, object index, iou threshold index';'checks for total support over threshold AND gt iou over threshold'};
         
         
-        
         % trace of what scouts were looking for at each iteration (25 images per method)
         
         % show what scouts were looking for during the run (with final IOU info in the title)
@@ -319,8 +317,6 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
             hold on;
             plot( inds_over, agent_interests(inds_over) + perturbation(inds_over), '.r');
             
-            %yticks(0:3);
-            %yticklabels(['none' situation_objects]);
             ylim([-.5 3.5])
             set( gca, 'YTick', 0:3);
             set( gca, 'YTickLabel', ['none' situation_objects] );

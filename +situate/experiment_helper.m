@@ -36,7 +36,7 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
     %   if it was numeric, make up new training/testing splits
 
         if exist('split_file_directory','var') && isdir(split_file_directory)
-            data_folds = generate_data_splits_from_directory( split_file_directory );
+            data_folds = load_data_splits_from_directory( split_file_directory );
         else 
             generate_new_splits = true;
         end
@@ -44,6 +44,8 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
     % make sure the split fnames and the specified directories led to actual images
     % if not, replace training images with those in the training directory
     % if not, replace testing  images with those in the testing  directory
+    
+    if exist('data_folds','var')
     
         needed_to_adjust_file_list_train = false;
         if ~all( cellfun( @(x) exist(fullfile(experiment_settings.data_path_train,x),'file'), unique(vertcat(data_folds.fnames_lb_train)) ) )
@@ -56,7 +58,7 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
             end
             needed_to_adjust_file_list_train = true;
         end
-        
+
         needed_to_adjust_file_list_test = false;
         if ~all( cellfun( @(x) exist(fullfile(experiment_settings.data_path_test,x),'file'), unique(vertcat(data_folds.fnames_im_test)) ) )
             warning('testing images from split file do not all exist in the testing directory. using all files in the testing image directory');
@@ -68,12 +70,15 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
             end
             needed_to_adjust_file_list_test = true;
         end
-        
+
         if (needed_to_adjust_file_list_train || needed_to_adjust_file_list_test) ...
         && isequal( experiment_settings.data_path_test, experiment_settings.data_path_train )
             generate_new_splits = true;
-        end
-        
+        end  
+    end
+    
+    
+    
     % this logic is ridiculous
         
     % generate new splits
@@ -102,6 +107,7 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
                 fprintf(fid_test, '%s\n',data_folds(i).fnames_lb_test{:} );
                 fclose(fid_test);
             end 
+            
     end
         
     % apply limits to training/testing set sizes
@@ -109,7 +115,7 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
     %   or on the number of training images,
     %   adjust the data_folds struct to reflect that
 
-        if ~isempty(experiment_settings.testing_data_max) && experiment_settings.testing_data_max < length(data_folds(i).fnames_lb_test)
+        if ~isempty(experiment_settings.testing_data_max) && experiment_settings.testing_data_max < length(data_folds(1).fnames_im_test)
             for i = 1:length(data_folds)
                 data_folds(i).fnames_lb_test = data_folds(i).fnames_lb_test(1:experiment_settings.testing_data_max);
                 data_folds(i).fnames_im_test = data_folds(i).fnames_im_test(1:experiment_settings.testing_data_max);
@@ -122,6 +128,8 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
                 data_folds(i).fnames_im_train = data_folds(i).fnames_im_train(1:experiment_settings.training_data_max);
             end
         end
+        
+        
         
     
         
@@ -332,7 +340,7 @@ function data_folds = generate_data_folds( data_path, num_folds, testing_data_ma
 end
 
 
-function data_folds = generate_data_splits_from_directory( split_file_directory )
+function data_folds = load_data_splits_from_directory( split_file_directory )
 
        % Load the folds from files rather than generating new ones
 

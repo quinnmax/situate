@@ -16,14 +16,35 @@
     % situation, experiment title
     
         experiment_settings = [];
-        experiment_settings.title               = 'dogwalking debug';
+        experiment_settings.title               = 'handshake check';
         experiment_settings.situations_struct   = situate.situation_definitions();
-        experiment_settings.situation           = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
+        experiment_settings.situation           = 'handshaking';  % look in experiment_settings.situations_struct to see the options
+        %experiment_settings.situation           = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
+        %experiment_settings.situation           = 'pingpong';  % look in experiment_settings.situations_struct to see the options
+        
+    % sources 
+        
+        data_path_train = ''; % empty means use a default
+        data_path_test  = ''; % empty means use a default
+        %data_path_test = '/Users/Max/Desktop/dog_other/people-other52.jpg';
+        %data_path_test = '';
+
+        %split_arg = [];
+        split_arg = 1; % randomly generated with seed value 1
+        % split_arg = now; % randomly generated with time-based seed value
+        % split_arg = uigetdir(pwd); % pick one in the gui
+        % split_arg = 'split_validation/'; % validation set (hard)
+        
+        if ischar(split_arg)
+            seed_train = [];
+        elseif isnumeric(split_arg)
+            seed_train = split_arg;
+        end
         
     % running limits
     
         experiment_settings.training_data_max   = []; 
-        experiment_settings.testing_data_max    = [];   % per fold, all images if empty
+        experiment_settings.testing_data_max    = [10];   % per fold, all images if empty
         experiment_settings.folds               = [1];  % list the folds, not how many. ie, 2:4
         
     % running parameters
@@ -66,11 +87,9 @@
 % situate.situation_definitions contains some defaults. 
 % worst case, you point them out in the gui
           
-    % training testing sources
    
-    data_path_train = ''; % empty means use a default
-    data_path_test = '/Users/Max/Desktop/dog_other/';
-    %data_path_test = '';
+    
+    
     
     % first see if the specified folder is empty
     % if empty
@@ -105,6 +124,10 @@
     end
     experiment_settings.data_path_test = data_path_test;
       
+   
+    
+        
+        
     % split_arg
     %
     %   This defines how we get our training/testing splits.
@@ -130,25 +153,9 @@
     %               image_1.labl
     %               image_2.labl
     %               image_3.labl
-    
-        % split_arg = now; % randomly generated with time-based seed value
-        % split_arg = 1; % randomly generated with seed value 1
-        % split_arg = uigetdir(pwd); % pick one in the gui
-        split_arg = 'split_validation/'; % validation set (hard)
-        % split_arg = 'split_test_stanford/';
-        % split_arg = 'split_test/';
-        
-        if ischar(split_arg)
-            seed_train = [];
-        elseif isnumeric(split_arg)
-            seed_train = split_arg;
-        end
-        
-    % validate that the specified splits and images actually exist
-    % blerg, this has to happen in the helper script, because that actually does the directory work
 
-     
-        
+    
+    
 %% Situate parameters: initialize, iterations, pipeline 
 
     p = situate.parameters_initialize;
@@ -390,7 +397,8 @@
 %% Situate parameters: support functions 
     
         p.external_support_function_description    = 'atan fit';
-        p.total_support_function_description       = 'regression experiment';
+        % p.total_support_function_description       = 'regression experiment dogwalking';
+        p.total_support_function_description       = 'mostly internal';
         p.situation_grounding_function_description = 'geometric mean padded';
         
         % define how to calculate external support (ie, compatibility between a proposed entry to
@@ -449,7 +457,7 @@
                 p.total_support_function    = @(internal,external) 0.5 * internal + 0.5 * external;
             case 'mostly internal'
                 p.total_support_function    = @(internal,external) 0.8 * internal + 0.2 * external;
-            case 'regression experiment'
+            case 'regression experiment dogwalking'
                 % bootstrap re-estimation based on validation set run
                 b = [   0.1210    0.8053   -0.0033    0.0220; ...
                         0.0568    0.8975   -0.0001   -0.0204; ...
@@ -517,7 +525,7 @@
         
 %% Situate parameters: adjustment model 
     
-        p.adjustment_model.description = 'bounding box regression two-tone per-object';
+        p.adjustment_model.description = 'bounding box regression two-tone with decay and drop';
     
         switch p.adjustment_model.description
             
@@ -534,8 +542,15 @@
                 p.adjustment_model.train                = @(a,b,c) box_adjust.two_tone_train(a,b,c,box_adjust_training_thresholds, model_selection_threshold);
                 p.adjustment_model.apply                = @box_adjust.two_tone_w_decay_apply; % decay value of .9 is hard coded in box_adjust.apply_w_decay 
                 p.adjustment_model.directory            = 'default_models/';
+            case 'bounding box regression two-tone with decay and drop'
+                p.adjustment_model.activation_logic     = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, .2, 1.0 );
+                box_adjust_training_thresholds          = [.1 .6];
+                model_selection_threshold               = .5; % set via validation set experiments
+                p.adjustment_model.train                = @(a,b,c) box_adjust.two_tone_train(a,b,c,box_adjust_training_thresholds, model_selection_threshold);
+                p.adjustment_model.apply                = @box_adjust.two_tone_w_decay_and_drop_apply; % decay value of .9 is hard coded in box_adjust.apply_w_decay, urgency below .1 just dies 
+                p.adjustment_model.directory            = 'default_models/';
             case 'bounding box regression two-tone'
-                p.adjustment_model.activation_logic     = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, p.thresholds.internal_support, 1.0 );
+                p.adjustment_model.activation_logic     = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, .3, 1.0 );
                 box_adjust_training_thresholds          = [.1 .6];
                 model_selection_threshold               = .5; % set via validation set experiments
                 p.adjustment_model.train                = @(a,b,c) box_adjust.two_tone_train(a,b,c,box_adjust_training_thresholds, model_selection_threshold);
