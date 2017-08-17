@@ -16,6 +16,7 @@ function classifier_struct = IOU_ridge_regression_train( p, fnames_in, saved_mod
     if model_already_existed
        loaded_data = load( selected_model_fname );
        models = loaded_data.models;
+       AUROCs = loaded_data.AUROCs;
        display(['loaded ' model_description ' model from: ' selected_model_fname ]);
     else
         

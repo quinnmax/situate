@@ -16,11 +16,11 @@
     % situation, experiment title
     
         experiment_settings = [];
-        experiment_settings.title               = 'handshake check';
+        experiment_settings.title               = 'pingpong AUROC support check';
         experiment_settings.situations_struct   = situate.situation_definitions();
-        experiment_settings.situation           = 'handshaking';  % look in experiment_settings.situations_struct to see the options
+        %experiment_settings.situation           = 'handshaking';  % look in experiment_settings.situations_struct to see the options
         %experiment_settings.situation           = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
-        %experiment_settings.situation           = 'pingpong';  % look in experiment_settings.situations_struct to see the options
+        experiment_settings.situation           = 'pingpong';  % look in experiment_settings.situations_struct to see the options
         
     % sources 
         
@@ -44,13 +44,13 @@
     % running limits
     
         experiment_settings.training_data_max   = []; 
-        experiment_settings.testing_data_max    = [10];   % per fold, all images if empty
+        experiment_settings.testing_data_max    = [50]; % per fold, all images if empty
         experiment_settings.folds               = [1];  % list the folds, not how many. ie, 2:4
         
     % running parameters
     
-        experiment_settings.use_gui                         = true;
-        experiment_settings.use_parallel                    = false;
+        experiment_settings.use_gui                         = false;
+        experiment_settings.use_parallel                    = true;
         experiment_settings.run_analysis_after_completion   = false;
 
         % visualization specifics
@@ -397,9 +397,11 @@
 %% Situate parameters: support functions 
     
         p.external_support_function_description    = 'atan fit';
+        
         % p.total_support_function_description       = 'regression experiment dogwalking';
-        p.total_support_function_description       = 'mostly internal';
-        p.situation_grounding_function_description = 'geometric mean padded';
+        %p.total_support_function_description        = 'mostly internal';
+        p.total_support_function_description         = 'AUROC based';
+        p.situation_grounding_function_description   = 'geometric mean padded';
         
         % define how to calculate external support (ie, compatibility between a proposed entry to
         % the workspace and the existing entries) and total support (a combination of the internal
@@ -466,6 +468,8 @@
                 p.total_support_function{1} = @(internal,external) b(1,1) + b(1,2) * internal + b(1,3) * external + b(1,4) * internal * external;
                 p.total_support_function{2} = @(internal,external) b(2,1) + b(2,2) * internal + b(2,3) * external + b(2,4) * internal * external;
                 p.total_support_function{3} = @(internal,external) b(3,1) + b(3,2) * internal + b(3,3) * external + b(3,4) * internal * external;
+            case 'AUROC based'
+                p.total_support_function = @(internal,external,AUROC) (AUROC^2 - .1) * internal + (1 - AUROC^2 + .1) * external;
             case 'jointly learned external and total'
                 b = [0.9266   -0.0583    0.0453   -4.6040e-13    0.0063; ...
                      0.9177    0.0065    0.0654    1.7392e-12    0.0025; ...
@@ -605,43 +609,44 @@
     temp.description = description;
     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
     
-    description = 'uniform location and box, no box adjust';
-    temp = p;
-    temp.description = description;
-    temp.situation_model.description    = 'uniform';
-    temp.situation_model.learn          = @situation_models.uniform_fit;
-    temp.situation_model.update         = @situation_models.uniform_condition;
-    temp.situation_model.sample         = @situation_models.uniform_sample;
-    temp.situation_model.draw           = @situation_models.uniform_draw;
-    temp.adjustment_model.description      = 'none';
-    temp.adjustment_model.activation_logic = @(cur_agent,a,b) false;
-    temp.adjustment_model.train            = @(a,b,c,d) [];
-    temp.adjustment_model.apply            = @(cur_agent) assert(1==0);
-    temp.total_support_function_description = 'all internal';
-    temp.total_support_function             = @(internal,external) 1.0 * internal + 0 * external;
-    if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
-    
-    description = 'uniform location and box, box adjust';
-    temp = p;
-    temp.description = description;
-    temp.situation_model.description    = 'uniform';
-    temp.situation_model.learn          = @situation_models.uniform_fit;
-    temp.situation_model.update         = @situation_models.uniform_condition;
-    temp.situation_model.sample         = @situation_models.uniform_sample;
-    temp.situation_model.draw           = @situation_models.uniform_draw;
-    temp.total_support_function_description = 'all internal';
-    temp.total_support_function = @(internal,external) 1.0 * internal + 0 * external;
-    if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
-    
-    description = 'normal location and box, no box adjust';
-    temp = p;
-    temp.description = description;
-    temp.adjustment_model.activation_logic = @(cur_agent,a,b) false;
-    temp.adjustment_model.train            = @(a,b,c,d) [];
-    temp.adjustment_model.apply            = @(cur_agent) assert(1==0);
-    if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
-    
+%     description = 'uniform location and box, no box adjust';
+%     temp = p;
+%     temp.description = description;
+%     temp.situation_model.description    = 'uniform';
+%     temp.situation_model.learn          = @situation_models.uniform_fit;
+%     temp.situation_model.update         = @situation_models.uniform_condition;
+%     temp.situation_model.sample         = @situation_models.uniform_sample;
+%     temp.situation_model.draw           = @situation_models.uniform_draw;
+%     temp.adjustment_model.description      = 'none';
+%     temp.adjustment_model.activation_logic = @(cur_agent,a,b) false;
+%     temp.adjustment_model.train            = @(a,b,c,d) [];
+%     temp.adjustment_model.apply            = @(cur_agent) assert(1==0);
+%     temp.total_support_function_description = 'all internal';
+%     temp.total_support_function             = @(internal,external) 1.0 * internal + 0 * external;
+%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+%     
+%     description = 'uniform location and box, box adjust';
+%     temp = p;
+%     temp.description = description;
+%     temp.situation_model.description    = 'uniform';
+%     temp.situation_model.learn          = @situation_models.uniform_fit;
+%     temp.situation_model.update         = @situation_models.uniform_condition;
+%     temp.situation_model.sample         = @situation_models.uniform_sample;
+%     temp.situation_model.draw           = @situation_models.uniform_draw;
+%     temp.total_support_function_description = 'all internal';
+%     temp.total_support_function = @(internal,external) 1.0 * internal + 0 * external;
+%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+%     
+%     description = 'normal location and box, no box adjust';
+%     temp = p;
+%     temp.description = description;
+%     temp.adjustment_model.activation_logic = @(cur_agent,a,b) false;
+%     temp.adjustment_model.train            = @(a,b,c,d) [];
+%     temp.adjustment_model.apply            = @(cur_agent) assert(1==0);
+%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+%     
   
+
 
 %% Run the experiment 
 

@@ -93,7 +93,14 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
         
         fnames_test = cellfun( @(x) x.fnames_im_test, temp_data, 'UniformOutput', false);
         fnames_test = cellfun( @(x) x', fnames_test,'UniformOutput',false);
-        fnames_test = [fnames_test{:}]';
+        fnames_test = [fnames_test{:}];
+        fnames_test = fnames_test(:)';
+        
+        for wi = 1:length(workspaces_final)
+            labl_fname = [fnames_test{wi}(1:end-3) 'labl']; 
+            workspaces_final(wi) = situate.score_workspace( workspaces_final(wi), labl_fname, p_condition );
+        end
+        
         
         results_per_condition(ci).condition = p_condition.description;
         
@@ -219,7 +226,7 @@ function situate_experiment_analysis( results_directory, show_failure_examples )
         iou_thresholds = sort(unique([linspace(0,1,num_thresholds+1) .5])); % make sure .5 is in there
         iou_thresholds = iou_thresholds(2:end);
         num_thresholds = length(iou_thresholds);
-        num_images = numel(fnames_test);
+        num_images = numel(unique(fnames_test));
         
         % final IOUs for objects
         final_ious = zeros( num_images, num_situation_objects );

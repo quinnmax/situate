@@ -78,21 +78,6 @@ function [fname_out] = cnn_feature_extractor( directory_in, directory_out, p )
         
     end 
     
-    figure
-    for oi = 1:num_situation_objects
-        subplot2(4,num_situation_objects,1,oi); hist(box_shapes(:,oi),50);
-        xlabel('shapes');
-        title(situation_objects{oi});
-        subplot2(4,num_situation_objects,2,oi); hist(box_sizes(:,oi),20);
-        xlabel('sizes');
-        
-        subplot2(4,num_situation_objects,3,oi); hist(log(box_shapes(:,oi)),50);
-        xlabel('log shapes');
-        title(situation_objects{oi});
-        subplot2(4,num_situation_objects,4,oi); hist(log(box_sizes(:,oi)),20);
-        xlabel('log sizes');
-    end
-        
     
     
 %% define box set for each image
@@ -100,6 +85,7 @@ function [fname_out] = cnn_feature_extractor( directory_in, directory_out, p )
     
     center_func = @(c, w) c + w * .5 * [randn(1,11) 0];
     wh_func     = @(w)    w * [exp(randn(1,11)/3) 1];
+    
     
     
 %% gather box proposal information

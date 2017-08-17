@@ -150,6 +150,8 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
                 % update external and total support for existing workspace objects
                 for wi = 1:length(workspace.labels)
 
+                    oi = strcmp( workspace.labels{wi},p.situation_objects);
+                    
                     cur_box = workspace.boxes_r0rfc0cf(wi,:);
                     dist_index = strcmp( {d.interest}, workspace.labels{wi} );
                     [~,new_density] = p.situation_model.sample( d(dist_index).distribution, workspace.labels{wi}, 1, d(1).image_size, cur_box );
@@ -157,19 +159,22 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
                     % update external support
                     if length(p.external_support_function) == 1
                         workspace.external_support(wi) = p.external_support_function( new_density );
-                    elseif length(p.total_support_function) == length(p.situation_objects) % we have different functions for each object type
-                        obj_ind = strcmp( workspace.labels{wi},p.situation_objects);
-                        workspace.external_support(wi) = p.external_support_function{obj_ind}( new_density );
+                    elseif length(p.external_support_function) == length(p.situation_objects) % we have different functions for each object type
+                        workspace.external_support(wi) = p.external_support_function{oi}( new_density );
                     else
                         error('number of external support functions is incompatible with the number of situation objects');
                     end
                     
                     % update total support
                     if length(p.total_support_function) == 1
-                        workspace.total_support(wi) = p.total_support_function( workspace.internal_support(wi), workspace.external_support(wi) );
+                        if nargin(p.total_support_function) == 2
+                            workspace.total_support(wi) = p.total_support_function( workspace.internal_support(wi), workspace.external_support(wi) );
+                        elseif nargin(p.total_support_function) == 3
+                            workspace.total_support(wi) = p.total_support_function( workspace.internal_support(wi), workspace.external_support(wi), learned_models.classifier_model.AUROCs(oi) );
+                        end
                     elseif length(p.total_support_function) == length(p.situation_objects)  % we have different functions for each object type
-                        obj_ind = strcmp( workspace.labels{wi},p.situation_objects);
-                        workspace.total_support(wi) = p.total_support_function{obj_ind}( workspace.internal_support(wi), workspace.external_support(wi) );
+                        
+                        workspace.total_support(wi) = p.total_support_function{oi}( workspace.internal_support(wi), workspace.external_support(wi) );
                     else
                         error('number of total support functions is incompatible with the number of situation objects');
                     end
@@ -398,7 +403,7 @@ function [agent_pool, d, workspace, object_was_added] = agent_evaluate( agent_po
             [agent_pool, d] = agent_evaluate_scout( agent_pool, agent_index, p, d, im, label, learned_models );
         case 'reviewer'
             % reviewers do not modify the distributions
-            [agent_pool] = agent_evaluate_reviewer( agent_pool, agent_index, p, workspace, d );
+            [agent_pool] = agent_evaluate_reviewer( agent_pool, agent_index, p, workspace, d, learned_models );
         case 'builder'
             % builders modify d by changing the prior on scout interests,
             % and by focusing attention on box sizes and shapes similar to
@@ -453,7 +458,7 @@ function [agent_pool, d, workspace, object_was_added] = agent_evaluate( agent_po
             agent_pool(end).urgency = p.agent_urgency_defaults.reviewer;
         end
         
-        [agent_pool] = agent_evaluate_reviewer( agent_pool, length(agent_pool), p, workspace, d );
+        [agent_pool] = agent_evaluate_reviewer( agent_pool, length(agent_pool), p, workspace, d, learned_models );
         agent_pool(agent_index).support.external = agent_pool(end).support.external;
         agent_pool(agent_index).support.total    = agent_pool(end).support.total;
         if isequal(agent_pool(end).type,'builder') && agent_pool(agent_index).support.internal >= p.thresholds.internal_support
@@ -590,7 +595,7 @@ end
 
 %% eval reviewer 
 
-function [agent_pool] = agent_evaluate_reviewer( agent_pool, agent_index, p, workspace, d ) 
+function [agent_pool] = agent_evaluate_reviewer( agent_pool, agent_index, p, workspace, d, learned_models ) 
     
     % the reviewer checks to see how compatible a proposed object is with
     % our understanding of the relationships between objects. if the
@@ -609,12 +614,17 @@ function [agent_pool] = agent_evaluate_reviewer( agent_pool, agent_index, p, wor
         cur_agent.support.external = p.external_support_function{obj_ind}( agent_pool(agent_index).support.sample_densities ); 
     end
     
+    oi = strcmp( p.situation_objects, cur_agent.interest );
+    
     switch class( p.total_support_function )
         case 'function_handle'
-            cur_agent.support.total    = p.total_support_function( cur_agent.support.internal, cur_agent.support.external );
+            if nargin(p.total_support_function) == 2
+                cur_agent.support.total    = p.total_support_function( cur_agent.support.internal, cur_agent.support.external );
+            elseif nargin(p.total_support_function) == 3
+                cur_agent.support.total    = p.total_support_function( cur_agent.support.internal, cur_agent.support.external, learned_models.classifier_model.AUROCs(oi) );
+            end
         case 'cell'
             % assume different functions per object type
-            oi = strcmp( p.situation_objects, cur_agent.interest );
             cur_agent.support.total    = p.total_support_function{oi}( cur_agent.support.internal, cur_agent.support.external );
         otherwise
             error('dunno what to do with this');
