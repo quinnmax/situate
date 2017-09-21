@@ -24,6 +24,9 @@ function classifier_struct = IOU_ridge_regression_train( p, fnames_in, saved_mod
         
         % see if we have pre-existing features, or if we need to extract them
         existing_feature_directory = 'pre_extracted_feature_data';
+        if ~exist(existing_feature_directory,'dir')
+            mkdir(existing_feature_directory);
+        end
         
         selected_datafile_fname = situate.check_for_existing_model( ...
             existing_feature_directory, 'object_labels', sort(p.situation_objects) );

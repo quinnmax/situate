@@ -16,16 +16,6 @@ function [confidences, gt_ious, boxes_xywh, output_labels, fnames_include] = csv
 %   gt_ious are based on a comparison with the label files (if available)
 %   output_labels specify which objects are in which column
 %   per_row_fnames gives you the files that each row represents
-
-
-%     csv_directory           = '/Users/Max/Desktop/rcnn box data/dogwalking, positive, portland test/';
-%     testing_file_directory  = '/Users/Max/Documents/MATLAB/data/situate_images/Dogwalking_PortlandSimple_test/';
-%     fnames_include = [];
-
-    csv_directory           = '/Users/Max/Desktop/rcnn box data/handshaking participants, positive all/';
-    testing_file_directory  = '/Users/Max/Documents/MATLAB/data/situate_images/Handshaking_test/';
-    fnames_include = [];
-
     
     csv_data_columns = {'x','y','w','h','confidence','gt iou maybe'};
     csv_box_inds = 1:4;
@@ -116,8 +106,8 @@ function [confidences, gt_ious, boxes_xywh, output_labels, fnames_include] = csv
     num_objects = sum( instances_per_obj_in_situation );
     
     boxes_xywh  =      cell( num_images, num_objects );
-    confidences = -1 * ones( num_images, num_objects );
-    gt_ious     = -1 * ones( num_images, num_objects );
+    confidences = nan( num_images, num_objects );
+    gt_ious     = nan( num_images, num_objects );
     
     for fi = 1:num_images
        
@@ -163,6 +153,7 @@ function [confidences, gt_ious, boxes_xywh, output_labels, fnames_include] = csv
         
     end
     
+    gt_ious( gt_ious < 0 ) = nan;
      
 end
 

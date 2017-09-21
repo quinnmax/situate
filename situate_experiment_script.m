@@ -16,7 +16,7 @@
     % situation, experiment title
     
         experiment_settings = [];
-        experiment_settings.title               = 'dogwalking, primed agent pool experiment';
+        experiment_settings.title               = 'dogwalking, usual validation set';
         experiment_settings.situations_struct   = situate.situation_definitions();
         
     % sources 
@@ -68,7 +68,7 @@
         
     % running parameters
     
-        experiment_settings.use_gui                         = false;
+        experiment_settings.use_gui                         = true;
         experiment_settings.use_parallel                    = false;
         experiment_settings.run_analysis_after_completion   = false;
 
