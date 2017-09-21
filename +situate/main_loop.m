@@ -56,11 +56,16 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
         d(joint_dist_index).image_size        = [size(im,1)   size(im,2)];
         d(joint_dist_index).image_size_px     =  size(im,1) * size(im,2);
         
-    % initialize the agent pool
-        agent_pool = repmat( agent_initialize(), 1, p.num_scouts );
-        for ai = 1:length(agent_pool)
-            agent_pool(ai) = agent_initialize(p);
+        % initialize agent pool
+        if isfield(p,'prime_agent_pool') && p.prime_agent_pool
+            [~,agent_pool] = prime_agent_pool( im_size );
+        else
+            agent_pool = repmat( situate.agent_initialize(), 1, p.num_scouts );
+            for ai = 1:length(agent_pool)
+                agent_pool(ai) = situate.agent_initialize(p);
+            end
         end
+        
         agent_types = {'scout','reviewer','builder'};
         
     % initialize record keeping 
@@ -190,7 +195,8 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
                 
             % update temperature
             if isfield(p,'temperature')
-                workspace.temperature = p.temperature.update( workspace );
+                %workspace.temperature = p.temperature.update( workspace );
+                workspace.temperature = iteration / p.num_iterations;
             end
             
         % update records
@@ -274,18 +280,13 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
                     d(dj).interest_priorty = p.situation_objects_urgency_pre.( d(dj).interest );
                 end
             end
-            
-%             % random clear out
-%             if rand() < .01
-%                 agent_pool = agent_initialize(p);
-%             end
-              
+       
             % refill the pool if we're continuing on and the pool is under size
             while sum( strcmp( 'scout', {agent_pool.type} ) ) < p.num_scouts
                 if isempty(agent_pool)
-                    agent_pool = agent_initialize(p); 
+                    agent_pool = situate.agent_initialize(p); 
                 else
-                    agent_pool(end+1) = agent_initialize(p); 
+                    agent_pool(end+1) = situate.agent_initialize(p); 
                 end
             end
             
@@ -351,43 +352,6 @@ function workspace = workspace_initialize(p,im_size)
     
 end
 
-function agent = agent_initialize(p)
-
-    persistent agent_base;
-    persistent p_old;
-    
-    if ~exist('p','var') || isempty(p)
-        p = [];
-    end
-    
-    if isempty(agent_base) || ~isequal(p,p_old)
-        agent_base                           = [];
-        agent_base.type                      = 'scout';
-        agent_base.interest                  = [];
-        agent_base.urgency                   = [];
-        agent_base.box.r0rfc0cf              = [];
-        agent_base.box.xywh                  = [];
-        agent_base.box.xcycwh                = [];
-        agent_base.box.aspect_ratio          = [];
-        agent_base.box.area_ratio            = [];
-        agent_base.support.internal          = NaN;
-        agent_base.support.external          = NaN;
-        agent_base.support.total             = NaN;
-        agent_base.support.GROUND_TRUTH      = NaN;
-        agent_base.support.sample_densities  = NaN;
-        agent_base.eval_function             = []; % not really using it right now :/
-        agent_base.GT_label_raw = [];
-    
-        if ~isempty(p)
-            agent_base.urgency  = p.agent_urgency_defaults.scout;
-        end
-        
-        p_old = p;
-    end
-   
-    agent = agent_base;
-    
-end
 
 
 
@@ -556,7 +520,11 @@ function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, p, d, i
         if ~isempty(label) && ismember( cur_agent.interest, label.labels_adjusted )
             relevant_label_ind = find(strcmp(cur_agent.interest,label.labels_adjusted),1,'first');
             ground_truth_box_xywh = label.boxes_xywh(relevant_label_ind,:);
-            cur_agent.support.GROUND_TRUTH = intersection_over_union( cur_agent.box.xywh, ground_truth_box_xywh, 'xywh' );
+            if ~isempty(cur_agent.box.xywh)
+                cur_agent.support.GROUND_TRUTH = intersection_over_union( cur_agent.box.xywh, ground_truth_box_xywh, 'xywh' );
+            else
+                cur_agent.support.GROUND_TRUTH = intersection_over_union( cur_agent.box.r0rfc0cf, ground_truth_box_xywh, 'r0rfc0cf', 'xywh' );
+            end
             cur_agent.GT_label_raw = label.labels_raw{relevant_label_ind};
         else
             cur_agent.support.GROUND_TRUTH = nan;

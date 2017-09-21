@@ -10,7 +10,6 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
     generate_new_splits = false;
 
     % process the split arg
-
         if exist('split_arg','var') ...
         && ~isempty(split_arg)
     
@@ -21,26 +20,33 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
             elseif ischar(split_arg) && isdir(split_arg)
                 % then it's a directory, we'll look for files that give file names to use as the splits
                 split_file_directory = split_arg;
+                data_folds = situate.load_data_splits_from_directory( split_file_directory );
             else
                 % don't rightly know
                 error('don''t know what to do with that split_arg');
             end
             
-        else
-            warning('split_arg_was empty, using current time as rng seed for defining training-testing split');
-            rng(now);
+        else % split arg is empty, so try using the directories
+            if isequal(experiment_settings.data_path_train,experiment_settings.data_path_test)
+                % same folder, so generate splits of it
+                rng(now);
+                generate_new_splits = true;
+            else
+                % not the same folder, so use everything from training folder and test folder
+                data_folds = [];
+                
+                temp = dir( fullfile(experiment_settings.data_path_train,'*.labl') );
+                data_folds.fnames_lb_train = {temp.name};
+                data_folds.fnames_im_train = cellfun( @(x) [x(1:end-4) 'jpg'], data_folds.fnames_lb_train, 'Uniformoutput', false );
+                
+                temp = dir( fullfile(experiment_settings.data_path_test,'*.jpg') );
+                data_folds.fnames_im_test = {temp.name};
+                data_folds.fnames_lb_test = cellfun( @(x) [x(1:end-3) 'labl'], data_folds.fnames_im_test, 'Uniformoutput', false );
+                data_folds.fnames_lb_test( cellfun( @(x) ~exist(x,'file'), data_folds.fnames_lb_test ) ) = {''};
+            end
         end
        
-    % load or generate splits
-    %   if the split_arg was a directory, load splits from them
-    %   if it was numeric, make up new training/testing splits
-
-        if exist('split_file_directory','var') && isdir(split_file_directory)
-            data_folds = load_data_splits_from_directory( split_file_directory );
-        else 
-            generate_new_splits = true;
-        end
-        
+       
     % make sure the split fnames and the specified directories led to actual images
     % if not, replace training images with those in the training directory
     % if not, replace testing  images with those in the testing  directory
@@ -76,11 +82,7 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
             generate_new_splits = true;
         end  
     end
-    
-    
-    
-    % this logic is ridiculous
-        
+   
     % generate new splits
     if generate_new_splits
         % this really only makes sense if there's a single directory that will be used for
@@ -115,7 +117,11 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
     %   or on the number of training images,
     %   adjust the data_folds struct to reflect that
 
-        if ~isempty(experiment_settings.testing_data_max) && experiment_settings.testing_data_max < length(data_folds(1).fnames_im_test)
+        if isempty(experiment_settings.testing_data_max)
+            experiment_settings.testing_data_max = length(data_folds(1).fnames_im_test);
+        end
+    
+        if experiment_settings.testing_data_max < length(data_folds(1).fnames_im_test)
             for i = 1:length(data_folds)
                 data_folds(i).fnames_lb_test = data_folds(i).fnames_lb_test(1:experiment_settings.testing_data_max);
                 data_folds(i).fnames_im_test = data_folds(i).fnames_im_test(1:experiment_settings.testing_data_max);
@@ -340,33 +346,5 @@ function data_folds = generate_data_folds( data_path, num_folds, testing_data_ma
 end
 
 
-function data_folds = load_data_splits_from_directory( split_file_directory )
-
-       % Load the folds from files rather than generating new ones
-
-        fnames_splits_train = dir(fullfile(split_file_directory, '*_fnames_split_*_train.txt'));
-        fnames_splits_test  = dir(fullfile(split_file_directory, '*_fnames_split_*_test.txt' ));
-        fnames_splits_train = cellfun( @(x) fullfile(split_file_directory, x), {fnames_splits_train.name}, 'UniformOutput', false );
-        fnames_splits_test  = cellfun( @(x) fullfile(split_file_directory, x), {fnames_splits_test.name},  'UniformOutput', false );
-
-        assert( length(fnames_splits_train) > 0 );
-        assert( length(fnames_splits_train) == length(fnames_splits_test) );
-
-        fprintf('using training splits from: \t%s\n', fnames_splits_train{:});
-        fprintf('using testing  splits from: \t%s\n', fnames_splits_test{:} );
-
-        temp = [];
-        temp.fnames_lb_train = cellfun( @(x) importdata(x, '\n'), fnames_splits_train, 'UniformOutput', false );
-        temp.fnames_lb_test  = cellfun( @(x) importdata(x, '\n'), fnames_splits_test,  'UniformOutput', false );
-        data_folds = [];
-        for i = 1:length(temp.fnames_lb_train)
-            data_folds(i).fnames_lb_train = temp.fnames_lb_train{i};
-            data_folds(i).fnames_lb_test  = temp.fnames_lb_test{i};
-            data_folds(i).fnames_im_train = cellfun( @(x) [x(1:end-4) 'jpg'], temp.fnames_lb_train{i}, 'UniformOutput', false );
-            data_folds(i).fnames_im_test  = cellfun( @(x) [x(1:end-4) 'jpg'], temp.fnames_lb_test{i},  'UniformOutput', false );
-        end
-
-end
-       
            
 

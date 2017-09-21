@@ -1,5 +1,5 @@
 function workspace = score_workspace( workspace, label, p )
-% workspace = score_workspace( workspace, label_struct, [p] );
+% workspace = score_workspace( workspace, label_struct, p );
 % workspace = score_workspace( workspace, label_fname,  p );
 %
 % if the p structure is given, and there are labels that can be swapped, will look for the best
@@ -44,7 +44,7 @@ function workspace = score_workspace( workspace, label, p )
             end
         end
     end
-
+    
 end
 
 function GT_IOU = score_workspace_helper( workspace, lb )
@@ -52,7 +52,11 @@ function GT_IOU = score_workspace_helper( workspace, lb )
     GT_IOU = zeros(1,length(workspace.labels));
     for wi = 1:length(workspace.labels)
         lb_ind = strcmp( workspace.labels{wi}, lb.labels_adjusted );
-        GT_IOU(wi) = intersection_over_union( workspace.boxes_r0rfc0cf(wi,:), lb.boxes_r0rfc0cf(lb_ind,:), 'r0rfc0cf', 'r0rfc0cf' );
+        if isfield(workspace,'boxes_r0rfc0cf')
+            GT_IOU(wi) = intersection_over_union( workspace.boxes_r0rfc0cf(wi,:), lb.boxes_r0rfc0cf(lb_ind,:), 'r0rfc0cf', 'r0rfc0cf' );
+        elseif isfield(workspace,'boxes_xywh')
+            GT_IOU(wi) = intersection_over_union( workspace.boxes_xywh(wi,:), lb.boxes_xywh(lb_ind,:), 'xywh', 'xywh' ); 
+        end
     end
 
 end

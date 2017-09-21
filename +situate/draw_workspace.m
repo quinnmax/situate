@@ -11,9 +11,9 @@ function h = draw_workspace( input, p, workspace, font_size )
     %   p is a situate parameters structure
     %   workspace is the situate workspace to draw
    
-    bounding_box_format_provisional = 'r--';
-    bounding_box_format_final = 'r';
-    
+    bounding_box_format_provisional = {'r--',  'LineWidth', 2 };
+    bounding_box_format_final = {'r','LineWidth', 2} ;
+     
     h = [];
     
     if ~exist('font_size','var')
@@ -29,7 +29,7 @@ function h = draw_workspace( input, p, workspace, font_size )
                 case 'char'
                     x = imresize_px( imread(input), p.image_redim_px );
                     h(1) = imshow( x, [] );
-                case 'double'
+                case {'double', 'uint8'}
                     if all(ishandle(input))
                         axes(input);
                     else
@@ -53,10 +53,10 @@ function h = draw_workspace( input, p, workspace, font_size )
         for wi = 1:size(workspace.boxes_r0rfc0cf,1)
             if workspace.total_support(wi) >= p.thresholds.total_support_final
                 % was UserData.handles(end+1) = 
-                h(end+1) = draw_box(workspace.boxes_r0rfc0cf(wi,:), 'r0rfc0cf', bounding_box_format_final);
+                h(end+1) = draw_box(workspace.boxes_r0rfc0cf(wi,:), 'r0rfc0cf', bounding_box_format_final{:});
             else
                 % was UserData.handles(end+1) = 
-                h(end+1) = draw_box(workspace.boxes_r0rfc0cf(wi,:), 'r0rfc0cf', bounding_box_format_provisional);
+                h(end+1) = draw_box(workspace.boxes_r0rfc0cf(wi,:), 'r0rfc0cf', bounding_box_format_provisional{:});
             end
         end
 
@@ -72,11 +72,11 @@ function h = draw_workspace( input, p, workspace, font_size )
             y_position = workspace.boxes_r0rfc0cf(wi,1);
             
             t1 = text( x_position, y_position, label_text);
-            set(t1,'color',[0 0 0]);
+            set(t1,'color',[eps 0 0]);
             set(t1,'FontSize',font_size);
             set(t1,'FontWeight','bold');
             t2 = text( x_position+1, y_position+1, label_text);
-            set(t2,'color',[1 1 1]);
+            set(t2,'color',[1-eps 1 1]);
             set(t2,'FontSize',font_size);
             set(t2,'FontWeight','bold');
             
@@ -96,12 +96,12 @@ function h = draw_workspace( input, p, workspace, font_size )
             y_positions = y_positions(2:2:end-1);
             
             %y_position = workspace.boxes_r0rfc0cf(wi,1);
-            y_position = y_positions(find(strcmp(workspace.labels{wi},p.situation_objects)));
+            y_position = y_positions(strcmp(workspace.labels{wi},p.situation_objects));
             
             t3 = text( x_position, y_position, detailed_text);
-            set(t1,'color',[0 0 0]);
-            set(t1,'FontSize',font_size);
-            set(t1,'FontWeight','bold');
+            set(t3,'color',[eps 0 0]);
+            set(t3,'FontSize',font_size);
+            set(t3,'FontWeight','bold');
             
             h(end+1) = t3;
             

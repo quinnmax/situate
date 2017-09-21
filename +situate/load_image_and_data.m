@@ -1,7 +1,7 @@
 function [im_data,im] = load_image_and_data( fname_in, p, use_resize )
 
     % [im_data,im] = load_image_and_data( fname_in, p, use_resize );
-    % [im_data] = load_image_and_data( fname_in, p, use_resize );
+    % [im_data]    = load_image_and_data( fname_in, p, use_resize );
     %   just loads the image data
     %
     % if use_resize, resizes to p.image_redim_px
@@ -82,29 +82,33 @@ function [im_data,im] = load_image_and_data( fname_in, p, use_resize )
     
     % get the image data
     if exist(lb_fname,'file')
-        im_data_a = situate.image_data(lb_fname);
-        im_data_b = situate.image_data_label_adjust( im_data_a, p );
+        im_data = situate.image_data(lb_fname);
+        if exist('p','var') && ~isempty(p)
+            im_data.situation_objects = p.situation_objects;
+            im_data.situation_objects_possible_labels = p.situation_objects_possible_labels;
+            im_data = situate.image_data_label_adjust( im_data, p);
+        end
     else
-        im_data_b = [];
+        im_data = [];
     end
     
     % do we need to resize the image data?
-    if use_resize
+    if use_resize && ~isempty(im_data)
         % want to do this without needing to load the actual image, in case
         % it's just the data being pulled
+        
+        warning('off','MATLAB:imagesci:tifftagsread:numDirectoryEntriesIsZero');
         image_info = imfinfo(im_fname);
+        warning('on','MATLAB:imagesci:tifftagsread:numDirectoryEntriesIsZero');
+        
         rows = image_info.Height;
         cols = image_info.Width;
         ratio = sqrt( p.image_redim_px / (rows*cols) );
         new_rows = round( rows * ratio );
         new_cols = round( cols * ratio );
-        if ~isempty(im_data_b)
-            im_data   = situate.image_data_rescale( im_data_b, new_rows, new_cols );
-        else
-            im_data = [];
-        end
-    else
-        im_data = im_data_b;
+        
+        im_data   = situate.image_data_rescale( im_data, new_rows, new_cols );
+        
     end
     
     % hang on to the last call's info

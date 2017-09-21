@@ -1,4 +1,4 @@
-function h = draw_box(box, box_format, arg)
+function h = draw_box(box, box_format, varargin)
 
 % h = draw_box(box, box_format, arg);
 % box_format options include
@@ -54,12 +54,12 @@ function h = draw_box(box, box_format, arg)
         cs = [c0(i) c0(i) cf(i) cf(i) c0(i)];
         rs = [r0(i) rf(i) rf(i) r0(i) r0(i)];
 
-        if ~exist('arg','var') || isempty(arg)
+        if ~exist('varargin','var') || isempty(varargin)
             h(i) = plot(cs, rs);
-        elseif ischar(arg)
-            h(i) = plot(cs, rs, arg);
-        elseif isnumeric(arg) && length(arg) == 3
-            h(i) = plot(cs, rs, 'Color', arg);
+        elseif length(varargin) == 1
+            h(i) = plot(cs, rs, varargin{1});
+        else
+            h(i) = plot(cs, rs, varargin{:} );
         end
         
     end

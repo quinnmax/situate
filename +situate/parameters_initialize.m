@@ -10,6 +10,9 @@ function p = parameters_initialize()
     p.image_redim_px = 500000;
     p.num_iterations = 1000;
     
+    p.situation_objects                 = {};
+    p.situation_objects_possible_labels = {{},{}};
+    
      % population settings
         p.num_scouts = 10;
         p.agent_urgency_defaults.scout    = 1;

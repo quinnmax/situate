@@ -1,8 +1,9 @@
-function image_data_out = image_data_label_adjust( image_data_in, p )
+function image_data_out = image_data_label_adjust( image_data_in, varargin )
 
 
 
-% label_out = image_data_label_adjust( image_data_in, p );
+% image_data_out = image_data_label_adjust( image_data_in, p )
+% image_data_out = image_data_label_adjust( image_data_in, labels_adjusted, labels_raw )
 %
 %   add labels_adjusted to the image_data_struct
 %   using the mapping from p.situation_objects_possible_labels to
@@ -14,6 +15,13 @@ function image_data_out = image_data_label_adjust( image_data_in, p )
 % both accept the same set of raw labels {player front, player back, etc},
 % then the first raw_label will go to player1, and the next to player2,
 % then back to player1.
+
+if length(varargin) == 1
+    p = varargin{1};
+else
+    p.situation_objects = varargin{1};
+    p.situation_objects_possible_labels = varargin{2};
+end
 
 global assignment_counter
 if isempty(assignment_counter), assignment_counter = 0; end
@@ -28,6 +36,7 @@ if isempty(assignment_counter), assignment_counter = 0; end
         end
         
     elseif iscellstr(image_data_in)
+        
         % we just have file names, so get the image data first, and then do the
         % adjustment
         fnames_in = image_data_in;
@@ -49,9 +58,9 @@ if isempty(assignment_counter), assignment_counter = 0; end
             end
             
             switch length(possible_label_inds)
-                case 0, 
+                case 0
                     image_data_out.labels_adjusted{i} = 'unknown_object';
-                case 1, 
+                case 1 
                     image_data_out.labels_adjusted{i} = p.situation_objects{possible_label_inds};
                 otherwise
                     if assignment_counter == 0

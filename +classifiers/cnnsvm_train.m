@@ -32,9 +32,14 @@ function classifier_struct = cnnsvm_train( p, fnames_in, saved_models_directory 
     classifier_struct.model_description = model_description;
     
     if ~model_already_existed
-        saved_model_fname = fullfile( saved_models_directory, [model_description '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat'] );
-        save(saved_model_fname,'-struct','classifier_model');
-        display(['saved cnnsvm model to: ' saved_model_fname ]);
+        iter = 0;
+        saved_model_fname = fullfile( saved_models_directory, [ [p.situation_objects{:}] ', ' model_description ', ' num2str(iter) '.mat'] );
+        while exist(saved_model_fname,'file')
+            iter = iter + 1;
+            saved_model_fname = fullfile( saved_models_directory, [ [p.situation_objects{:}] ', ' model_description ', ' num2str(iter) '.mat'] );
+        end
+        save(saved_model_fname,'-struct','classifier_struct');
+        display(['saved ' model_description ' model to: ' saved_model_fname ]);
     end
 
 end

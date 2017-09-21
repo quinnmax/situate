@@ -9,11 +9,13 @@ function model = two_tone_train ( p, fnames_in, saved_models_directory, training
         'fnames_train',fnames_in_pathless,...
         'model_description',model_description, ...
         'IOU_thresholds', training_IOU_thresholds, ...
-        'model_selection_threshold', model_selection_threshold);
+        'model_selection_threshold', model_selection_threshold,...
+        'object_types', p.situation_objects);
     
     if ~isempty(model_fname)
         model = load(model_fname);
         display(['box_adjust two tone model loaded from ' model_fname]);
+        display(repmat(' ',1,100));
         return;
     end
 
@@ -32,9 +34,16 @@ function model = two_tone_train ( p, fnames_in, saved_models_directory, training
     model.sub_models{1} = model_a;
     model.sub_models{2} = model_b;
     
-    save_fname = fullfile( saved_models_directory, [model_description '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
-    save( save_fname, '-struct', 'model' );
-    display(['box_adjust two tone model saved to ' save_fname ]);
+    
+    iter = 0;
+    saved_model_fname = fullfile( saved_models_directory, [ [p.situation_objects{:}] ', ' model_description ', ' num2str(iter) '.mat'] );
+    while exist(saved_model_fname,'file')
+        iter = iter + 1;
+        saved_model_fname = fullfile( saved_models_directory, [ [p.situation_objects{:}] ', ' model_description ', ' num2str(iter) '.mat'] );
+    end
+    save(saved_model_fname,'-struct','classifier_struct');
+    display(['saved ' model_description ' model to: ' saved_model_fname ]);
+    
     
 end
     

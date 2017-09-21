@@ -31,7 +31,7 @@ function model = train( p, fnames_in, saved_models_directory, training_IOU_thres
         {saved_models_directory,'default_models'}, ...
         'fnames_train',fnames_in_pathless,...
         'model_description',model_description, ...
-        'IOU_threshold', training_IOU_threshold);
+        'object_types', p.situation_objects);
     
     if ~isempty(model_fname)
         model = load(model_fname);
@@ -81,9 +81,29 @@ function model = train( p, fnames_in, saved_models_directory, training_IOU_thres
         fprintf('\n');
     end
     
-    save_fname = fullfile( saved_models_directory, [model_description '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
-    save( save_fname, '-struct', 'model' );
-    display(['box_adjust model saved to ' save_fname ' in ' num2str(toc) 's']);
+    
+    % save the model
+    
+    iter = 0;
+    saved_model_fname = fullfile( saved_models_directory, [ [p.situation_objects{:}] ', ' model_description ', ' num2str(iter) '.mat'] );
+    while exist(saved_model_fname,'file')
+        iter = iter + 1;
+        saved_model_fname = fullfile( saved_models_directory, [ [p.situation_objects{:}] ', ' model_description ', ' num2str(iter) '.mat'] );
+    end
+    save(saved_model_fname,'-struct','classifier_struct');
+    display(['saved ' model_description ' model to: ' saved_model_fname ]);
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     show_results_on_training_data = false;

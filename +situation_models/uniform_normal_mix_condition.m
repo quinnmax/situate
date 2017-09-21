@@ -9,11 +9,7 @@ function model_out = uniform_normal_mix_condition( model_in, object_type, worksp
     else
         
         model_out = situation_models.normal_condition( model_in, object_type, workspace );
-        
-        % if workspace has some property
-        %   model_out.probability_of_uniform_after_conditioning is something else
-        % end
-        
+      
     end
 
 end

@@ -16,24 +16,43 @@
     % situation, experiment title
     
         experiment_settings = [];
-        experiment_settings.title               = 'pingpong AUROC support check';
+        experiment_settings.title               = 'dogwalking, primed agent pool experiment';
         experiment_settings.situations_struct   = situate.situation_definitions();
-        %experiment_settings.situation           = 'handshaking';  % look in experiment_settings.situations_struct to see the options
-        %experiment_settings.situation           = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
-        experiment_settings.situation           = 'pingpong';  % look in experiment_settings.situations_struct to see the options
         
     % sources 
         
-        data_path_train = ''; % empty means use a default
-        data_path_test  = ''; % empty means use a default
-        %data_path_test = '/Users/Max/Desktop/dog_other/people-other52.jpg';
-        %data_path_test = '';
+        % dogwalking validation experiment
+        experiment_settings.situation = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
+        data_path_train = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/';
+        data_path_test  = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/';
+        
+%         % dogwalking positive test
+%         experiment_settings.situation           = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
+%         data_path_train = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/';
+%         data_path_test  = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_test/';
 
-        %split_arg = [];
-        split_arg = 1; % randomly generated with seed value 1
+%         % dogwalking negative test
+%         experiment_settings.situatio = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
+%         data_path_train = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/';
+%         data_path_test  = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_negative/';
+        
+%         % handshaking (unsided) positive test
+%         experiment_settings.situation = 'handshaking_unsided';  % look in experiment_settings.situations_struct to see the options
+%         data_path_train = '/Users/Max/Documents/MATLAB/data/situate_images/Handshaking_train/';
+%         data_path_test  = '/Users/Max/Documents/MATLAB/data/situate_images/Handshaking_test/';
+
+%         % handshaking (unsided) negative test
+%         experiment_settings.situation = 'handshaking_unsided';  % look in experiment_settings.situations_struct to see the options
+%         data_path_train = '/Users/Max/Documents/MATLAB/data/situate_images/Handshaking_train/';
+%         data_path_test  = '/Users/Max/Documents/MATLAB/data/situate_images/Handshaking_negative/';
+      
+
+
+        % split_arg = [];
+        % split_arg = 1; % randomly generated with seed value 1
         % split_arg = now; % randomly generated with time-based seed value
         % split_arg = uigetdir(pwd); % pick one in the gui
-        % split_arg = 'split_validation/'; % validation set (hard)
+        split_arg = 'split_validation/'; % validation set (hard)
         
         if ischar(split_arg)
             seed_train = [];
@@ -44,13 +63,13 @@
     % running limits
     
         experiment_settings.training_data_max   = []; 
-        experiment_settings.testing_data_max    = [50]; % per fold, all images if empty
-        experiment_settings.folds               = [1];  % list the folds, not how many. ie, 2:4
+        experiment_settings.testing_data_max    = []; % per fold, if empty all images used
+        experiment_settings.folds               = [1];  % list the folds, not how many. ie, [1] or [2,3,4]
         
     % running parameters
     
         experiment_settings.use_gui                         = false;
-        experiment_settings.use_parallel                    = true;
+        experiment_settings.use_parallel                    = false;
         experiment_settings.run_analysis_after_completion   = false;
 
         % visualization specifics
@@ -87,16 +106,12 @@
 % situate.situation_definitions contains some defaults. 
 % worst case, you point them out in the gui
           
-   
-    
-    
-    
     % first see if the specified folder is empty
     % if empty
-    %   try to use a default folder
+    %   try to use a default folder ( from situate.situation_definitions )
     % if it wasn't empty, but the folder doesn't exist
     % or we couldn't find a default 
-    %   then just ask the user to specify the folder
+    %   then ask the user to specify the needed folder(s)
     
     if isempty(data_path_train)
         possible_path_train_ind = find(cellfun( @(x) exist(x,'dir'), experiment_settings.situations_struct.(experiment_settings.situation).possible_paths_train ),1,'first');
@@ -124,11 +139,8 @@
     end
     experiment_settings.data_path_test = data_path_test;
       
-   
-    
         
-        
-    % split_arg
+    % how split_arg works
     %
     %   This defines how we get our training/testing splits.
     %   The split arg can take on a few different values for differing behaviors.
@@ -501,6 +513,7 @@
 %% Situate parameters: support thresholds 
     
         check_in_thresholds = 'parameter experiment findings';
+        %check_in_thresholds = 'custom';
         
         switch check_in_thresholds
             case 'IOU'
@@ -512,9 +525,9 @@
                 p.thresholds.total_support_provisional = .15; % workspace entry, provisional (search continues)
                 p.thresholds.total_support_final       = .35; % workspace entry, final (search (maybe) ends) depends on p.situation_objects_urgency_post
             case 'custom'
-                p.thresholds.internal_support          = .25; % scout -> reviewer threshold
-                p.thresholds.total_support_provisional = .25; % workspace entry, provisional (search continues)
-                p.thresholds.total_support_final       = .75; % workspace entry, final (search (maybe) ends) depends on p.situation_objects_urgency_post
+                p.thresholds.internal_support          = .2; % scout -> reviewer threshold
+                p.thresholds.total_support_provisional = .2; % workspace entry, provisional (search continues)
+                p.thresholds.total_support_final       = .5625; % workspace entry, final (search (maybe) ends) depends on p.situation_objects_urgency_post
             case 'parameter experiment findings'
                 p.thresholds.internal_support          = .2;   % scout -> reviewer threshold
                 p.thresholds.total_support_provisional = inf;   % workspace entry, provisional (search continues)
@@ -603,28 +616,19 @@
 
     p_conditions = [];
     p_conditions_descriptions = {};
-    
+
     description = 'normal location and box, box adjust';
     temp = p;
     temp.description = description;
     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
     
-%     description = 'uniform location and box, no box adjust';
+%     description = 'normal location and box, box adjust, primed agent pool, fuzzy temperature';
 %     temp = p;
 %     temp.description = description;
-%     temp.situation_model.description    = 'uniform';
-%     temp.situation_model.learn          = @situation_models.uniform_fit;
-%     temp.situation_model.update         = @situation_models.uniform_condition;
-%     temp.situation_model.sample         = @situation_models.uniform_sample;
-%     temp.situation_model.draw           = @situation_models.uniform_draw;
-%     temp.adjustment_model.description      = 'none';
-%     temp.adjustment_model.activation_logic = @(cur_agent,a,b) false;
-%     temp.adjustment_model.train            = @(a,b,c,d) [];
-%     temp.adjustment_model.apply            = @(cur_agent) assert(1==0);
-%     temp.total_support_function_description = 'all internal';
-%     temp.total_support_function             = @(internal,external) 1.0 * internal + 0 * external;
+%     temp.prime_agent_pool = true;
+%     temp.situation_model.update = @situation_models.uniform_normal_mix_condition_w_temperature_sketch;
 %     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
-%     
+    
 %     description = 'uniform location and box, box adjust';
 %     temp = p;
 %     temp.description = description;
@@ -636,15 +640,6 @@
 %     temp.total_support_function_description = 'all internal';
 %     temp.total_support_function = @(internal,external) 1.0 * internal + 0 * external;
 %     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
-%     
-%     description = 'normal location and box, no box adjust';
-%     temp = p;
-%     temp.description = description;
-%     temp.adjustment_model.activation_logic = @(cur_agent,a,b) false;
-%     temp.adjustment_model.train            = @(a,b,c,d) [];
-%     temp.adjustment_model.apply            = @(cur_agent) assert(1==0);
-%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
-%     
   
 
 
