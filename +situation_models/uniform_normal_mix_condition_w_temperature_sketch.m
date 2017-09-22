@@ -26,7 +26,7 @@ function model_out = uniform_normal_mix_condition_w_temperature_sketch( model_in
             else
                 run_status = [run_status 'most_objects:'];
             end
-           
+            
             total_support_vect = workspace.total_support;
             total_support_vect( strcmp(object_type,workspace.labels) ) = [];
             cur_support_level = prod( total_support_vect + .01 ) ^ (1/numel(total_support_vect));

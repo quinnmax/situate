@@ -9,8 +9,6 @@
 % situate_results_data = load(situate_results_file_fname,'fnames_im_test','workspaces_final','p_condition');
 % output_directory          = '/Users/Max/Desktop/situate_results_images_negatives/';
 
-
-
 situate_results_file_fname  = '/Users/Max/Dropbox/Projects/situate/results/dogwalking, negatives/dogwalking_negatives_situate.mat';
 image_file_directory        = '/Users/Max/Documents/MATLAB/data/situate_images/Dogwalking_negative';
 output_directory            = '/Users/Max/Desktop/dogwalking_situate_results_images_neg/';
@@ -25,11 +23,9 @@ figure;
 
 font_size = 8;
 for imi = 1:length(situate_results_data.fnames_im_test)
-%for imi = 1:5
-    
     
     cur_im_fname = situate_results_data.fnames_im_test{imi};
-    [~,fname,~] = fileparts(cur_im_fname);
+    [~,fname,~]  = fileparts(cur_im_fname);
     cur_im_fname = fullfile( image_file_directory, [fname '.jpg'] );
     
     subplot2(2,3,1,1,2,2);

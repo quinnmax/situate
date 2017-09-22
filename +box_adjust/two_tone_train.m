@@ -41,7 +41,7 @@ function model = two_tone_train ( p, fnames_in, saved_models_directory, training
         iter = iter + 1;
         saved_model_fname = fullfile( saved_models_directory, [ [p.situation_objects{:}] ', ' model_description ', ' num2str(iter) '.mat'] );
     end
-    save(saved_model_fname,'-struct','classifier_struct');
+    save(saved_model_fname,'-struct','model');
     display(['saved ' model_description ' model to: ' saved_model_fname ]);
     
     

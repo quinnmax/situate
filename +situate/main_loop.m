@@ -354,7 +354,6 @@ end
 
 
 
-
 %% eval agent (general, just routing) 
 
 function [agent_pool, d, workspace, object_was_added] = agent_evaluate( agent_pool, agent_index, im, label, d, p, workspace, learned_models )

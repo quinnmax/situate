@@ -61,7 +61,9 @@ function [ agent_pool, adjusted_box_r0rfc0cf, delta_xywh ] = apply( model, curre
     
     % construct a new agent to add to the pool
     new_agent = current_agent_snapshot;
-    new_agent.history = [current_agent_snapshot.history '_boxAdjust'];
+    if isfield( new_agent, 'history' )
+        new_agent.history = [current_agent_snapshot.history '_boxAdjust'];
+    end
     new_agent.type = 'scout';
     new_agent.urgency = 1;
     new_agent.support.internal     = 0;

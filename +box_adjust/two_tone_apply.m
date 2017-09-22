@@ -1,4 +1,5 @@
 function [ agent_pool_out, adjusted_box_r0rfc0cf, delta_xywh ] = two_tone_apply( model, current_agent_snapshot, agent_pool, image, cnn_features )
+% [ agent_pool_out, adjusted_box_r0rfc0cf, delta_xywh ] = two_tone_apply( model, current_agent_snapshot, agent_pool, image, cnn_features );
 
     if ~exist('cnn_features','var')
         cnn_features = [];

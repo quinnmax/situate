@@ -46,19 +46,25 @@
 %         data_path_train = '/Users/Max/Documents/MATLAB/data/situate_images/Handshaking_train/';
 %         data_path_test  = '/Users/Max/Documents/MATLAB/data/situate_images/Handshaking_negative/';
       
-
-
-        % split_arg = [];
-        % split_arg = 1; % randomly generated with seed value 1
-        % split_arg = now; % randomly generated with time-based seed value
-        % split_arg = uigetdir(pwd); % pick one in the gui
-        split_arg = 'split_validation/'; % validation set (hard)
+        % if data_path_train and data_path_test are the same directory, then the split_arg will be
+        % used to decide how to split up the data. this can be done a few ways.
+        %   -a directory with explicit lists of files that are used for training and testing
+        %   -a seed value that's used to randomly divide the files into training and testing
         
-        if ischar(split_arg)
-            seed_train = [];
-        elseif isnumeric(split_arg)
-            seed_train = split_arg;
-        end
+            if isequal( data_path_train, data_path_test )
+                % split_arg = 1; % randomly generated with seed value 1
+                % split_arg = now; % randomly generated with time-based seed value
+                % split_arg = uigetdir(pwd); % pick a folder in the gui
+                split_arg = 'split_validation/'; % existing validation set for dogwalking images (hard)
+            else
+                split_arg = [];
+            end
+
+            if ischar(split_arg)
+                seed_train = [];
+            elseif isnumeric(split_arg)
+                seed_train = split_arg;
+            end
         
     % running limits
     
@@ -90,7 +96,7 @@
             
     % results directory
     
-        experiment_settings.results_directory = fullfile('results',[experiment_settings.title '_' datestr(now,'yyyy.mm.dd.HH.MM.SS')]);                                                                                          
+        experiment_settings.results_directory = fullfile('results',[experiment_settings.situation '_' experiment_settings.title '_' datestr(now,'yyyy.mm.dd.HH.MM.SS')]);                                                                                          
         if ~exist(experiment_settings.results_directory,'dir') && ~experiment_settings.use_gui, mkdir(experiment_settings.results_directory); display(['made results directory ' experiment_settings.results_directory]); end
 
         
