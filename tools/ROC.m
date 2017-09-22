@@ -5,24 +5,13 @@ function [AUROC, TPR, FPR, thresholds] = ROC( d_vars, labels, direction )
     % if direction is (+), then a high d_val is associated with targets [default]
     % if direction is (-), then a low d_val is associated with targets
     % if direction is (0), then ROC will make a charitable assumption
-    %   direction selected using means of dvars only, not automatically > .5
     
-    
-    
-    ifndef('direction',1);
-    if ifndef('d_vars',[])
-        display('ROC in demo mode');
-        d_vars = [ randn(100,1); randn(100,1)+2 ];
-        labels = [ zeros(100,1);  ones(100,1) ];
+    if ~exist('direction','var') || isempty(direction)
         direction = 1;
     end
     
-    
-    
     d_tar_in = d_vars(eq(labels,1));
     d_non_in = d_vars(eq(labels,0));
-    
-    
     
     % set up our thresholds
     
