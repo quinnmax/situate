@@ -13,7 +13,11 @@ function [im_data,im] = load_image_and_data( fname_in, p, use_resize )
     persistent prev_im;
     
     if ~exist('use_resize','var') || isempty(use_resize)
-        use_resize = false;
+        if isempty(p.image_redim_px) || p.image_redim_px == 0
+            use_resize = false;
+        elseif p.image_redim_px > 0
+            use_resize = true;
+        end
     end
     
     % see if we can get away with returning last times stuff
@@ -66,13 +70,16 @@ function [im_data,im] = load_image_and_data( fname_in, p, use_resize )
     end
     
     if ~exist('use_resize','var') || isempty(use_resize)
-        use_resize = true;
+        if p.image_redim_px == 0 || isempty(p.image_redim_px)
+            use_resize = false;
+        elseif p.image_redim_px > 0
+            use_resize = true;
+        end
     end
     
     % do we load the image?
     if nargout >= 2
         im_in = imread(im_fname);
-        im_in = im_in;
         if use_resize
             im = imresize_px(im_in, p.image_redim_px);
         else

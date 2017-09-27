@@ -1,12 +1,12 @@
-function [classifier_output, gt_iou] = IOU_ridge_regression_apply( classifier_struct, target_class, im, box_r0rfc0cf, lb )
-% [classifier_output, ground_truth_iou] = IOU_ridge_regression_apply( classifier_struct, target_class, im, box_r0rfc0cf, [lb] )
+function [classifier_output, gt_iou, cnn_feature_vect]    = IOU_ridge_regression_apply( classifier_struct, target_class, im, box_r0rfc0cf, lb )
+% [classifier_output, ground_truth_iou, cnn_feature_vect] = IOU_ridge_regression_apply( classifier_struct, target_class, im, box_r0rfc0cf, [lb] )
 
     persistent im_old;
     persistent box_r0rfc0cf_old;
-    persistent cnn_features_old;
+    persistent cnn_feature_vect_old;
     
     if isequal(box_r0rfc0cf, box_r0rfc0cf_old) && isequal(im, im_old)
-        cnn_features = cnn_features_old;
+        cnn_feature_vect = cnn_feature_vect_old;
     else
 
         % should be in 0-255
@@ -28,17 +28,17 @@ function [classifier_output, gt_iou] = IOU_ridge_regression_apply( classifier_st
             return;
         end
 
-        cnn_features = cnn.cnn_process( image_crop );
+        cnn_feature_vect = cnn.cnn_process( image_crop );
         
         % make these new values the old values
         im_old = im;
         box_r0rfc0cf_old = box_r0rfc0cf;
-        cnn_features_old = cnn_features;
+        cnn_feature_vect_old = cnn_feature_vect;
         
     end
     
     model_ind = strcmp( classifier_struct.classes, target_class );
-    classifier_output = [1 cnn_features'] * classifier_struct.models{model_ind};
+    classifier_output = [1 cnn_feature_vect'] * classifier_struct.models{model_ind};
     
     if classifier_output > 5 || classifier_output < -1
        warning('classifiers.IOU_ridge_regression_apply is giving some extreme values'); 

@@ -7,6 +7,7 @@ function [ agent_pool_out, adjusted_box_r0rfc0cf, delta_xywh ] = two_tone_apply(
 
     if current_agent_snapshot.support.internal <= model.model_selection_threshold
 
+
         [ agent_pool_out, adjusted_box_r0rfc0cf, delta_xywh ] = box_adjust.apply( model.sub_models{1}, current_agent_snapshot, agent_pool, image, cnn_features );
         
     else

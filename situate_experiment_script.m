@@ -16,20 +16,20 @@
     % situation, experiment title
     
         experiment_settings = [];
-        experiment_settings.title               = 'dogwalking, usual validation set';
+        experiment_settings.title               = 'dogwalking, usual validation set, total support comparison';
         experiment_settings.situations_struct   = situate.situation_definitions();
         
     % sources 
         
-        % dogwalking validation experiment
-        experiment_settings.situation = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
-        data_path_train = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/';
-        data_path_test  = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/';
-        
-%         % dogwalking positive test
-%         experiment_settings.situation           = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
+%         % dogwalking validation experiment
+%         experiment_settings.situation = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
 %         data_path_train = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/';
-%         data_path_test  = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_test/';
+%         data_path_test  = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/';
+        
+        % dogwalking positive test
+        experiment_settings.situation           = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
+        data_path_train = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/';
+        data_path_test  = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_test/';
 
 %         % dogwalking negative test
 %         experiment_settings.situatio = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
@@ -74,7 +74,7 @@
         
     % running parameters
     
-        experiment_settings.use_gui                         = true;
+        experiment_settings.use_gui                         = false;
         experiment_settings.use_parallel                    = false;
         experiment_settings.run_analysis_after_completion   = false;
 
@@ -416,9 +416,10 @@
     
         p.external_support_function_description    = 'atan fit';
         
-        % p.total_support_function_description       = 'regression experiment dogwalking';
-        %p.total_support_function_description        = 'mostly internal';
         p.total_support_function_description         = 'AUROC based';
+        % p.total_support_function_description       = 'regression experiment dogwalking';
+        % p.total_support_function_description       = 'mostly internal';
+        
         p.situation_grounding_function_description   = 'geometric mean padded';
         
         % define how to calculate external support (ie, compatibility between a proposed entry to
@@ -623,7 +624,13 @@
     p_conditions = [];
     p_conditions_descriptions = {};
 
-    description = 'normal location and box, box adjust';
+%     description = 'situate, AUROC total support, decay and drop, no resize';
+%     temp = p;
+%     temp.image_redim_px = [];
+%     temp.description = description;
+%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+    
+    description = 'situate, AUROC total support, decay and drop, use resize';
     temp = p;
     temp.description = description;
     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end

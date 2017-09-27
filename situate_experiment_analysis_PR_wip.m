@@ -1,20 +1,26 @@
 
 
-%% load data
+% path containing results from situate runs. one path should contain results from a run on positive
+% images, the other should contain results from a run on negative images.
 
-group_field = 'p_condition';
+% if there is more than one method run on the positive set, there should be matching methods run for
+% the negative set. 
 
 path_pos = '/Users/Max/Dropbox/Projects/situate/results/handshaking unsided, test, positives';
 path_neg = '/Users/Max/Dropbox/Projects/situate/results/handshaking unsided, negatives_2017.09.14.11.56.04/';
 
+
+
+%% load data
+
 paths = {path_pos; path_neg};
-     
 
 fnames_temp = cell(1,length(paths));
 for mi =1 :length(paths)
     fnames_temp{mi} = arrayfun( @(x) fullfile( x.folder, x.name ), dir( fullfile( paths{mi}, '*.mat' ) ), 'UniformOutput', false );
 end
 
+group_field = 'p_condition';
 fnames = vertcat(fnames_temp{:});
 %fnames(strcmp(fnames,'/Users/Max/Dropbox/Projects/situate/results/handshaking unsided, test, positives/uniform location and box, box adjust_fold_01_2017.09.09.14.58.56.mat')) = [];
 temp = cellfun( @(x) load(x, group_field), fnames );

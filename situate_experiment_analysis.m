@@ -98,7 +98,19 @@ function situate_experiment_analysis( results_directory, show_final_workspaces, 
         
         for wi = 1:length(workspaces_final)
             labl_fname = [fnames_test{wi}(1:end-3) 'labl']; 
+            if ~exist(labl_fname,'file')
+                [path,name,ext] = fileparts(labl_fname);
+                switch path
+                    case '/Users/Max/Documents/MATLAB/data/situate_images/PortlandSimpleDogWalking_test'
+                        path = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_test/';
+                    otherwise
+                        error('need to correct some more paths');
+                end
+                labl_fname = fullfile(path,[name ext]);
+            end
+            
             workspaces_final(wi) = situate.score_workspace( workspaces_final(wi), labl_fname, p_condition );
+            
         end
         
         
