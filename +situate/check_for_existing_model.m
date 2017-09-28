@@ -38,8 +38,9 @@ function selected_model_fname = check_for_existing_model( possible_paths, vararg
                         % with a different directory structure. if images are just numbered, it will
                         % definitely be a problem.
                         if iscellstr( file_data )   
-                            file_data = cellfun( @(x) x(last(strfind(x,filesep()))+1:end), file_data, 'UniformOutput',false);
-                            assert( isequal( sort(file_data), sort(varargin{vari+1}) ) );
+                            a = cellfun( @(x) x(last(strfind(x,filesep()))+1:end), file_data, 'UniformOutput',false);
+                            b = varargin{vari+1};
+                            assert( all(ismember(a,b)), all(ismember(b,a)) );
                         else
                             assert( isequal( file_data, varargin{vari+1}) );
                         end 

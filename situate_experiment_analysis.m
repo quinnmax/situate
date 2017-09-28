@@ -17,8 +17,6 @@ function situate_experiment_analysis( results_directory, show_final_workspaces, 
 
 %% data source 
 
-    
-
     if ~exist( 'results_directory', 'var' ) || isempty(results_directory) || ~isdir(results_directory)
 
         h = msgbox('Select directory containing the results to analyze');
@@ -32,7 +30,6 @@ function situate_experiment_analysis( results_directory, show_final_workspaces, 
 
     temp = dir(fullfile(results_directory, '*.mat'));
     fn = cellfun( @(x) fullfile(results_directory,x), {temp.name}, 'UniformOutput', false );
-
 
 %% group on condition
    
@@ -48,8 +45,6 @@ function situate_experiment_analysis( results_directory, show_final_workspaces, 
     
     [p_conditions_descriptions,~,condition_indices] = unique(p_conditions_descriptions_temp);
     num_conditions = length(p_conditions_descriptions);
-    
-    
     
 %% reshape the data
 
@@ -412,7 +407,6 @@ function situate_experiment_analysis( results_directory, show_final_workspaces, 
     clear temp_data;
     clear agent_records;
     clear temp;
-    
     
 %% include rcnn results
 
