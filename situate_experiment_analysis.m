@@ -408,6 +408,18 @@ function situate_experiment_analysis( results_directory, show_final_workspaces, 
     clear agent_records;
     clear temp;
     
+    
+%% median detection times
+iou_threshold_ind = find(eq( abs(iou_thresholds - .5 ), min(abs(iou_thresholds - .5 ))));
+median_detections = nan( num_conditions, num_situation_objects + 1 );
+for ci = 1:num_conditions
+for oi = 1:num_situation_objects + 1
+    temp = results_per_condition(ci).first_iteration_over_threshold(:,oi,iou_threshold_ind);
+    temp( isnan(temp) ) = p_condition.num_iterations + 1;
+    median_detections(ci,oi) = median(temp);
+end
+end
+    
 %% include rcnn results
 
 % include jordan's rcnn data source
