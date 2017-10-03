@@ -18,8 +18,8 @@ path_neg = '/Users/Max/Dropbox/Projects/situate/results/dogwalking, negatives';
 paths = {path_pos; path_neg};
 
 fnames_temp = cell(1,length(paths));
-for mi =1 :length(paths)
-    fnames_temp{mi} = arrayfun( @(x) fullfile( x.folder, x.name ), dir( fullfile( paths{mi}, '*.mat' ) ), 'UniformOutput', false );
+for mi = 1:length(paths)
+    fnames_temp{mi} = arrayfun( @(x) fullfile( paths{mi}, x.name ), dir( fullfile( paths{mi}, '*.mat' ) ), 'UniformOutput', false );
 end
 
 group_field = 'p_condition';
