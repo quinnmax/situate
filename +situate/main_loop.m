@@ -57,8 +57,15 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
         d(joint_dist_index).image_size_px     =  size(im,1) * size(im,2);
         
         % initialize agent pool
-        if isfield(p,'prime_agent_pool') && p.prime_agent_pool
-            [~,agent_pool] = prime_agent_pool( im_size );
+        if isfield(p,'prime_agent_pool')
+            switch p.prime_agent_pool
+                case 'rcnn'
+                    agent_pool = prime_agent_pool_rcnn( im_size, im_fname, p );
+                case true
+                    agent_pool = prime_agent_pool( im_size );
+                otherwise
+                    error(['don''t know what to do with p.prime_agent_pool : ' p.prime_agent_pool] );
+            end
         else
             agent_pool = repmat( situate.agent_initialize(), 1, p.num_scouts );
             for ai = 1:length(agent_pool)
@@ -472,8 +479,12 @@ function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, p, d, i
             if nargout(p.situation_model.sample) == 2
                 % see if it wants to change the distribution by sampling
                 % (such as for inhibition on return)
+                
+                % no change to dist struct
                 [sampled_box_r0rfc0cf, sample_density] = p.situation_model.sample( d(di).distribution, d(di).interest, 1, [size(im,1), size(im,2)] ); 
             else
+                
+                % with change to dist struct
                 [sampled_box_r0rfc0cf, sample_density, d(di).distribution] = p.situation_model.sample( d(di).distribution, d(di).interest, 1, [size(im,1), size(im,2)] ); 
             end
             

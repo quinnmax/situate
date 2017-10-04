@@ -1,34 +1,61 @@
-function [primed_boxes_r0rfc0cf, primed_agent_pool] = prime_agent_pool( im_size )
-% [primed_agent_pool] = prime_agent_pool( im_size )
+function primed_agent_pool = prime_agent_pool( im_size )
+% primed_agent_pool = prime_agent_pool( im_size )
 
-    linear_scaling_factor = sqrt(im_size(1)*im_size(2));
-    box_sizes = round(linear_scaling_factor * [.2 .4 .6]);
+    box_size_width_ratios = [.2 .5];
+    box_shapes = [1/2 1/1 2/1];
+    overlap_ratio = .5;
+    
+    box_sizes_px = box_size_width_ratios.^2 * im_size(1) * im_size(2);
+    approx_num_boxes = sum((1./box_size_width_ratios).^2 .* (1/overlap_ratio).^2) * length(box_shapes);
+
+    % ratio of width of the image -> total pixels
+    
     primed_boxes_r0rfc0cf = zeros(0,4);
-    for bi = 1:length(box_sizes)
+    for bi = 1:length(box_sizes_px)
+    for bj = 1:length(box_shapes)
         
-        d = box_sizes(bi);
-        s = d/2;
+        [w,h] = box_aa2wh(box_shapes(bj),box_sizes_px(bi));
+        w = round(w);
+        h = round(h);
         
-        rcs = linspace( d/2, im_size(1)-d/2, round(im_size(1)/s) );
-        r0s = floor( rcs - d/2 ) + 1;
-        rfs = r0s + d - 1;
+        rcs = linspace( 1 + h/2 - .5, im_size(1) - h/2, round((im_size(1)-h/2)/(h * overlap_ratio)) );
+        r0s = floor( rcs - h/2 ) + 1;
+        rfs = r0s + h - 1;
 
-        ccs = linspace( d/2, im_size(2)-d/2, round(im_size(2)/s) );
-        c0s = floor( ccs - d/2 ) + 1;
-        cfs = c0s + d - 1;
+        ccs = linspace( 1 + w/2 - .5, im_size(2) - w/2, round((im_size(2)-w/2)/(w * overlap_ratio)) );
+        c0s = floor( ccs - w/2 ) + 1;
+        cfs = c0s + w - 1;
 
-        block = [sort(repmat( r0s', length(c0s), 1 )) sort(repmat( rfs', length(c0s), 1 )) repmat( c0s', length(r0s), 1 ) repmat( cfs', length(r0s), 1 )];
+        new_boxes_r0rfc0cf = [sort(repmat( r0s', length(c0s), 1 )) sort(repmat( rfs', length(c0s), 1 )) repmat( c0s', length(r0s), 1 ) repmat( cfs', length(r0s), 1 )];
         
-        primed_boxes_r0rfc0cf(end+1:end+size(block,1),:) = block;
+        primed_boxes_r0rfc0cf(end+1:end+size(new_boxes_r0rfc0cf,1),:) = new_boxes_r0rfc0cf;
         
+    end
     end
     
     agent = situate.agent_initialize();
     agent.history = 'primed';
+    agent.urgency = 1;
     primed_agent_pool = repmat(agent,size(primed_boxes_r0rfc0cf,1),1);
     for ai = 1:length(primed_agent_pool)
-        primed_agent_pool(ai).box.r0rfc0cf = primed_boxes_r0rfc0cf(ai,:);
-        primed_agent_pool(ai).urgency = 1;
+        
+        r0 = primed_boxes_r0rfc0cf(ai,1);
+        rf = primed_boxes_r0rfc0cf(ai,2);
+        c0 = primed_boxes_r0rfc0cf(ai,3);
+        cf = primed_boxes_r0rfc0cf(ai,4);
+        x = c0;
+        y = r0;
+        w = cf - c0 + 1;
+        h = rf - r0 + 1;
+        xc = round( x + w/2 - .5 );
+        yc = round( y + h/2 - .5 );
+        
+        primed_agent_pool(ai).box.r0rfc0cf = [r0 rf c0 cf];
+        primed_agent_pool(ai).box.xywh     = [x y w h];
+        primed_agent_pool(ai).box.xcycwh   = [xc yc w h];
+        primed_agent_pool(ai).box.aspect_ratio = w/h;
+        primed_agent_pool(ai).box.area_ratio   = (w*h)/prod(im_size);
+        
     end
     
 end

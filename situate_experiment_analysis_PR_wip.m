@@ -12,6 +12,14 @@
 path_pos = '/Users/Max/Dropbox/Projects/situate/results/dogwalking, test, single attempt, positives';
 path_neg = '/Users/Max/Dropbox/Projects/situate/results/dogwalking, negatives';
 
+output_directory = '/Users/Max/Desktop/temp_results/';
+if ~exist(output_directory,'dir')
+    mkdir(output_directory);
+end
+
+show_example_workspaces = false;
+
+
 
 %% load data
 
@@ -50,7 +58,9 @@ for mi = 1:num_methods
 end
 
 assert( ~isequal( {'a','b'}, {'a','b'}, {'b','a'} ) );
-assert( isequal( fnames_im_test{:} ) );
+if length(fnames_im_test) > 1
+    assert( isequal( fnames_im_test{:} ) );
+end
 fnames_im_test = fnames_im_test{1};
 is_positive = [true(1,length(temp{1})), false(1,length(temp{2}))]; % pos first per def of paths;
 num_images = length(is_positive);
@@ -73,7 +83,7 @@ xlabel('FPR');
 ylabel('TPR');
 title('ROC using situation support');
 
-saveas(gcf, [[p_structs(1).situation_objects{:}] '_ROC.png'],'png')
+saveas(gcf, fullfile( output_directory, [[p_structs(1).situation_objects{:}] '_ROC.png'] ),'png')
     
 
 %% generate precision recall with unique images
@@ -94,7 +104,7 @@ xlim([0 1]);
 ylim([0 1]);
 title('PR using situation support (100+,400-)');
 
-saveas(gcf,'dogwalking pos neg PR unbalanced.png','png')
+saveas(gcf,fullfile( output_directory, 'dogwalking pos neg PR unbalanced.png'),'png')
    
 %% generate precision recall with balanced pos/neg images (repeat runs on positives)
 
@@ -125,169 +135,174 @@ ylim([0 1]);
 title('PR using situation support (400+,400-)');
 
 fname = ['dogwalking pos neg PR balanced ' datestr(now,'yyyy_mm_dd_HH_MM_SS') '.png'];
-saveas(gcf,fname,'png');
+saveas(gcf,fullfile( output_directory, fname ),'png');
     
 %% top n
 
-[~, ~, ~, unique_im_inds] = unique_cell(fnames_im_test);
-include_inds = unique_im_inds;
+if show_example_workspaces
 
-situation_support_sorted = cell(1,num_methods);
-is_positive_sorted     = cell(1,num_methods);
-fnames_sorted            = cell(1,num_methods);
-workspaces_sorted        = cell(1,num_methods);
+    [~, ~, ~, unique_im_inds] = unique_cell(fnames_im_test);
+    include_inds = unique_im_inds;
 
-for mi = 1:num_methods
-    situation_support_temp = situation_support{mi}(include_inds);
-    is_positive_temp = is_positive(include_inds);
-    fnames_temp = fnames_im_test(include_inds);
-    workspaces_temp = workspaces_final{mi}(include_inds);
-    
-    [situation_support_sorted{mi}, sort_order] = sort(situation_support_temp,'descend');
-    is_positive_sorted{mi} = is_positive_temp( sort_order );
-    fnames_sorted{mi} = fnames_temp( sort_order );
-    workspaces_sorted{mi} = workspaces_temp( sort_order );
-    
-end
+    situation_support_sorted = cell(1,num_methods);
+    is_positive_sorted       = cell(1,num_methods);
+    fnames_sorted            = cell(1,num_methods);
+    workspaces_sorted        = cell(1,num_methods);
 
-% look at top 5 images by situation support
-n = 5;
-figure;
-for mi = 1:num_methods
-for ii = 1:n
-    cur_im_ind = ii;
-    subplot2(num_methods,n,mi,ii);
-    cur_fname = fnames_sorted{mi}{cur_im_ind};
-    
-    % this is just fixing for max having updated directory names
-    if ~exist(cur_fname,'file')
-        [path,filename,ext] = fileparts( cur_fname );
-        switch path
-            case '/Users/Max/Documents/MATLAB/data/situate_images/PortlandSimpleDogWalking_test'
-                new_path = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_test';
-            case '/Users/Max/Documents/MATLAB/data/situate_images/dogwalking_negative_test'
-                new_path = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_negative';
-            case '/Users/Max/Documents/MATLAB/data/situate_images/dogwalking_negative_validation'
-                new_path = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_negative';
-            otherwise
-                error('file not found, path not fixed');
-        end
-        cur_fname = fullfile( new_path, [filename ext] );
+    for mi = 1:num_methods
+        
+        situation_support_temp = situation_support{mi}(include_inds);
+        is_positive_temp = is_positive(include_inds);
+        fnames_temp = fnames_im_test(include_inds);
+        workspaces_temp = workspaces_final{mi}(include_inds);
+
+        [situation_support_sorted{mi}, sort_order] = sort(situation_support_temp,'descend');
+        is_positive_sorted{mi} = is_positive_temp( sort_order );
+        fnames_sorted{mi} = fnames_temp( sort_order );
+        workspaces_sorted{mi} = workspaces_temp( sort_order );
+
     end
-    
-    situate.draw_workspace( cur_fname, p_structs(mi), workspaces_sorted{mi}(cur_im_ind) ) ;
-    if ii == 1 && mi == 1, title('highest situation support'); end
-    if ii == 1, ylabel(p_structs(mi).description); end
-    xlabel(['situation support: ' num2str( situation_support_sorted{mi}(cur_im_ind) ) ]);
-end
-end
-set(gcf,'OuterPosition',[1,5,1680,1023]);
-saveas(gcf,'tops, high situation support, all images.png','png');
 
-% look at bottom 5 images by situation support
-n = 5;
-figure;
-for mi = 1:num_methods
-for ii = 1:n
-    cur_im_ind = length(fnames_sorted{mi}) - ii + 1;
-    subplot2(num_methods,n,mi,ii);
-    cur_fname = fnames_sorted{mi}{cur_im_ind};
-    
-    if ~exist(cur_fname,'file')
-        [path,filename,ext] = fileparts( cur_fname );
-        switch path
-            case '/Users/Max/Documents/MATLAB/data/situate_images/PortlandSimpleDogWalking_test'
-                new_path = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_test';
-            case '/Users/Max/Documents/MATLAB/data/situate_images/dogwalking_negative_test'
-                new_path = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_negative';
-            case '/Users/Max/Documents/MATLAB/data/situate_images/dogwalking_negative_validation'
-                new_path = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_negative';
-            otherwise
-                error('file not found, path not fixed');
-        end
-        cur_fname = fullfile( new_path, [filename ext] );
-    end
-    
-    situate.draw_workspace( cur_fname, p_structs(mi), workspaces_sorted{mi}(cur_im_ind) ) ;
-    if ii == 1 && mi == 1, title('lowest situation support'); end
-    if ii == 1, ylabel(p_structs(mi).description); end
-    xlabel(['situation support: ' num2str( situation_support_sorted{mi}(cur_im_ind) ) ]);
-end
-end
-set(gcf,'OuterPosition',[1,5,1680,1023]);
-saveas(gcf,'tops, low situation support, all images.png','png');
+    % look at top 5 images by situation support
+    n = 5;
+    figure;
+    for mi = 1:num_methods
+    for ii = 1:n
+        cur_im_ind = ii;
+        subplot2(num_methods,n,mi,ii);
+        cur_fname = fnames_sorted{mi}{cur_im_ind};
 
-% top false positives
-n = 5;
-figure;
-for mi = 1:num_methods
-    temp_inds = find(~is_positive_sorted{mi}, n, 'first' );
-for ii = 1:min(n,length(temp_inds))
-    cur_im_ind = temp_inds(ii);
-    subplot2(num_methods,n,mi,ii);
-    cur_fname = fnames_sorted{mi}{cur_im_ind};
-    
-    if ~exist(cur_fname,'file')
-        [path,filename,ext] = fileparts( cur_fname );
-        switch path
-            case '/Users/Max/Documents/MATLAB/data/situate_images/PortlandSimpleDogWalking_test'
-                new_path = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_test';
-            case '/Users/Max/Documents/MATLAB/data/situate_images/dogwalking_negative_test'
-                new_path = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_negative';
-            case '/Users/Max/Documents/MATLAB/data/situate_images/dogwalking_negative_validation'
-                new_path = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_negative';
-            otherwise
-                error('file not found, path not fixed');
+        % this is just fixing for max having updated directory names
+        if ~exist(cur_fname,'file')
+            [path,filename,ext] = fileparts( cur_fname );
+            switch path
+                case '/Users/Max/Documents/MATLAB/data/situate_images/PortlandSimpleDogWalking_test'
+                    new_path = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_test';
+                case '/Users/Max/Documents/MATLAB/data/situate_images/dogwalking_negative_test'
+                    new_path = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_negative';
+                case '/Users/Max/Documents/MATLAB/data/situate_images/dogwalking_negative_validation'
+                    new_path = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_negative';
+                otherwise
+                    error('file not found, path not fixed');
+            end
+            cur_fname = fullfile( new_path, [filename ext] );
         end
-        cur_fname = fullfile( new_path, [filename ext] );
-    end
-    
-    %cur_fname = strrep(cur_fname,'_validation','_test');
-    
-    situate.draw_workspace( cur_fname, p_structs(mi), workspaces_sorted{mi}(cur_im_ind) ) ;
-    if ii == 1 && mi == 1, title('highest situation support, non-target image'); end
-    if ii == 1, ylabel(p_structs(mi).description); end
-    xlabel(['situation support: ' num2str( situation_support_sorted{mi}(cur_im_ind) ) ]);
-end
-end
-set(gcf,'OuterPosition',[1,5,1680,1023]);
-saveas(gcf,'tops, high situation support, negatives.png','png');
 
-% top false negatives
-n = 5;
-figure;
-for mi = 1:num_methods
-    temp_inds = find(is_positive_sorted{mi}, n, 'last' );
-for ii = 1:n
-    cur_im_ind = temp_inds(ii);
-    subplot2(num_methods,n,mi,ii);
-    cur_fname = fnames_sorted{mi}{cur_im_ind};
-    
-    if ~exist(cur_fname,'file')
-        [path,filename,ext] = fileparts( cur_fname );
-        switch path
-            case '/Users/Max/Documents/MATLAB/data/situate_images/PortlandSimpleDogWalking_test'
-                new_path = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_test';
-            case '/Users/Max/Documents/MATLAB/data/situate_images/dogwalking_negative_test'
-                new_path = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_negative';
-            case '/Users/Max/Documents/MATLAB/data/situate_images/dogwalking_negative_validation'
-                new_path = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_negative';
-            otherwise
-                error('file not found, path not fixed');
-        end
-        cur_fname = fullfile( new_path, [filename ext] );
+        situate.draw_workspace( cur_fname, p_structs(mi), workspaces_sorted{mi}(cur_im_ind) ) ;
+        if ii == 1 && mi == 1, title('highest situation support'); end
+        if ii == 1, ylabel(p_structs(mi).description); end
+        xlabel(['situation support: ' num2str( situation_support_sorted{mi}(cur_im_ind) ) ]);
     end
-    
-    %cur_fname = strrep(cur_fname,'_validation','_test');
-    
-    situate.draw_workspace( cur_fname, p_structs(mi), workspaces_sorted{mi}(cur_im_ind) ) ;
-    if ii == 1 && mi == 1, title('lowest situation support, target image'); end
-    if ii == 1, ylabel(p_structs(mi).description); end
-    xlabel(['situation support: ' num2str( situation_support_sorted{mi}(cur_im_ind) ) ]);
+    end
+    set(gcf,'OuterPosition',[1,5,1680,1023]);
+    saveas(gcf,fullfile( output_directory, 'tops, high situation support, all images.png'),'png');
+
+    % look at bottom 5 images by situation support
+    n = 5;
+    figure;
+    for mi = 1:num_methods
+    for ii = 1:n
+        cur_im_ind = length(fnames_sorted{mi}) - ii + 1;
+        subplot2(num_methods,n,mi,ii);
+        cur_fname = fnames_sorted{mi}{cur_im_ind};
+
+        if ~exist(cur_fname,'file')
+            [path,filename,ext] = fileparts( cur_fname );
+            switch path
+                case '/Users/Max/Documents/MATLAB/data/situate_images/PortlandSimpleDogWalking_test'
+                    new_path = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_test';
+                case '/Users/Max/Documents/MATLAB/data/situate_images/dogwalking_negative_test'
+                    new_path = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_negative';
+                case '/Users/Max/Documents/MATLAB/data/situate_images/dogwalking_negative_validation'
+                    new_path = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_negative';
+                otherwise
+                    error('file not found, path not fixed');
+            end
+            cur_fname = fullfile( new_path, [filename ext] );
+        end
+
+        situate.draw_workspace( cur_fname, p_structs(mi), workspaces_sorted{mi}(cur_im_ind) ) ;
+        if ii == 1 && mi == 1, title('lowest situation support'); end
+        if ii == 1, ylabel(p_structs(mi).description); end
+        xlabel(['situation support: ' num2str( situation_support_sorted{mi}(cur_im_ind) ) ]);
+    end
+    end
+    set(gcf,'OuterPosition',[1,5,1680,1023]);
+    saveas(gcf,fullfile( output_directory, 'tops, low situation support, all images.png'),'png');
+
+    % top false positives
+    n = 5;
+    figure;
+    for mi = 1:num_methods
+        temp_inds = find(~is_positive_sorted{mi}, n, 'first' );
+    for ii = 1:min(n,length(temp_inds))
+        cur_im_ind = temp_inds(ii);
+        subplot2(num_methods,n,mi,ii);
+        cur_fname = fnames_sorted{mi}{cur_im_ind};
+
+        if ~exist(cur_fname,'file')
+            [path,filename,ext] = fileparts( cur_fname );
+            switch path
+                case '/Users/Max/Documents/MATLAB/data/situate_images/PortlandSimpleDogWalking_test'
+                    new_path = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_test';
+                case '/Users/Max/Documents/MATLAB/data/situate_images/dogwalking_negative_test'
+                    new_path = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_negative';
+                case '/Users/Max/Documents/MATLAB/data/situate_images/dogwalking_negative_validation'
+                    new_path = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_negative';
+                otherwise
+                    error('file not found, path not fixed');
+            end
+            cur_fname = fullfile( new_path, [filename ext] );
+        end
+
+        %cur_fname = strrep(cur_fname,'_validation','_test');
+
+        situate.draw_workspace( cur_fname, p_structs(mi), workspaces_sorted{mi}(cur_im_ind) ) ;
+        if ii == 1 && mi == 1, title('highest situation support, non-target image'); end
+        if ii == 1, ylabel(p_structs(mi).description); end
+        xlabel(['situation support: ' num2str( situation_support_sorted{mi}(cur_im_ind) ) ]);
+    end
+    end
+    set(gcf,'OuterPosition',[1,5,1680,1023]);
+    saveas(gcf,fullfile( output_directory, 'tops, high situation support, negatives.png' ),'png');
+
+    % top false negatives
+    n = 5;
+    figure;
+    for mi = 1:num_methods
+        temp_inds = find(is_positive_sorted{mi}, n, 'last' );
+    for ii = 1:n
+        cur_im_ind = temp_inds(ii);
+        subplot2(num_methods,n,mi,ii);
+        cur_fname = fnames_sorted{mi}{cur_im_ind};
+
+        if ~exist(cur_fname,'file')
+            [path,filename,ext] = fileparts( cur_fname );
+            switch path
+                case '/Users/Max/Documents/MATLAB/data/situate_images/PortlandSimpleDogWalking_test'
+                    new_path = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_test';
+                case '/Users/Max/Documents/MATLAB/data/situate_images/dogwalking_negative_test'
+                    new_path = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_negative';
+                case '/Users/Max/Documents/MATLAB/data/situate_images/dogwalking_negative_validation'
+                    new_path = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_negative';
+                otherwise
+                    error('file not found, path not fixed');
+            end
+            cur_fname = fullfile( new_path, [filename ext] );
+        end
+
+        %cur_fname = strrep(cur_fname,'_validation','_test');
+
+        situate.draw_workspace( cur_fname, p_structs(mi), workspaces_sorted{mi}(cur_im_ind) ) ;
+        if ii == 1 && mi == 1, title('lowest situation support, target image'); end
+        if ii == 1, ylabel(p_structs(mi).description); end
+        xlabel(['situation support: ' num2str( situation_support_sorted{mi}(cur_im_ind) ) ]);
+    end
+    end
+    set(gcf,'OuterPosition',[1,5,1680,1023]);
+    saveas(gcf,fullfile( output_directory, 'tops, low situation support, positives.png'),'png');
+
 end
-end
-set(gcf,'OuterPosition',[1,5,1680,1023]);
-saveas(gcf,'tops, low situation support, positives.png','png');
 
 %% recall at n if each target image was alone
 
@@ -306,13 +321,17 @@ for ci = 1:num_methods
     end
 end
 
-recall_at_vals = [1 5 10 20 100];
+%recall_at_vals = [1 5 10 20 100];
+recall_at_vals = 1:100;
 mean_recall_at = zeros( num_methods, length(recall_at_vals) );
 for ci = 1:num_methods
 for ni = 1:length(recall_at_vals)
     mean_recall_at( ci, ni ) = mean( rank_if_only_target(ci,:) < recall_at_vals(ni) );
 end
 end
+% should output a csv file or at least save off the mat
+save( fullfile( output_directory, 'mean_recall_at_n.mat'), 'mean_recall_at','recall_at_vals', 'param_descriptions' );
+
 
 for ci = 1:num_methods
     fprintf('method: %s \n', p_structs(ci).description );

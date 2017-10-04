@@ -18,6 +18,13 @@ function [classifier_output, gt_iou, cnn_feature_vect]    = IOU_ridge_regression
         rf = box_r0rfc0cf(:,2);
         c0 = box_r0rfc0cf(:,3);
         cf = box_r0rfc0cf(:,4);
+        
+        % fix boxes
+        r0 = max(r0,1);
+        rf = min(rf,size(im,1));
+        c0 = max(c0,1);
+        cf = min(cf,size(im,2));
+        
         image_crop = im(r0:rf,c0:cf,:);
 
         if min(size(image_crop))==0

@@ -16,20 +16,20 @@
     % situation, experiment title
     
         experiment_settings = [];
-        experiment_settings.title               = 'dogwalking, usual validation set, total support comparison';
-        experiment_settings.situations_struct   = situate.situation_definitions();
+        experiment_settings.title             = 'dogwalking, validation, rcnn priming debug';
+        experiment_settings.situations_struct = situate.situation_definitions();
         
     % sources 
         
-%         % dogwalking validation experiment
+        % dogwalking validation experiment
+        experiment_settings.situation = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
+        data_path_train = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/';
+        data_path_test  = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/';
+        
+%         % dogwalking positive test
 %         experiment_settings.situation = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
 %         data_path_train = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/';
-%         data_path_test  = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/';
-        
-        % dogwalking positive test
-        experiment_settings.situation           = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
-        data_path_train = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/';
-        data_path_test  = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_test/';
+%         data_path_test  = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_test/';
 
 %         % dogwalking negative test
 %         experiment_settings.situatio = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
@@ -630,8 +630,10 @@
 %     temp.description = description;
 %     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
     
-    description = 'situate, AUROC total support, decay and drop, use resize';
+    description = 'situate, AUROC total support, decay and drop, primed pool rcnn';
     temp = p;
+    %temp.prime_agent_pool = true;
+    temp.prime_agent_pool = 'rcnn';
     temp.description = description;
     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
     

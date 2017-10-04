@@ -61,9 +61,6 @@ end
 % for oi = 1:length(data.object_labels)
 %     predicted_IOUs_for_each_obj_type(:,oi) = [ones(sum(box_inds_test) , 1) data.box_proposal_cnn_features( box_inds_test, : )] * b{oi};
 % end
-    
-
-
 
 
 
