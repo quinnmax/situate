@@ -48,6 +48,7 @@ function primed_agent_pool = prime_agent_pool_rcnn( im_size, im_fname, p )
     
     total_primed_agents = sum( cellfun( @(x) size( x, 1 ), csv_data ) ) + num_non_rcnn_agents;
     primed_agent_pool = repmat( situate.agent_initialize(), total_primed_agents, 1 );
+    agents_remove = false( size( primed_agent_pool ) );
     ai = 1;
     for oi = 1:length(situation_objects)
     for bi = 1:size( csv_data{oi}, 1 )
@@ -80,6 +81,11 @@ function primed_agent_pool = prime_agent_pool_rcnn( im_size, im_fname, p )
         w = cf - c0 + 1;
         h = rf - r0 + 1;
         
+        % see if it should get dropped
+        if ( r0 > rf ) || ( c0 > cf )
+            agents_remove(ai) = true;
+        end
+        
         xc = x + w/2 - .5;
         yc = y + h/2 - .5;
         aspect_ratio = w/h;
@@ -93,6 +99,8 @@ function primed_agent_pool = prime_agent_pool_rcnn( im_size, im_fname, p )
         ai = ai + 1;
     end
     end
+    
+    primed_agent_pool( agents_remove ) = [];
     
 end
        
