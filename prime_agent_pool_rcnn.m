@@ -4,50 +4,81 @@ function primed_agent_pool = prime_agent_pool_rcnn( im_size, im_fname, p )
     num_rcnn_agents_per_obj = 10;
     num_non_rcnn_agents     = 10; % total in initial pool
     
-    rcnn_box_dir = 'rcnn box data/dogwalking, positive, portland all/';
+    rcnn_box_dir = {};
+    rcnn_box_dir{1} = 'rcnn box data/dogwalking, positive, portland all/';
+    rcnn_box_dir{2} = 'rcnn box data/dogwalking, negative, all/';
+    
     situation_objects = p.situation_objects; % dogwalker dog leash
     situation_object_dirs = {'dog_walker','dog','leash'};
-
+    
+    % get csv data
     csv_fnames = cell(1,length(situation_objects));
     csv_data   = cell(1,length(situation_objects));
-    for oi = 1:length(situation_objects)
-        [~,fname,~] = fileparts( im_fname );
-        csv_fnames{oi} = fullfile( rcnn_box_dir,situation_object_dirs{oi}, [fname '.csv'] );
-        assert( logical( exist(csv_fnames{oi},'file') ) );
-        
-        csv_data_columns = {'x','y','w','h','confidence','gt iou initial'};
-        conf_column = find( strcmp( csv_data_columns, 'confidence' ) );
-        temp = importdata( csv_fnames{oi} );
-        temp = sortrows( temp, -conf_column );
-        
-        num_rcnn_agents_per_obj = min(num_rcnn_agents_per_obj,size(temp,1));
-        temp = temp( 1:num_rcnn_agents_per_obj, : );
-        csv_data{oi} = temp;
-    end
     
-    im_info = imfinfo(im_fname);
-    if ~isequal( im_size, [im_info.Height im_info.Width] )
-        % need to resize the rcnn boxes
-        linear_scaling_factor = sqrt( prod(im_size) / prod([im_info.Height im_info.Width]) );
+    if num_rcnn_agents_per_obj > 0
+
         for oi = 1:length(situation_objects)
-            csv_data{oi}(1:4,:) = linear_scaling_factor * csv_data{oi}(1:4,:);
+
+            % go through each of the box dir entries to see if we can find the csv file that matches the
+            % current image file
+                [~,fname,~] = fileparts( im_fname );
+                di = 1;
+                cur_csv_fname = fullfile( rcnn_box_dir{di},situation_object_dirs{oi}, [fname '.csv'] );
+                while ~exist(cur_csv_fname,'file') && di < length(rcnn_box_dir)
+                    di = di + 1;
+                    cur_csv_fname = fullfile( rcnn_box_dir{di},situation_object_dirs{oi}, [fname '.csv'] );
+                end
+                if ~exist( cur_csv_fname,'file') 
+                    % we need to fix the old naming scheme to make it match with the new naming scheme
+                    % should just rename all of the csv files at this point? or does it make more sense
+                    % to find the old names and update my images? ugh.
+                end
+                    csv_fnames{oi} = cur_csv_fname;
+
+            % grab box data from the csv file
+                csv_data_columns = {'x','y','w','h','confidence','gt iou initial'};
+                conf_column = find( strcmp( csv_data_columns, 'confidence' ) );
+                temp = importdata( csv_fnames{oi} );
+                temp = sortrows( temp, -conf_column );
+
+                num_rcnn_agents_per_obj = min(num_rcnn_agents_per_obj,size(temp,1));
+                temp = temp( 1:num_rcnn_agents_per_obj, : );
+                csv_data{oi} = temp;
         end
-        
-        check_boxes = false;
-        if check_boxes
-            imshow( imresize( imread( im_fname ), linear_scaling_factor ) );
-            colors = hot(3);
-            hold on;
+
+        % see if we need to do resizing for the rcnn boxes
+        im_info = imfinfo(im_fname);
+        if ~isequal( im_size, [im_info.Height im_info.Width] )
+
+            linear_scaling_factor = sqrt( prod(im_size) / prod([im_info.Height im_info.Width]) );
             for oi = 1:length(situation_objects)
-                draw_box( csv_data{oi}(:,1:4),'xywh', 'Color', colors(oi,:), 'LineWidth', 1 );
+                csv_data{oi}(1:4,:) = linear_scaling_factor * csv_data{oi}(1:4,:);
             end
-            hold off;
+
+            check_boxes = false;
+            if check_boxes
+                imshow( imresize( imread( im_fname ), linear_scaling_factor ) );
+                colors = hot(3);
+                hold on;
+                for oi = 1:length(situation_objects)
+                    draw_box( csv_data{oi}(:,1:4),'xywh', 'Color', colors(oi,:), 'LineWidth', 1 );
+                end
+                hold off;
+            end
+
         end
-        
+
     end
+        
+    num_rcnn_primed_agents = sum( cellfun( @(x) size( x, 1 ), csv_data ) );
     
-    total_primed_agents = sum( cellfun( @(x) size( x, 1 ), csv_data ) ) + num_non_rcnn_agents;
-    primed_agent_pool = repmat( situate.agent_initialize(), total_primed_agents, 1 );
+    
+    
+    
+    total_primed_agents = num_rcnn_primed_agents + num_non_rcnn_agents;
+    agent = situate.agent_initialize();
+    agent.urgency = 1;
+    primed_agent_pool = repmat( agent, total_primed_agents, 1 );
     agents_remove = false( size( primed_agent_pool ) );
     ai = 1;
     for oi = 1:length(situation_objects)

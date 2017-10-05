@@ -16,7 +16,7 @@
     % situation, experiment title
     
         experiment_settings = [];
-        experiment_settings.title             = 'dogwalking, validation, rcnn priming debug';
+        experiment_settings.title             = 'dogwalking, rcnn priming debug';
         experiment_settings.situations_struct = situate.situation_definitions();
         
     % sources 
@@ -32,7 +32,7 @@
 %         data_path_test  = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_test/';
 
 %         % dogwalking negative test
-%         experiment_settings.situatio = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
+%         experiment_settings.situation = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
 %         data_path_train = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/';
 %         data_path_test  = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_negative/';
         
@@ -69,7 +69,7 @@
     % running limits
     
         experiment_settings.training_data_max   = []; 
-        experiment_settings.testing_data_max    = []; % per fold, if empty all images used
+        experiment_settings.testing_data_max    = [5]; % per fold, if empty all images used
         experiment_settings.folds               = [1];  % list the folds, not how many. ie, [1] or [2,3,4]
         
     % running parameters
