@@ -74,7 +74,7 @@
         
     % running parameters
     
-        experiment_settings.use_gui                         = false;
+        experiment_settings.use_gui                         = true;
         experiment_settings.use_parallel                    = false;
         experiment_settings.run_analysis_after_completion   = false;
 

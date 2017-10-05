@@ -138,8 +138,20 @@ function [h, return_status_string] = visualize( h, im, p, d, workspace, cur_agen
         
         if ~skip_this_agent
             
+            switch cur_agent.history
+                case 'blank'
+                    box_color = 'black';
+                case 'primedRCNN'
+                    box_color = 'yellow';
+                case {'primedRCNN_boxAdjust', 'blank_boxAdjust'}
+                    box_color = 'green';
+                otherwise
+                    box_color = 'blue';
+                    %error('dont recognize history');
+            end
+            
             hold on;
-            UserData.handles(end+1) = draw_box(cur_agent.box.r0rfc0cf, 'r0rfc0cf', 'blue');
+            UserData.handles(end+1) = draw_box(cur_agent.box.r0rfc0cf, 'r0rfc0cf', box_color);
             hold off;
             
             label_text = {...

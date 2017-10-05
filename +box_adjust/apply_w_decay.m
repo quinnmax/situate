@@ -61,6 +61,9 @@ function [ agent_pool, adjusted_box_r0rfc0cf, delta_xywh ] = apply_w_decay( mode
     
     % construct a new agent to add to the pool
     new_agent = current_agent_snapshot;
+    if isfield( new_agent, 'history' )
+        new_agent.history = [current_agent_snapshot.history '_boxAdjust'];
+    end
     new_agent.type = 'scout';
     new_agent.urgency = current_agent_snapshot.urgency * .9;
     new_agent.support.internal     = 0;
