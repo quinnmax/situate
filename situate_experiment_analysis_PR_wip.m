@@ -304,6 +304,8 @@ if show_example_workspaces
 
 end
 
+
+
 %% recall at n if each target image was alone
 
 [unique_im_fnames, ~, IA, unique_im_inds] = unique_cell(fnames_im_test);
@@ -332,7 +334,6 @@ end
 % should output a csv file or at least save off the mat
 save( fullfile( output_directory, 'mean_recall_at_n.mat'), 'mean_recall_at','recall_at_vals', 'param_descriptions' );
 
-
 for ci = 1:num_methods
     fprintf('method: %s \n', p_structs(ci).description );
     for ni = 1:length(recall_at_vals)
@@ -340,6 +341,27 @@ for ci = 1:num_methods
     end
     fprintf('\n');
 end
+
+
+
+%% output data to csv file
+
+fname_out = fullfile( output_directory, ['average_recall_at_n_' datestr(now,'yyyy_mm_dd_HH_MM_SS') '.csv'] );
+fid = fopen(fname_out,'w');
+
+fprintf(fid, 'n, ');
+fprintf(fid, '%d, ', recall_at_vals ); 
+fprintf(fid,'\n');
+
+for ci = 1:length(param_descriptions)
+    cur_condition_desc = param_descriptions{ci};
+    cur_condition_desc = strrep( cur_condition_desc, ',', '.' );
+    fprintf(fid, '%s, ', cur_condition_desc);
+    fprintf(fid, '%f, ', mean_recall_at(ci,:) );
+    fprintf(fid,'\n');
+end
+
+fclose(fid);
 
 
 
