@@ -350,15 +350,15 @@ fname_out = fullfile( output_directory, ['average_recall_at_n_' datestr(now,'yyy
 fid = fopen(fname_out,'w');
 
 fprintf(fid, 'n, ');
-fprintf(fid, '%d, ', recall_at_vals ); 
-fprintf(fid,'\n');
+fprintf(fid, '%d, ', recall_at_vals(1:end-1) ); 
+fprintf(fid, '%d\n', recall_at_vals(end) ); 
 
 for ci = 1:length(param_descriptions)
     cur_condition_desc = param_descriptions{ci};
     cur_condition_desc = strrep( cur_condition_desc, ',', '.' );
     fprintf(fid, '%s, ', cur_condition_desc);
-    fprintf(fid, '%f, ', mean_recall_at(ci,:) );
-    fprintf(fid,'\n');
+    fprintf(fid, '%f, ', mean_recall_at(ci,1:end-1) );
+    fprintf(fid, '%f\n', mean_recall_at(ci,end) );
 end
 
 fclose(fid);
