@@ -14,26 +14,19 @@ function [classifier_output, gt_iou, cnn_feature_vect]    = IOU_ridge_regression
             im = 255 * im;
         end
 
+        [success, box_r0rfc0cf] = situate.fix_box( box_r0rfc0cf, 'r0rfc0cf', [size(im,1) size(im,2)] );
+        
+        if ~success
+            classifier_output=-1;
+            return;
+        end
+        
         r0 = box_r0rfc0cf(:,1);
         rf = box_r0rfc0cf(:,2);
         c0 = box_r0rfc0cf(:,3);
         cf = box_r0rfc0cf(:,4);
         
-        % fix boxes
-        r0 = max(r0,1);
-        rf = min(rf,size(im,1));
-        c0 = max(c0,1);
-        cf = min(cf,size(im,2));
-        
         image_crop = im(r0:rf,c0:cf,:);
-
-        if min(size(image_crop))==0
-            % it's possible that we sample a box that gives us a busted crop.
-            % if that happens, just return a nonsense confidence value that
-            % will definitely fail to beat the max workspace entry
-            classifier_output=-1;
-            return;
-        end
 
         cnn_feature_vect = cnn.cnn_process( image_crop );
         

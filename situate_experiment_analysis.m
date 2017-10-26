@@ -11,7 +11,7 @@ function situate_experiment_analysis( results_directory, show_final_workspaces, 
     end
     
     if ~exist('show_final_workspaces','var') || isempty(show_final_workspaces)
-        show_final_workspaces = false;
+        show_final_workspaces = true;
     end
     
 
@@ -234,6 +234,10 @@ function situate_experiment_analysis( results_directory, show_final_workspaces, 
         iou_thresholds = iou_thresholds(2:end);
         num_thresholds = length(iou_thresholds);
         num_images     = numel(fnames_test);
+        if num_images > length(workspaces_final)
+            warning('looks like there are more image names that finished workspaces');
+            num_images = length(workspaces_final);
+        end
         
         % final IOUs for objects
         final_ious = zeros( num_images, num_situation_objects );

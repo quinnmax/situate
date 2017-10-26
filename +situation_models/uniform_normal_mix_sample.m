@@ -66,6 +66,8 @@ function [boxes_r0rfc0cf, sample_density] = uniform_normal_mix_sample( model, ob
         
     end
     
+    
+    
     %% otherwise, actually generate a bounding box
     
     raw_samples = mvnrnd( model.mu, model.Sigma, n);
@@ -144,6 +146,8 @@ function [boxes_r0rfc0cf, sample_density] = uniform_normal_mix_sample( model, ob
         
     end
 
+    
+    
 end
 
 

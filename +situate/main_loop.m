@@ -102,7 +102,7 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
     if p.viz_options.on_iteration || p.viz_options.on_workspace_change || p.viz_options.on_end
         
         [~,visualization_description] = fileparts(im_fname);
-        [h, visualizer_run_status] = situate.visualize( [], im, p, d, workspace, [], records.population_count, records.agent_record, visualization_description );
+        [h, visualizer_run_status] = situate.visualize( [], im, p, d, workspace, [], agent_pool, records.agent_record, visualization_description );
         
         % see if an exit command came from the GUI
         if ~ishandle(h), visualizer_run_status = 'stop'; end
@@ -199,6 +199,7 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
             total_support_values = padarray_to( workspace.total_support, [1 length(p.situation_objects)] );
             cur_grounding = p.situation_grounding_function(total_support_values, iteration, p.num_iterations);
             workspace.situation_support = cur_grounding;
+            workspace.iteration = iteration;
                 
             % update temperature
             if isfield(p,'temperature')
@@ -243,7 +244,7 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
                 
                 [~,fname_no_path] = fileparts(im_fname); 
                 visualization_description = {fname_no_path; ['iteration: ' num2str(iteration) '/' num2str(p.num_iterations)]; ['situation grounding: ' num2str(workspace.situation_support)] };
-                [h, visualizer_run_status] = situate.visualize( h, im, p, d, workspace, current_agent_snapshot, records.population_count, records.agent_record, visualization_description );
+                [h, visualizer_run_status] = situate.visualize( h, im, p, d, workspace, current_agent_snapshot, agent_pool, records.agent_record, visualization_description );
                 
                 % see if an exit command came from the GUI
                 if ~ishandle(h), visualizer_run_status = 'stop'; end
@@ -255,21 +256,36 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
             
         % update agent pool
             
-            % remove the evaluated agent from the pool
-            agent_pool(agent_index)  = [];
-            
             % generate new agents based on the current agent's findings
-            %   do it if we haven't finished yet
-            %   OR if we made progress and want to let it keep improving,
-            %       even though a situation has been detected
-            if length(p.adjustment_model.activation_logic) == 1 && p.adjustment_model.activation_logic(current_agent_snapshot,workspace,p)
-                agent_pool = p.adjustment_model.apply( learned_models.adjustment_model, current_agent_snapshot, agent_pool, im );
-            elseif length(p.adjustment_model.activation_logic) == length(p.situation_objects)
-                if p.adjustment_model.activation_logic{ strcmp( current_agent_snapshot.interest, p.situation_objects ) }( current_agent_snapshot, workspace, p )
-                    agent_pool = p.adjustment_model.apply( learned_models.adjustment_model, current_agent_snapshot, agent_pool, im );
+                new_agents = [];
+                if length(p.adjustment_model.activation_logic) == 1 
+                    if p.adjustment_model.activation_logic(current_agent_snapshot,workspace,p)
+                        new_agents = p.adjustment_model.apply( learned_models.adjustment_model, current_agent_snapshot, agent_pool, im );
+                        agent_pool(agent_index).had_offspring = true;
+                    end
+                elseif length(p.adjustment_model.activation_logic) == length(p.situation_objects)
+                    if p.adjustment_model.activation_logic{ strcmp( current_agent_snapshot.interest, p.situation_objects ) }( current_agent_snapshot, workspace, p )
+                        new_agents = p.adjustment_model.apply( learned_models.adjustment_model, current_agent_snapshot, agent_pool, im );
+                        agent_pool(agent_index).had_offspring = true;
+                    end
+                else
+                    error('don''t know how to use this adjustment model activation function');
                 end
-            end
+                if ~isempty(new_agents)
+                    agent_pool(end+1:end+length(new_agents)) = new_agents;
+                end
+
+            % decide what to do with the evaluated agent (default is remove)
+                post_eval_agent = p.post_eval_function( agent_pool(agent_index) );
+                if isempty(post_eval_agent)
+                    agent_pool(agent_index) = [];
+                else
+                    agent_pool(agent_index) = post_eval_agent;
+                end
             
+            % make adjustments to the pool
+                agent_pool = p.agent_pool_adjustment_function(agent_pool);
+                
         % check stopping condition
         
             if p.stopping_condition( workspace, agent_pool, p )
@@ -297,8 +313,6 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
                 end
             end
             
-            % fprintf(' dogwalker: %d, dog: %d, leash: %d, blank: %d , total: %d \n', sum(strcmp({agent_pool.interest},'dogwalker')), sum(strcmp({agent_pool.interest},'dog')), sum(strcmp({agent_pool.interest},'leash')), sum(cellfun(@isempty,{agent_pool.interest})), length(agent_pool))
-            
     end % of main iteration loop
 
 
@@ -315,7 +329,7 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
             [~,fname_no_path] = fileparts(im_fname);
 
             visualization_description = {fname_no_path; [num2str(iteration) '/' num2str(p.num_iterations)]; ['situation grounding: ' num2str(workspace.situation_support)] };
-            [h, visualizer_run_status] = situate.visualize( h, im, p, d, workspace, [], records.population_count, records.agent_record, visualization_description );
+            [h, visualizer_run_status] = situate.visualize( h, im, p, d, workspace, [], agent_pool, records.agent_record, visualization_description );
             
             % interpret closing the window as 'no thank you'
             if ~ishandle(h)
@@ -350,6 +364,7 @@ function workspace = workspace_initialize(p,im_size)
     workspace.im_size = im_size;
     
     workspace.situation_support = 0;
+    workspace.iteration = 0;
     
     if isfield(p,'temperature')
         workspace.temperature = p.temperature.initial;
@@ -382,55 +397,30 @@ function [agent_pool, d, workspace, object_was_added] = agent_evaluate( agent_po
         otherwise
             error('situate:main_loop:agent_evaluate:agentTypeUnknown','agent does not have a known type field'); 
     end
-    
-%     % implementing the direct scout -> reviewer -> builder pipeline
-%     if p.use_direct_scout_to_workspace_pipe ...
-%     && strcmp(agent_pool(agent_index).type, 'scout' ) ...
-%     && agent_pool(agent_index).support.internal >= p.thresholds.internal_support
-%         % We now know that a scout added a reviewer to the end of the agent
-%         % pool. We'll evaluate that and the associated builder, and then
-%         % delete both of them, keeping the iteration counter from ticking
-%         % up any further. The scout will be killed in the iteration loop
-%         % per usual.
-%         [agent_pool] = agent_evaluate_reviewer( agent_pool, length(agent_pool), p, workspace, d );
-%         agent_pool(agent_index).support.external = agent_pool(end).support.external;
-%         agent_pool(agent_index).support.total    = agent_pool(end).support.total;
-%         if isequal(agent_pool(end).type,'reviewer')
-%             % the reviewer failed to spawn a builder, so just fizzle
-%             agent_pool(end) = [];
-%         else
-%             % the reviewer did spawn a builder, so evaluate it
-%             assert(isequal(agent_pool(end).type,'builder'));
-%             [workspace, agent_pool, object_was_added] = agent_evaluate_builder( agent_pool, length(agent_pool), workspace );
-%             % feed the total support back to the scout, since this bonkers
-%             % process is in effect and the addition to the workspace needs
-%             % to be justified with a final score. alternatively, we could
-%             % just turn scouts into reviewers and builders, rather than
-%             % adding them to the pool...
-%             agent_pool([end-1 end]) = [];
-%         end
-%     end
+   
 
     % implementing the direct scout -> reviewer -> builder pipeline
     if p.use_direct_scout_to_workspace_pipe ...
     && strcmp(agent_pool(agent_index).type, 'scout' )
-        % We now know that a scout added a reviewer to the end of the agent
-        % pool. We'll evaluate that and the associated builder, and then
-        % delete both of them, keeping the iteration counter from ticking
-        % up any further. The scout will be killed in the iteration loop
-        % per usual.
-        
+
+        % we'd like to just go ahead and make a reviewer for every scout, and eval it right away.
+        % if it leads to a builder, we'll review that right away as well.
+
         % if we didn't generate a reviewer, let's just fake it and see what the total support would
-        % have been anyway.
+        % have been anyway. Put one at the end of the pool
         if ~isequal(agent_pool(end).type, 'reviewer')
             agent_pool(end+1) = agent_pool(agent_index);
             agent_pool(end).type = 'reviewer';
             agent_pool(end).urgency = p.agent_urgency_defaults.reviewer;
         end
         
+        assert( isequal( agent_pool(end).type, 'reviewer' ) );
         [agent_pool] = agent_evaluate_reviewer( agent_pool, length(agent_pool), p, workspace, d, learned_models );
+        % this gets us external and total support values.
+        % it might also add a builder to the end of the agent pool.
         agent_pool(agent_index).support.external = agent_pool(end).support.external;
         agent_pool(agent_index).support.total    = agent_pool(end).support.total;
+        
         if isequal(agent_pool(end).type,'builder') && agent_pool(agent_index).support.internal >= p.thresholds.internal_support
             % the reviewer did spawn a builder, so evaluate it
             assert(isequal(agent_pool(end).type,'builder'));
@@ -460,70 +450,132 @@ end
 
 function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, p, d, im, label, learned_models ) 
 
-    if isempty(agent_pool(agent_index).interest)
-        agent_pool(agent_index).interest = p.situation_objects{ sample_1d( [d.interest_priority], 1 ) };
+    % a few different behaviors depending on what the scout has baked in. 
+    
+    % if has an interest and a location already assigned, just eval
+    % if has an interest and no location, sample a location and eval
+    % if has no interest and no location, sample both and eval
+    % if has no interest but does have a location, then this is a priming box, so we'll eval for
+    %   each object type (at a computational discount, as the classifiers will all have the same
+    %   expensive feature transform)
+    
+    cur_agent = agent_pool(agent_index); % for convenience. will be put back into the pool array after
+    
+    has_interest = ~isempty( cur_agent.interest );
+    has_box      = ~isempty( cur_agent.box.r0rfc0cf );
+    
+    sample_interest = false;
+    sample_box = false;
+    update_density = false;
+
+    if has_interest &&  has_box
+        sample_interest = false;
+        sample_box      = false;
+        update_density  = true;
+        
+    elseif has_interest && ~has_box
+        % sample box for that interest type
+        
+        sample_interest = false;
+        sample_box      = true;
+        update_density  = true;
+        
+    elseif ~has_interest && has_box
+        % eval that box for each interest, then finalize the interest
+        
+        sample_interest = false;
+        sample_box      = false;
+        update_density  = false;
+        
+        cur_agent.interest = p.situation_objects;
+        
+    elseif ~has_interest && ~has_box
+        % sample an interest, then sample a box based on that interest
+        
+        sample_interest = true;
+        sample_box      = true;
+        update_density  = true;
+        
     end
     
-    assert( isequal( agent_pool(agent_index).type, 'scout' ) );
     
-    cur_agent = agent_pool(agent_index);
     
-    % pick a box for our scout (if it doesn't already have one)
+    if sample_interest
+        di = sample_1d( [d.interest_priority], 1 );
+        cur_agent.interest = p.situation_objects{ di };
+    end
     
-        if isempty(cur_agent.box.r0rfc0cf)
-
-            % then we need to pick out a box for our scout
-
-            di = find(strcmp({d.interest},cur_agent.interest));
-            
-            if nargout(p.situation_model.sample) == 2
-                % see if it wants to change the distribution by sampling
-                % (such as for inhibition on return)
-                
-                % no change to dist struct
-                [sampled_box_r0rfc0cf, sample_density] = p.situation_model.sample( d(di).distribution, d(di).interest, 1, [size(im,1), size(im,2)] ); 
-            else
-                
-                % with change to dist struct
-                [sampled_box_r0rfc0cf, sample_density, d(di).distribution] = p.situation_model.sample( d(di).distribution, d(di).interest, 1, [size(im,1), size(im,2)] ); 
-            end
-            
-            % double checking that it's in bounds 
-            r0 = round(sampled_box_r0rfc0cf(1));
-            rf = round(sampled_box_r0rfc0cf(2));
-            c0 = round(sampled_box_r0rfc0cf(3));
-            cf = round(sampled_box_r0rfc0cf(4));
-            r0 = max( r0, 1);
-            rf = min( rf, size(im,1) );
-            c0 = max( c0, 1);
-            cf = min( cf, size(im,2) );
-
-            % filling out the parameters
-            w = cf-c0+1;
-            h = rf-r0+1;
-            x = c0;
-            y = r0;
-            xc = round(x + w/2);
-            yc = round(y + h/2);
-
-            cur_agent.box.r0rfc0cf = [ r0 rf c0 cf ];
-            cur_agent.box.xywh     = [  x  y  w  h ];
-            cur_agent.box.xcycwh   = [ xc yc  w  h ];
-            cur_agent.box.aspect_ratio = w/h;
-            cur_agent.box.area_ratio   = (w*h) / (size(im,1)*size(im,2));
-            
-            cur_agent.support.sample_densities = sample_density;
+    if sample_box
+        di = find( strcmp( cur_agent.interest, p.situation_objects ) );
+        if nargout(p.situation_model.sample) == 2
+            % no change to dist struct
+            [sampled_box_r0rfc0cf, sample_density] = p.situation_model.sample( d(di).distribution, d(di).interest, 1, [size(im,1), size(im,2)] ); 
         else
-            % This means the scout was spawned with a location in mind,
-            % probably for local search.
-            
-            % Just update the sample density of the box with respect to the distribution as it exists 
-            % now. When it was generated, it just had the sample density of its template agent.
-            di = find(strcmp({d.interest},cur_agent.interest));
-            [~, sample_density] = p.situation_model.sample( d(di).distribution, d(di).interest, 1, [size(im,1), size(im,2)], cur_agent.box.r0rfc0cf ); 
-            cur_agent.support.sample_densities = sample_density;
+            % with change to dist struct
+            [sampled_box_r0rfc0cf, sample_density, d(di).distribution] = p.situation_model.sample( d(di).distribution, d(di).interest, 1, [size(im,1), size(im,2)] ); 
         end
         
+        % check the box, add to the agent
+        [~, ...
+         cur_agent.box.r0rfc0cf, ...
+         cur_agent.box.xywh, ...
+         cur_agent.box.xcycwh, ...
+         cur_agent.box.aspect_ratio, ...
+         cur_agent.box.area_ratio] = situate.fix_box( sampled_box_r0rfc0cf, 'r0rfc0cf', [size(im,1) size(im,2)] );
+    end
+    
+    if update_density
+        di = find(strcmp({d.interest},cur_agent.interest));
+        [~, cur_agent.support.sample_densities] = p.situation_model.sample( d(di).distribution, d(di).interest, 1, [size(im,1), size(im,2)], agent_pool(agent_index).box.r0rfc0cf ); 
+    end
+    
+    assert( isequal( cur_agent.type, 'scout' ) );
+    assert( ~isempty( cur_agent.box.r0rfc0cf ) );
+    assert( ~isempty( cur_agent.interest ) );
+
+    % figure out the internal support
+    
+        if iscell(cur_agent.interest)
+            % we need to eval for a included interests and pick one
+            
+            % because the apply function should keep track of being called with the same image and
+            % box, it can keep the expensive feature transform as a persistent variable and avoid
+            % recomputing it, meaning we're just adding classifications, not feature transforms
+            
+            classification_scores = zeros(1,length(cur_agent.interest));
+            for oi = 1:length(cur_agent.interest)
+                classification_scores(oi) = p.classifier.apply(  ...
+                    learned_models.classifier_model, ...
+                    cur_agent.interest{oi}, ...
+                    im, ...
+                    cur_agent.box.r0rfc0cf, ...
+                    label);
+            end
+            [~,winning_oi] = max( classification_scores );
+            classification_score = classification_scores(winning_oi);
+            cur_agent.interest = cur_agent.interest{winning_oi};
+            % now that we have an interest, we can eval the box density w/ respect to that interest
+            di = find(strcmp({d.interest},cur_agent.interest));
+            [~, cur_agent.support.sample_densities] = p.situation_model.sample( d(di).distribution, d(di).interest, 1, [size(im,1), size(im,2)], agent_pool(agent_index).box.r0rfc0cf ); 
+        
+        elseif isnan(cur_agent.support.internal) || isempty(cur_agent.support.internal)
+        
+            classification_score = p.classifier.apply(  ...
+                learned_models.classifier_model, ...
+                cur_agent.interest, ...
+                im, ...
+                cur_agent.box.r0rfc0cf, ...
+                label);
+            
+        else
+            
+            classification_score = cur_agent.support.internal;
+            
+        end
+    
+        internal_support_adjustment = @(x) floor(x * 100)/100; % rounding to nearest .01 for consistency between display and internal behavior
+        cur_agent.support.internal = internal_support_adjustment( classification_score );
+    
     % figure out GROUND_TRUTH support. this is the oracle response. 
     % getting it for displaying progress during a run, or if we're using IOU-oracle as our eval method
     
@@ -540,19 +592,6 @@ function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, p, d, i
             cur_agent.support.GROUND_TRUTH = nan;
             cur_agent.GT_label_raw = '';
         end
-
-    % figure out the internal support
-    
-        classification_score = p.classifier.apply(  ...
-            learned_models.classifier_model, ...
-            cur_agent.interest, ...
-            im, ...
-            cur_agent.box.r0rfc0cf, ...
-            label);
-    
-        internal_support_adjustment = @(x) floor(x * 100)/100; % rounding to nearest .01 for consistency between display and internal behavior
-        cur_agent.support.internal = internal_support_adjustment( classification_score );
-        
         
     % upate the agent pool based on what we found
     

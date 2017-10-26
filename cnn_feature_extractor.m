@@ -9,7 +9,6 @@ function [fname_out] = cnn_feature_extractor( directory_in, directory_out, p )
     %   this is a pretty good place to run classifier experiments and stuff that
     %   shouldn't use situate's stochastic nature to pull crops.
     %
-    %   no directory_in means it tries to use default dog-walking images
     %   no directory_out means save to current directory
     %   no p structure means a default parameterization for Situate
     
@@ -27,14 +26,10 @@ function [fname_out] = cnn_feature_extractor( directory_in, directory_out, p )
     if exist('directory_in','var') && ~isempty(directory_in)
         data_path = directory_in;
     else
-        try
-            data_path = experiment_settings.situations_struct.(experiment_settings.situation).possible_paths{ find(cellfun( @(x) exist(x,'dir'), experiment_settings.situations_struct.(experiment_settings.situation).possible_paths ),1,'first')};
-        catch
-            while ~exist('data_path','var') || isempty(data_path) || ~isdir(data_path)
-                h = msgbox( ['Select directory containing images of ' experiment_settings.situation] );
-                uiwait(h);
-                data_path = uigetdir(pwd);
-            end
+        while ~exist('data_path','var') || isempty(data_path) || ~isdir(data_path)
+            h = msgbox( ['Select directory containing images of ' experiment_settings.situation] );
+            uiwait(h);
+            data_path = uigetdir(pwd);
         end
     end
     

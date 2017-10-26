@@ -13,6 +13,10 @@ function p = parameters_initialize()
     p.situation_objects                 = {};
     p.situation_objects_possible_labels = {{},{}};
     
+    p.post_eval_function = @(x) [];
+    
+    p.agent_pool_adjustment_function = @(x) x;
+    
      % population settings
         p.num_scouts = 10;
         p.agent_urgency_defaults.scout    = 1;

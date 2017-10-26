@@ -44,9 +44,18 @@ function model = train( p, fnames_in, saved_models_directory, training_IOU_thres
     tic;
     
     existing_feature_directory = 'pre_extracted_feature_data';
-    temp = dir(fullfile(existing_feature_directory,'*.mat'));
-    if ~isempty(temp)
-        existing_features_fname = fullfile( existing_feature_directory, temp(1).name );
+    selected_datafile_fname = situate.check_for_existing_model( ...
+        existing_feature_directory, 'object_labels', sort(p.situation_objects) );
+    if ~isempty(selected_datafile_fname)
+        display(['loaded cnn feature data from ' selected_datafile_fname]);
+        existing_features_fname = selected_datafile_fname;
+    else
+        display('extracting cnn feature data');
+        existing_features_fname = cnn_feature_extractor( fileparts(fnames_in{1}), existing_feature_directory, p );
+    end    
+    
+    if ~isempty(selected_datafile_fname)
+        existing_features_fname = selected_datafile_fname;
     else
         existing_features_fname = cnn_feature_extractor( [], existing_feature_directory, p );
     end

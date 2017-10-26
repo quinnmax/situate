@@ -6,13 +6,16 @@
 % if there is more than one method run on the positive set, there should be matching methods run for
 % the negative set. 
 
-% path_pos = '/Users/Max/Dropbox/Projects/situate/results/handshaking unsided, test, positives';
-% path_neg = '/Users/Max/Dropbox/Projects/situate/results/handshaking unsided, negatives_2017.09.14.11.56.04/';
-
 path_pos = '/Users/Max/Dropbox/Projects/situate/results/dogwalking, test, single attempt, positives';
 path_neg = '/Users/Max/Dropbox/Projects/situate/results/dogwalking, negatives';
 
-output_directory = '/Users/Max/Desktop/temp_results/';
+% path_pos = '/Users/Max/Dropbox/Projects/situate/results/dogwalking, stanford positives, single attempt';
+% path_neg = '/Users/Max/Dropbox/Projects/situate/results/dogwalking, negatives';
+
+% path_neg = '/Users/Max/Dropbox/Projects/situate/results/handshaking_handshaking, retest, negative_2017.10.26.11.20.06/';
+% path_pos = '/Users/Max/Dropbox/Projects/situate/results/handshaking_handshaking, retest_2017.10.25.15.14.25/';
+
+output_directory = 'results/';
 if ~exist(output_directory,'dir')
     mkdir(output_directory);
 end
@@ -323,13 +326,15 @@ for ci = 1:num_methods
     end
 end
 
-%recall_at_vals = [1 5 10 20 100];
-recall_at_vals = 1:100;
-mean_recall_at = zeros( num_methods, length(recall_at_vals) );
+
+recall_at_vals   = 1:100;
+mean_recall_at   = zeros( num_methods, length(recall_at_vals) );
+median_rank    = zeros( num_methods, 1 );
 for ci = 1:num_methods
-for ni = 1:length(recall_at_vals)
-    mean_recall_at( ci, ni ) = mean( rank_if_only_target(ci,:) < recall_at_vals(ni) );
-end
+    median_rank( ci ) = median( rank_if_only_target(ci,:) + 1 );
+    for ni = 1:length(recall_at_vals)
+        mean_recall_at(   ci, ni ) = mean(   rank_if_only_target(ci,:) < recall_at_vals(ni) );
+    end
 end
 % should output a csv file or at least save off the mat
 save( fullfile( output_directory, 'mean_recall_at_n.mat'), 'mean_recall_at','recall_at_vals', 'param_descriptions' );
@@ -337,8 +342,14 @@ save( fullfile( output_directory, 'mean_recall_at_n.mat'), 'mean_recall_at','rec
 for ci = 1:num_methods
     fprintf('method: %s \n', p_structs(ci).description );
     for ni = 1:length(recall_at_vals)
-        fprintf('average recall @%d:   %f\n', recall_at_vals(ni), mean_recall_at(ci,ni) );
+        fprintf('mean recall @%d:   %f\n', recall_at_vals(ni), mean_recall_at(ci,ni) );
     end
+    fprintf('\n');
+end
+
+for ci = 1:num_methods
+    fprintf('method: %s \n', p_structs(ci).description );
+        fprintf('median rank:   %f\n', recall_at_vals(ni), median_rank(ci) );
     fprintf('\n');
 end
 
@@ -359,6 +370,25 @@ for ci = 1:length(param_descriptions)
     fprintf(fid, '%s, ', cur_condition_desc);
     fprintf(fid, '%f, ', mean_recall_at(ci,1:end-1) );
     fprintf(fid, '%f\n', mean_recall_at(ci,end) );
+end
+
+fclose(fid);
+
+%% output data to csv file
+
+fname_out = fullfile( output_directory, ['median_rank' datestr(now,'yyyy_mm_dd_HH_MM_SS') '.csv'] );
+fid = fopen(fname_out,'w');
+
+fprintf(fid, 'n, ');
+fprintf(fid, '%d, ', recall_at_vals(1:end-1) ); 
+fprintf(fid, '%d\n', recall_at_vals(end) ); 
+
+for ci = 1:length(param_descriptions)
+    cur_condition_desc = param_descriptions{ci};
+    cur_condition_desc = strrep( cur_condition_desc, ',', '.' );
+    fprintf(fid, '%s, ', cur_condition_desc);
+    fprintf(fid, '%f, ', median_rank(ci,1:end-1) );
+    fprintf(fid, '%f\n', median_rank(ci,end) );
 end
 
 fclose(fid);

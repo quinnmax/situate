@@ -25,6 +25,8 @@ function agent = agent_initialize(p)
         agent_base.eval_function             = []; % not really using it right now :/
         agent_base.GT_label_raw = [];
         agent_base.history = 'blank';
+        agent_base.generation    = 0;
+        agent_base.had_offspring = false;
     
         if ~isempty(p)
             agent_base.urgency  = p.agent_urgency_defaults.scout;

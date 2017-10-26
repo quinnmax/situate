@@ -1,18 +1,17 @@
 
 
 
-function [h, return_status_string] = visualize( h, im, p, d, workspace, cur_agent, population_count, scout_record, visualization_description )
-% [h, return_status_string] = visualize( h, im, p, d,
-%        workspace, cur_agent, population_count, scout_record, visualization_description ); 
+function [h, return_status_string] = visualize( h, im, p, d, workspace, cur_agent, agent_pool, scout_record, visualization_description )
+% [h, return_status_string] = visualize( h, im, p, d, workspace, cur_agent, agent_pool, scout_record, visualization_description ); 
 %
 % to initialize
-%   [h, return_status_string] = situate.visualize( [], im, p, d, workspace, cur_agent, population_count, scout_record, visualization_description )
+%   [h, return_status_string] = situate.visualize( [], im, p, d, workspace, cur_agent, agent_pool, scout_record, visualization_description, agent_pool )
 %
 % to update
-%   [h, return_status_string] = situate.visualize( h, im, p, d, workspace, cur_agent, population_count, scout_record, visualization_description )
+%   [h, return_status_string] = situate.visualize( h, im, p, d, workspace, cur_agent, agent_pool, scout_record, visualization_description, agent_pool )
 %
 % to draw a final visualization
-%   [h, return_status_string] = situate.visualize( h, im, p, d, workspace, [], population_count, scout_record, visualization_description )
+%   [h, return_status_string] = situate.visualize( h, im, p, d, workspace, [], agent_pool, scout_record, visualization_description )
 
     
 
@@ -185,14 +184,18 @@ function [h, return_status_string] = visualize( h, im, p, d, workspace, cur_agen
     
     % draw a population distribution or interest counts
     subplot2(3,sp_cols,3,1,3,3);
-    plotting_subject = 'interest_iterations';
+    %plotting_subject = 'interest_iterations';
+    plotting_subject = 'internal_support_dists';
     switch plotting_subject
+        
         case 'population_counts'
+            
             plot([[population_count.scout];[population_count.reviewer];[population_count.builder]]');
             xlim([0 p.num_iterations]);
             xlabel('iteration'); 
             ylabel('population'); 
             legend({'scouts','reviewers','builders'},'Location','NorthEast');
+            
         case 'interest_iterations'
             
             value_counts = zeros(1,length(p.situation_objects));
@@ -212,6 +215,14 @@ function [h, return_status_string] = visualize( h, im, p, d, workspace, cur_agen
             ylabel('number of samples');
             yrange = max(value_counts) + 2;
             set( get( get( temp_h, 'Parent' ), 'Xlabel' ), 'Position',  [2 -.2 * yrange, -1] );
+            
+        case 'internal_support_dists'
+            support = [agent_pool.support];
+            internal_support = [support.internal];
+            interest = {agent_pool.interest};
+            inds_keep = ~isnan(internal_support) & cellfun(@(x) ~isempty(x), interest);
+            boxplot( internal_support(inds_keep), interest(inds_keep) );
+            ylim([-.2 1.2]);
             
     end
     

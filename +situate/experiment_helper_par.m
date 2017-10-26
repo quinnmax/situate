@@ -218,10 +218,10 @@ function [] = experiment_helper_par(experiment_settings, parameterization_condit
 
                     % display an update in the console
                     num_iterations_run = sum(~eq(0,[run_data_cur.agent_record.interest]));
-                    IOUs_of_last_run   = num2str(run_data_cur.workspace_final.GT_IOU);
-                    progress_string    = [cur_parameterization.description ', ' num2str(num_iterations_run), ' steps, ' num2str(toc) 's,', ' IOUs: [' IOUs_of_last_run '] ' num2str(cur_image_ind) '/' num2str(experiment_settings.testing_data_max)];
-                    display(progress_string);
-
+                    [~,sort_order] = sort( run_data_cur.workspace_final.labels );
+                    IOUs_of_last_run   = num2str(run_data_cur.workspace_final.GT_IOU(sort_order));
+                    fprintf('%s, %3d / %d, %4d steps, %6.2fs,  IOUs: [%s] \n', cur_parameterization.description, cur_image_ind, length(fnames_im_test), num_iterations_run, toc, IOUs_of_last_run );
+                    
                 end
 
                 % save off results every condition and fold
@@ -245,6 +245,8 @@ function [] = experiment_helper_par(experiment_settings, parameterization_condit
            
     end
   
+    
+    
 end
 
 

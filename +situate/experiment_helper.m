@@ -94,6 +94,9 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
             end
 
         % genterate folds
+            if isempty( experiment_settings.testing_data_max) || experiment_settings.testing_data_max == 0
+                warning('everything is going to testing, need to have some reserved for training');
+            end
             data_folds = generate_data_folds( experiment_settings.data_path_train, length(experiment_settings.folds), experiment_settings.testing_data_max );
 
          % save the splits to files
@@ -240,9 +243,12 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
 
                         % display an update in the console
                         num_iterations_run = sum(~eq(0,[run_data_cur.agent_record.interest]));
-                        IOUs_of_last_run   = num2str(run_data_cur.workspace_final.GT_IOU);
-                        progress_string    = [cur_parameterization.description ', ' num2str(num_iterations_run), ' steps, ' num2str(toc) 's,', ' IOUs: [' IOUs_of_last_run ']'];
-                        progress(cur_image_ind,length(fnames_im_test),progress_string);
+                        [~,sort_order] = sort( run_data_cur.workspace_final.labels );
+                        IOUs_of_last_run   = num2str(run_data_cur.workspace_final.GT_IOU(sort_order));
+                        %progress_string    = [cur_parameterization.description ', ' num2str(num_iterations_run), ' steps, ' num2str(toc) 's,', ' IOUs: [' IOUs_of_last_run ']'];
+                        %progress(cur_image_ind,length(fnames_im_test),progress_string);
+                        
+                        fprintf('%s, %3d / %d, %4d steps, %6.2fs,  IOUs: [%s] \n', cur_parameterization.description, cur_image_ind, length(fnames_im_test), num_iterations_run, toc, IOUs_of_last_run );
                         
                         cur_image_ind = cur_image_ind + 1;
                         

@@ -1,8 +1,6 @@
-function [ agent_pool, adjusted_box_r0rfc0cf, delta_xywh ] = apply( model, current_agent_snapshot, agent_pool, image, cnn_features )
+function [ new_agent, adjusted_box_r0rfc0cf, delta_xywh ] = apply( model, current_agent_snapshot, agent_pool, image, cnn_features )
 
-    % [ agent_pool, adjusted_box_r0rfc0cf, delta_xywh ] = apply( model, current_agent_snapshot, agent_pool, image, cnn_features );
-
-    % [adjusted_box_r0rfc0cf, delta_xywh] = apply( model, object_type, box_r0rfc0cf, image, cnn_features );
+    % [ new_agent, adjusted_box_r0rfc0cf, delta_xywh ] = apply( model, current_agent_snapshot, agent_pool, image, cnn_features );
     %
     % adjusted_box_r0rfc0cf: the adjusted bounding box is returned in r0rfc0cf format
     % delta_xywh: the delta used to generate the adjusted box
@@ -36,6 +34,10 @@ function [ agent_pool, adjusted_box_r0rfc0cf, delta_xywh ] = apply( model, curre
     delta_h = [1 cnn_features] * model.weight_vectors{oi,4};
     delta_xywh = [delta_x delta_y delta_w delta_h];
     
+    if any( isnan( delta_xywh ) )
+        error('getting NaNs from box_adjust.apply');
+    end
+    
     % predict the new box values
     adjusted_x = x + delta_x * w;
     adjusted_y = y + delta_y * h;
@@ -57,6 +59,8 @@ function [ agent_pool, adjusted_box_r0rfc0cf, delta_xywh ] = apply( model, curre
     adjusted_x  = c0_adjusted + adjusted_w/2 - .5;
     adjusted_y  = r0_adjusted + adjusted_h/2 - .5;
     
+    
+    
     adjusted_box_r0rfc0cf = [r0_adjusted rf_adjusted c0_adjusted cf_adjusted];
     
     % construct a new agent to add to the pool
@@ -64,24 +68,27 @@ function [ agent_pool, adjusted_box_r0rfc0cf, delta_xywh ] = apply( model, curre
     if isfield( new_agent, 'history' )
         new_agent.history = [current_agent_snapshot.history '_boxAdjust'];
     end
-    new_agent.type = 'scout';
-    new_agent.urgency = 1;
-    new_agent.support.internal     = 0;
-    new_agent.support.external     = 0;
-    new_agent.support.total        = 0;
-    new_agent.support.GROUND_TRUTH = 0;
-    new_agent.GT_label_raw = [];
-    
-    new_agent.box.r0rfc0cf = adjusted_box_r0rfc0cf;
-    new_agent.box.xywh     = [ (adjusted_x-adjusted_w/2+1)  (adjusted_y-adjusted_h/2+1) adjusted_w  adjusted_h];
-    new_agent.box.xcycwh   = [adjusted_x adjusted_y  adjusted_w  adjusted_h];
-    new_agent.box.aspect_ratio = adjusted_w/adjusted_h;
-    new_agent.box.area_ratio   = (adjusted_w*adjusted_h) / (size(image,1)*size(image,2));
-    
-    if isempty(agent_pool)
-        agent_pool = new_agent; 
-    else
-        agent_pool(end+1) = new_agent; 
+    if isfield( new_agent, 'generation' )
+        new_agent.generation = new_agent.generation + 1;
     end
+    new_agent.type = 'scout';
+    new_agent.urgency               = 1;
+    new_agent.support.internal      = nan;
+    new_agent.support.external      = nan;
+    new_agent.support.total         = nan;
+    new_agent.support.GROUND_TRUTH  = nan;
+    new_agent.GT_label_raw          = [];
+    
+    new_agent.box.r0rfc0cf      = adjusted_box_r0rfc0cf;
+    new_agent.box.xywh          = [ (adjusted_x-adjusted_w/2+1)  (adjusted_y-adjusted_h/2+1) adjusted_w  adjusted_h ];
+    new_agent.box.xcycwh        = [ adjusted_x adjusted_y  adjusted_w  adjusted_h ];
+    new_agent.box.aspect_ratio  = adjusted_w/adjusted_h;
+    new_agent.box.area_ratio    = ( adjusted_w * adjusted_h ) / ( size(image,1) * size(image,2) );
+    
+%     if isempty(agent_pool)
+%         agent_pool = new_agent; 
+%     else
+%         agent_pool(end+1) = new_agent; 
+%     end
     
 end

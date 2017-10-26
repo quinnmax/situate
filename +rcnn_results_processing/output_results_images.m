@@ -13,32 +13,34 @@
 
 
 
-for super_i = 1:4
+
+%     switch super_i
+%         case 1
+%         rcnn_results_directory    = '/Users/Max/Dropbox/AAAI2018/AllRcnnResults/dogwalking, negative, PersonNoDog';
+%         image_directory           = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalkingSituationNegativeExamples/PersonNoDog';
+%         output_directory          = '/Users/Max/Desktop/results images dogwalking rcnn';
+%         fname_preamble = 'PersonNoDog';
+%         case 2
+%         rcnn_results_directory    = '/Users/Max/Dropbox/AAAI2018/AllRcnnResults/dogwalking, negative, NoDogNoPerson';
+%         image_directory           = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalkingSituationNegativeExamples/NoDogNoPerson';
+%         output_directory          = '/Users/Max/Desktop/results images dogwalking rcnn';
+%         fname_preamble = 'NoDogNoPerson';
+%         case 3
+%         rcnn_results_directory    = '/Users/Max/Dropbox/AAAI2018/AllRcnnResults/dogwalking, negative, DogNoPerson';
+%         image_directory           = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalkingSituationNegativeExamples/DogNoPerson';
+%         output_directory          = '/Users/Max/Desktop/results images dogwalking rcnn';
+%         fname_preamble = 'DogNoPerson';
+%         case 4
+%         rcnn_results_directory    = '/Users/Max/Dropbox/AAAI2018/AllRcnnResults/dogwalking, negative, DogAndPerson';
+%         image_directory           = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalkingSituationNegativeExamples/DogAndPerson';
+%         output_directory          = '/Users/Max/Desktop/results images dogwalking rcnn';
+%         fname_preamble = 'DogAndPerson';
+%     end
 
 
-    switch super_i
-        case 1
-        rcnn_results_directory    = '/Users/Max/Dropbox/AAAI2018/AllRcnnResults/dogwalking, negative, PersonNoDog';
-        image_directory           = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalkingSituationNegativeExamples/PersonNoDog';
-        output_directory          = '/Users/Max/Desktop/results images dogwalking rcnn';
-        fname_preamble = 'PersonNoDog';
-        case 2
-        rcnn_results_directory    = '/Users/Max/Dropbox/AAAI2018/AllRcnnResults/dogwalking, negative, NoDogNoPerson';
-        image_directory           = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalkingSituationNegativeExamples/NoDogNoPerson';
-        output_directory          = '/Users/Max/Desktop/results images dogwalking rcnn';
-        fname_preamble = 'NoDogNoPerson';
-        case 3
-        rcnn_results_directory    = '/Users/Max/Dropbox/AAAI2018/AllRcnnResults/dogwalking, negative, DogNoPerson';
-        image_directory           = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalkingSituationNegativeExamples/DogNoPerson';
-        output_directory          = '/Users/Max/Desktop/results images dogwalking rcnn';
-        fname_preamble = 'DogNoPerson';
-        case 4
-        rcnn_results_directory    = '/Users/Max/Dropbox/AAAI2018/AllRcnnResults/dogwalking, negative, DogAndPerson';
-        image_directory           = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalkingSituationNegativeExamples/DogAndPerson';
-        output_directory          = '/Users/Max/Desktop/results images dogwalking rcnn';
-        fname_preamble = 'DogAndPerson';
-    end
-
+rcnn_results_directory    = '/Users/Max/Dropbox/Projects/situate/rcnn box data/dogwalking, negative, all/';
+image_directory           = '/Users/Max/Documents/MATLAB/data/situate_images/Dogwalking_negative';
+output_directory          = '/Users/Max/Desktop/results images dogwalking rcnn';
 
 if ~exist(output_directory,'dir')
     mkdir(output_directory);
@@ -68,6 +70,7 @@ font_size = 12;
 figure
 for imi = 1:length(rcnn_per_row_fnames)
 %for imi = 1:2
+%for imi = 1:10
     
     hold off;
     
@@ -115,6 +118,8 @@ for imi = 1:length(rcnn_per_row_fnames)
     
     end
     
+    fname_preamble = rcnn_per_row_fnames_img_w_path{imi}(last(strfind( rcnn_per_row_fnames_img_w_path{imi}, '/' ))+1:end-8);
+    
     output_fname = sprintf( [fname_preamble '_%03d_rcnn_boxes.png'], imi );
     %output_fname = [rcnn_per_row_fnames_img{imi}(1:strfind(rcnn_per_row_fnames_img{imi},'.')-1) '_rcnn_boxes.png'];
     saveas( gcf, fullfile( output_directory, output_fname ), 'png')
@@ -122,8 +127,6 @@ for imi = 1:length(rcnn_per_row_fnames)
     
     progress(imi,length(rcnn_per_row_fnames));
     
-end
-
 end
 
 

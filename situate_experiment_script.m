@@ -16,16 +16,16 @@
     % situation, experiment title
     
         experiment_settings = [];
-        experiment_settings.title             = 'dogwalking, rcnn priming debug';
+        experiment_settings.title             = 'handshaking, retest, negative';
         experiment_settings.situations_struct = situate.situation_definitions();
         
     % sources 
         
-        % dogwalking validation experiment
-        experiment_settings.situation = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
-        data_path_train = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/';
-        data_path_test  = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/';
-        
+%         % dogwalking validation experiment
+%         experiment_settings.situation = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
+%         data_path_train = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/';
+%         data_path_test  = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/';
+%         
 %         % dogwalking positive test
 %         experiment_settings.situation = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
 %         data_path_train = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/';
@@ -46,16 +46,21 @@
 %         data_path_train = '/Users/Max/Documents/MATLAB/data/situate_images/Handshaking_train/';
 %         data_path_test  = '/Users/Max/Documents/MATLAB/data/situate_images/Handshaking_negative/';
       
+%         % handshaking (sided) validation set
+        experiment_settings.situation = 'handshaking';  % look in experiment_settings.situations_struct to see the options
+        data_path_train = '/Users/Max/Documents/MATLAB/data/situate_images/Handshaking_train/';
+        data_path_test  = '/Users/Max/Documents/MATLAB/data/situate_images/Handshaking_negative/';
+
         % if data_path_train and data_path_test are the same directory, then the split_arg will be
         % used to decide how to split up the data. this can be done a few ways.
         %   -a directory with explicit lists of files that are used for training and testing
         %   -a seed value that's used to randomly divide the files into training and testing
         
             if isequal( data_path_train, data_path_test )
-                % split_arg = 1; % randomly generated with seed value 1
+                split_arg = 1; % randomly generated with seed value 1
                 % split_arg = now; % randomly generated with time-based seed value
                 % split_arg = uigetdir(pwd); % pick a folder in the gui
-                split_arg = 'split_validation/'; % existing validation set for dogwalking images (hard)
+                % split_arg = 'split_validation/'; % existing validation set for dogwalking images (hard)
             else
                 split_arg = [];
             end
@@ -68,14 +73,19 @@
         
     % running limits
     
-        experiment_settings.training_data_max   = []; 
-        experiment_settings.testing_data_max    = [5]; % per fold, if empty all images used
-        experiment_settings.folds               = [1];  % list the folds, not how many. ie, [1] or [2,3,4]
+        experiment_settings.training_data_max = []; 
+        experiment_settings.testing_data_max  = []; % per fold, if empty all images used
+        experiment_settings.folds             = [1];   % list the folds, not how many. ie, [1] or [2,3,4]
+        
+        if isempty(experiment_settings.testing_data_max) ...
+        && ( (isnumeric( split_arg ) && ~isempty(split_arg)) || isequal( data_path_train, data_path_test ) )
+            error('need to specify how many images will be for testing');
+        end
         
     % running parameters
     
-        experiment_settings.use_gui                         = true;
-        experiment_settings.use_parallel                    = false;
+        experiment_settings.use_gui                         = false;
+        experiment_settings.use_parallel                    = true;
         experiment_settings.run_analysis_after_completion   = false;
 
         % visualization specifics
@@ -263,6 +273,27 @@
                     %   that box wrt the current situation model
                
                 p.situation_model.draw = @situation_models.uniform_normal_mix_draw;
+                    % takes: situation_model, object_string, what_to_draw_string
+                    % returns: nothing, just draws a figure
+                    %   what_to_draw can be 'xy', 'shape', 'size'
+                    
+            case 'uniform normal mix multiobject averaged'
+                probability_of_uniform_after_conditioning = .5;
+                p.situation_model.learn = @(a,b) situation_models.multi_obj_average_fit(a,b,probability_of_uniform_after_conditioning);        
+                    % takes: p, cellstr of training images 
+                    % returns: model object
+
+                p.situation_model.update = @situation_models.multi_obj_average_condition; 
+                    % takes: model object, workspace 
+                    % returns: model object
+
+                p.situation_model.sample = @situation_models.multi_obj_average_sample;  
+                    % takes: model object, object type str 
+                    % returns: sampled box r0rfc0cf, density of sample
+                    %   if passed a box, should just return the density of
+                    %   that box wrt the current situation model
+               
+                p.situation_model.draw = @situation_models.multi_obj_average_draw;
                     % takes: situation_model, object_string, what_to_draw_string
                     % returns: nothing, just draws a figure
                     %   what_to_draw can be 'xy', 'shape', 'size'
@@ -544,7 +575,30 @@
             otherwise
                 error('unrecognized check-in method');
         end
-     
+        
+        
+%% Situate parameters: pool adjustment rules
+% rule applied to the agent pool after each agent evaluation
+
+    adjustment_rule_description = 'none';
+    switch adjustment_rule_description
+        case 'none'
+            p.agent_pool_adjustment_function = @(x) x;
+        case 'drop'
+            p.agent_pool_adjustment_function = @(x) situate.pool_adjustment_drop_low_urgency(x,.5);
+        otherwise
+            error('unrecognized pool adjust rule');
+    end
+        
+    scout_post_eval_rule_description = 'remove';
+    switch scout_post_eval_rule_description
+        case 'remove'
+            p.post_eval_function = @(a) [];
+        case 'drop if low internal support'
+            threshold = .25;
+            p.post_eval_function = @(a) scout_post_eval_rule( a, threshold );
+    end
+    
         
         
 %% Situate parameters: adjustment model 
@@ -571,7 +625,8 @@
                 box_adjust_training_thresholds          = [.1 .6];
                 model_selection_threshold               = .5; % set via validation set experiments
                 p.adjustment_model.train                = @(a,b,c) box_adjust.two_tone_train(a,b,c,box_adjust_training_thresholds, model_selection_threshold);
-                p.adjustment_model.apply                = @box_adjust.two_tone_w_decay_and_drop_apply; % decay value of .9 is hard coded in box_adjust.apply_w_decay, urgency below .1 just dies 
+                p.adjustment_model.apply                = @box_adjust.two_tone_w_decay_apply; % decay value of .9 is hard coded in box_adjust.apply_w_decay, urgency below .1 just dies 
+                p.agent_pool_adjustment_function        = @(x) situate.pool_adjustment_drop_low_urgency(x,.5); % the drop part
                 p.adjustment_model.directory            = 'default_models/';
             case 'bounding box regression two-tone'
                 p.adjustment_model.activation_logic     = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, .3, 1.0 );
@@ -604,6 +659,7 @@
         end
         
     
+
         
 %% Situate parameters: temperature stuff (nothing yet) 
 
@@ -624,24 +680,17 @@
     p_conditions = [];
     p_conditions_descriptions = {};
 
-%     description = 'situate, AUROC total support, decay and drop, no resize';
-%     temp = p;
-%     temp.image_redim_px = [];
-%     temp.description = description;
-%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
-    
-    description = 'situate, AUROC total support, decay and drop, primed pool rcnn';
+    description = 'situate, AUROC total support, decay and drop';
     temp = p;
-    %temp.prime_agent_pool = true;
-    temp.prime_agent_pool = 'rcnn';
     temp.description = description;
     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
-    
-%     description = 'normal location and box, box adjust, primed agent pool, fuzzy temperature';
+   
+%     description = 'normal location and box, box adjust, primed agent pool, keep good scouts';
+%     % this has a problem. it keeps good scouts and never samples new ones
 %     temp = p;
 %     temp.description = description;
 %     temp.prime_agent_pool = true;
-%     temp.situation_model.update = @situation_models.uniform_normal_mix_condition_w_temperature_sketch;
+%     temp.post_eval_function = @(a) scout_post_eval_rule( a, .4 );
 %     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
     
 %     description = 'uniform location and box, box adjust';
