@@ -92,7 +92,7 @@ function situate_experiment_analysis( results_directory, show_final_workspaces, 
         fnames_test = fnames_test(:)';
         
         for wi = 1:length(workspaces_final)
-            labl_fname = [fnames_test{wi}(1:end-3) 'labl']; 
+            labl_fname = [fnames_test{wi}(1:end-3) 'labl'];
             if ~exist(labl_fname,'file')
                 [path,name,ext] = fileparts(labl_fname);
                 switch path
@@ -793,8 +793,13 @@ end
     
         for ci = 1:num_conditions
 
-            for imi = 1:length(fnames_test)
-                subplot_lazy(length(fnames_test),imi);
+            max_to_show = 25;
+            num_to_show = min(max_to_show,length(fnames_test));
+            
+            figure;
+            
+            for imi = 1:num_to_show
+                subplot_lazy(num_to_show,imi);
                 situate.draw_workspace( fnames_test{imi}, p_conditions_temp{ci}, workspaces_final(ci,imi), 12 );
             end
 

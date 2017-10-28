@@ -196,84 +196,85 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
             end
             
             % update situation grounding
-            total_support_values = padarray_to( workspace.total_support, [1 length(p.situation_objects)] );
-            cur_grounding = p.situation_grounding_function(total_support_values, iteration, p.num_iterations);
-            workspace.situation_support = cur_grounding;
-            workspace.iteration = iteration;
-                
+                total_support_values = padarray_to( workspace.total_support, [1 length(p.situation_objects)] );
+                cur_grounding = p.situation_grounding_function(total_support_values, iteration, p.num_iterations);
+                workspace.situation_support = cur_grounding;
+                workspace.iteration = iteration;
+
             % update temperature
-            if isfield(p,'temperature')
-                %workspace.temperature = p.temperature.update( workspace );
-                workspace.temperature = iteration / p.num_iterations;
-            end
+                if isfield(p,'temperature')
+                    % workspace.temperature = 1 - (iteration/p.num_iterations);
+                    % workspace.temperature = 100;
+                    workspace.temperature = p.temperature.update(iteration, p.num_iterations );
+                end
             
-        % update records
-        
-            % update record of scouting behavior
-            records.workspace_record(iteration) = workspace_snapshot;
-            current_agent_snapshot_lean = [];
-            current_agent_snapshot_lean.type            = uint8( find(strcmp(current_agent_snapshot.type, agent_types ) ) );
-            current_agent_snapshot_lean.interest        = uint8( find( strcmp( current_agent_snapshot.interest, p.situation_objects )));
-            current_agent_snapshot_lean.box.r0rfc0cf    = current_agent_snapshot.box.r0rfc0cf;
-            current_agent_snapshot_lean.support         = current_agent_snapshot.support;
-            current_agent_snapshot_lean.workspace.objects = cellfun( @(x) find(strcmp(x,p.situation_objects)), workspace.labels );
-            current_agent_snapshot_lean.workspace.total_support = workspace.total_support;
-            records.agent_record(iteration)                     = current_agent_snapshot_lean;
-            
-            % population of agent types
-            if iteration == 1
-                records.population_count = zeros(1,length(agent_types));
-                records.population_count = records.population_count + strcmp(current_agent_snapshot.type,agent_types);
-            else
-                records.population_count(iteration,:) = records.population_count(iteration-1,:) + strcmp(current_agent_snapshot.type,agent_types);
-            end
-            
-            % small adjustment for direct scout->reviewer pipeline
-            if isequal(current_agent_snapshot.type,'scout') && workspace_changed
-                % then we must have added an object using the direct 
-                % scout->workspace option, which means the current agent 
-                % doesn't actually have the total support. So, we'll pull 
-                % it from the end of the workspace instead. 
-                records.agent_record(iteration).support.total = workspace.total_support(end);
-            end
-            
-        % update visualization
-        
-            if ( p.viz_options.on_iteration && mod(iteration, p.viz_options.on_iteration_mod)==0 ) ...
-            || ( p.viz_options.on_workspace_change && workspace_changed )
-                
-                [~,fname_no_path] = fileparts(im_fname); 
-                visualization_description = {fname_no_path; ['iteration: ' num2str(iteration) '/' num2str(p.num_iterations)]; ['situation grounding: ' num2str(workspace.situation_support)] };
-                [h, visualizer_run_status] = situate.visualize( h, im, p, d, workspace, current_agent_snapshot, agent_pool, records.agent_record, visualization_description );
-                
-                % see if an exit command came from the GUI
-                if ~ishandle(h), visualizer_run_status = 'stop'; end
-                if any( strcmp( visualizer_run_status, {'next_image','restart','stop'} ) )
-                    visualizer_return_status = visualizer_run_status;
-                    return; 
-                end 
-            end
-            
-        % update agent pool
-            
-            % generate new agents based on the current agent's findings
-                new_agents = [];
-                if length(p.adjustment_model.activation_logic) == 1 
-                    if p.adjustment_model.activation_logic(current_agent_snapshot,workspace,p)
-                        new_agents = p.adjustment_model.apply( learned_models.adjustment_model, current_agent_snapshot, agent_pool, im );
-                        agent_pool(agent_index).had_offspring = true;
-                    end
-                elseif length(p.adjustment_model.activation_logic) == length(p.situation_objects)
-                    if p.adjustment_model.activation_logic{ strcmp( current_agent_snapshot.interest, p.situation_objects ) }( current_agent_snapshot, workspace, p )
-                        new_agents = p.adjustment_model.apply( learned_models.adjustment_model, current_agent_snapshot, agent_pool, im );
-                        agent_pool(agent_index).had_offspring = true;
-                    end
+            % update records
+
+                % update record of scouting behavior
+                records.workspace_record(iteration) = workspace_snapshot;
+                current_agent_snapshot_lean = [];
+                current_agent_snapshot_lean.type            = uint8( find(strcmp(current_agent_snapshot.type, agent_types ) ) );
+                current_agent_snapshot_lean.interest        = uint8( find( strcmp( current_agent_snapshot.interest, p.situation_objects )));
+                current_agent_snapshot_lean.box.r0rfc0cf    = current_agent_snapshot.box.r0rfc0cf;
+                current_agent_snapshot_lean.support         = current_agent_snapshot.support;
+                current_agent_snapshot_lean.workspace.objects = cellfun( @(x) find(strcmp(x,p.situation_objects)), workspace.labels );
+                current_agent_snapshot_lean.workspace.total_support = workspace.total_support;
+                records.agent_record(iteration)                     = current_agent_snapshot_lean;
+
+                % population of agent types
+                if iteration == 1
+                    records.population_count = zeros(1,length(agent_types));
+                    records.population_count = records.population_count + strcmp(current_agent_snapshot.type,agent_types);
                 else
-                    error('don''t know how to use this adjustment model activation function');
+                    records.population_count(iteration,:) = records.population_count(iteration-1,:) + strcmp(current_agent_snapshot.type,agent_types);
                 end
-                if ~isempty(new_agents)
-                    agent_pool(end+1:end+length(new_agents)) = new_agents;
+
+            % small adjustment for direct scout->reviewer pipeline
+                if isequal(current_agent_snapshot.type,'scout') && workspace_changed
+                    % then we must have added an object using the direct 
+                    % scout->workspace option, which means the current agent 
+                    % doesn't actually have the total support. So, we'll pull 
+                    % it from the end of the workspace instead. 
+                    records.agent_record(iteration).support.total = workspace.total_support(end);
                 end
+            
+            % update visualization
+
+                if ( p.viz_options.on_iteration && mod(iteration, p.viz_options.on_iteration_mod)==0 ) ...
+                || ( p.viz_options.on_workspace_change && workspace_changed )
+
+                    [~,fname_no_path] = fileparts(im_fname); 
+                    visualization_description = {fname_no_path; ['iteration: ' num2str(iteration) '/' num2str(p.num_iterations)]; ['situation grounding: ' num2str(workspace.situation_support)] };
+                    [h, visualizer_run_status] = situate.visualize( h, im, p, d, workspace, current_agent_snapshot, agent_pool, records.agent_record, visualization_description );
+
+                    % see if an exit command came from the GUI
+                    if ~ishandle(h), visualizer_run_status = 'stop'; end
+                    if any( strcmp( visualizer_run_status, {'next_image','restart','stop'} ) )
+                        visualizer_return_status = visualizer_run_status;
+                        return; 
+                    end 
+                end
+
+            % update agent pool
+
+                % generate new agents based on the current agent's findings
+                    new_agents = [];
+                    if length(p.adjustment_model.activation_logic) == 1 
+                        if p.adjustment_model.activation_logic(current_agent_snapshot,workspace,p)
+                            new_agents = p.adjustment_model.apply( learned_models.adjustment_model, current_agent_snapshot, agent_pool, im );
+                            agent_pool(agent_index).had_offspring = true;
+                        end
+                    elseif length(p.adjustment_model.activation_logic) == length(p.situation_objects)
+                        if p.adjustment_model.activation_logic{ strcmp( current_agent_snapshot.interest, p.situation_objects ) }( current_agent_snapshot, workspace, p )
+                            new_agents = p.adjustment_model.apply( learned_models.adjustment_model, current_agent_snapshot, agent_pool, im );
+                            agent_pool(agent_index).had_offspring = true;
+                        end
+                    else
+                        error('don''t know how to use this adjustment model activation function');
+                    end
+                    if ~isempty(new_agents)
+                        agent_pool(end+1:end+length(new_agents)) = new_agents;
+                    end
 
             % decide what to do with the evaluated agent (default is remove)
                 post_eval_agent = p.post_eval_function( agent_pool(agent_index) );
@@ -282,36 +283,42 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
                 else
                     agent_pool(agent_index) = post_eval_agent;
                 end
-            
+                
             % make adjustments to the pool
                 agent_pool = p.agent_pool_adjustment_function(agent_pool);
+
+            % check stopping condition
+                if p.stopping_condition( workspace, agent_pool, p )
+                    break;
+                end
                 
-        % check stopping condition
-        
-            if p.stopping_condition( workspace, agent_pool, p )
-                break;
-            end
-          
-        % prep for the next iteration
-        
-            % check for degenerate object priority distribution
-            %   if, for some reason, all of the priorities have been set to 0, then make them non-zero
-            %   to avoid trying to sample from a zero density distribution
-            if sum( [d.interest_priority] ) == 0
-                for di = 1:length(d)
-                    dj = strcmp( workspace.labels{di}, {d.interest} );
-                    d(dj).interest_priorty = p.situation_objects_urgency_pre.( d(dj).interest );
-                end
-            end
-       
-            % refill the pool if we're continuing on and the pool is under size
-            while sum( strcmp( 'scout', {agent_pool.type} ) ) < p.num_scouts
-                if isempty(agent_pool)
-                    agent_pool = situate.agent_initialize(p); 
+                if nargout( p.stopping_condition ) > 1
+                    [~,soft_stop] = p.stopping_condition( workspace, agent_pool, p );
                 else
-                    agent_pool(end+1) = situate.agent_initialize(p); 
+                    soft_stop = false;
                 end
-            end
+               
+            % prep for the next iteration
+
+                % check for degenerate object priority distribution
+                %   if, for some reason, all of the priorities have been set to 0, then make them non-zero
+                %   to avoid trying to sample from a zero density distribution
+                if sum( [d.interest_priority] ) == 0
+                    for di = 1:length(d)
+                        dj = strcmp( workspace.labels{di}, {d.interest} );
+                        d(dj).interest_priorty = p.situation_objects_urgency_pre.( d(dj).interest );
+                    end
+                end
+
+                % refill the pool if we're continuing on and the pool is under size
+
+                while ~soft_stop && sum( strcmp( 'scout', {agent_pool.type} ) ) < p.num_scouts
+                    if isempty(agent_pool)
+                        agent_pool = situate.agent_initialize(p); 
+                    else
+                        agent_pool(end+1) = situate.agent_initialize(p); 
+                    end
+                end
             
     end % of main iteration loop
 

@@ -8,8 +8,7 @@ function primed_agent_pool = prime_agent_pool( im_size )
     overlap_ratio = .5;
     
     box_sizes_px = box_size_width_ratios.^2 * im_size(1) * im_size(2);
-    approx_num_boxes = sum((1./box_size_width_ratios).^2 .* (1/overlap_ratio).^2) * length(box_shapes);
-
+    
     % ratio of width of the image -> total pixels
     
     primed_boxes_r0rfc0cf = zeros(0,4);
@@ -43,7 +42,6 @@ function primed_agent_pool = prime_agent_pool( im_size )
                 | primed_boxes_r0rfc0cf(:,4) > im_size(2);
             
     primed_boxes_r0rfc0cf(inds_remove,:) = [];
-    primed_box_urgencies(inds_remove) = [];
     
     agent = situate.agent_initialize();
     agent.history = 'primed';

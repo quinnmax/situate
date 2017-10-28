@@ -16,7 +16,7 @@
     % situation, experiment title
     
         experiment_settings = [];
-        experiment_settings.title             = 'handshaking, retest, negative';
+        experiment_settings.title             = 'dogwalking, rcnn pool priming, visualize';
         experiment_settings.situations_struct = situate.situation_definitions();
         
     % sources 
@@ -25,11 +25,16 @@
 %         experiment_settings.situation = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
 %         data_path_train = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/';
 %         data_path_test  = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/';
-%         
+  
 %         % dogwalking positive test
 %         experiment_settings.situation = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
 %         data_path_train = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/';
 %         data_path_test  = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_test/';
+
+        % dogwalking positive stanford
+        experiment_settings.situation = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
+        data_path_train = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/';
+        data_path_test  = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_StanfordSimple/';
 
 %         % dogwalking negative test
 %         experiment_settings.situation = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
@@ -47,9 +52,9 @@
 %         data_path_test  = '/Users/Max/Documents/MATLAB/data/situate_images/Handshaking_negative/';
       
 %         % handshaking (sided) validation set
-        experiment_settings.situation = 'handshaking';  % look in experiment_settings.situations_struct to see the options
-        data_path_train = '/Users/Max/Documents/MATLAB/data/situate_images/Handshaking_train/';
-        data_path_test  = '/Users/Max/Documents/MATLAB/data/situate_images/Handshaking_negative/';
+%         experiment_settings.situation = 'handshaking';  % look in experiment_settings.situations_struct to see the options
+%         data_path_train = '/Users/Max/Documents/MATLAB/data/situate_images/Handshaking_train/';
+%         data_path_test  = '/Users/Max/Documents/MATLAB/data/situate_images/Handshaking_negative/';
 
         % if data_path_train and data_path_test are the same directory, then the split_arg will be
         % used to decide how to split up the data. this can be done a few ways.
@@ -84,8 +89,8 @@
         
     % running parameters
     
-        experiment_settings.use_gui                         = false;
-        experiment_settings.use_parallel                    = true;
+        experiment_settings.use_gui                         = true;
+        experiment_settings.use_parallel                    = false;
         experiment_settings.run_analysis_after_completion   = false;
 
         % visualization specifics
@@ -189,6 +194,7 @@
     p = situate.parameters_initialize;
     % add viz parameters
     p.viz_options = viz_options;
+    p.num_scouts = 10;
     % add seeds
     p.seed_test  = RandStream.shuffleSeed;  % generates a seed based on current time, stores it into p_structures
     p.seed_train = seed_train;
@@ -577,15 +583,20 @@
         end
         
         
+        
 %% Situate parameters: pool adjustment rules
 % rule applied to the agent pool after each agent evaluation
 
-    adjustment_rule_description = 'none';
-    switch adjustment_rule_description
+    pool_adjustment_rule_description = 'none';
+    switch pool_adjustment_rule_description
         case 'none'
             p.agent_pool_adjustment_function = @(x) x;
-        case 'drop'
-            p.agent_pool_adjustment_function = @(x) situate.pool_adjustment_drop_low_urgency(x,.5);
+        case 'clear low urgency'
+            p.agent_pool_adjustment_function = @(x) pool_funs.clear_low_urgency( x, .5 );
+        case 'clear and refill'
+            clear_low_urgency = @(x) pool_funs.clear_low_urgency( x, .5 );
+            fill_to_minimum   = @(x) pool_funs.fill_with_blanks( x, p.num_scouts );
+            p.agent_pool_adjustment_function = @(x) fill_to_minimum( clear_low_urgency(x) );
         otherwise
             error('unrecognized pool adjust rule');
     end
@@ -593,10 +604,10 @@
     scout_post_eval_rule_description = 'remove';
     switch scout_post_eval_rule_description
         case 'remove'
-            p.post_eval_function = @(a) [];
+            p.scout_post_eval_function = @(a) [];
         case 'drop if low internal support'
             threshold = .25;
-            p.post_eval_function = @(a) scout_post_eval_rule( a, threshold );
+            p.scout_post_eval_function = @(a) scout_post_eval_rule( a, threshold );
     end
     
         
@@ -626,7 +637,7 @@
                 model_selection_threshold               = .5; % set via validation set experiments
                 p.adjustment_model.train                = @(a,b,c) box_adjust.two_tone_train(a,b,c,box_adjust_training_thresholds, model_selection_threshold);
                 p.adjustment_model.apply                = @box_adjust.two_tone_w_decay_apply; % decay value of .9 is hard coded in box_adjust.apply_w_decay, urgency below .1 just dies 
-                p.agent_pool_adjustment_function        = @(x) situate.pool_adjustment_drop_low_urgency(x,.5); % the drop part
+                p.agent_pool_adjustment_function        = @(x) situate.pool_adjustment_drop_low_urgency(x,.3); % the drop part
                 p.adjustment_model.directory            = 'default_models/';
             case 'bounding box regression two-tone'
                 p.adjustment_model.activation_logic     = @(cur_agent,workspace,p) situate.adjustment_model_activation_logic( cur_agent, workspace, .3, 1.0 );
@@ -657,15 +668,14 @@
                 p.adjustment_model.apply                = @(cur_agent) assert(1==0);
                 p.adjustment_model.directory            = 'default_models/';
         end
-        
-    
 
+        
         
 %% Situate parameters: temperature stuff (nothing yet) 
 
     p.temperature = [];
     p.temperature.initial = 100;
-    p.temperature.update = @(x) 100; % do nothing, anywhere
+    p.temperature.update = @(iteration, total_iterations) (1 - iteration/total_iterations); % do nothing, anywhere
         
     
     
@@ -680,19 +690,27 @@
     p_conditions = [];
     p_conditions_descriptions = {};
 
+%     description = 'situate, AUROC total support, decay and drop';
+%     temp = p;
+%     temp.description = description;
+%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+    
     description = 'situate, AUROC total support, decay and drop';
     temp = p;
     temp.description = description;
+    temp.prime_agent_pool = 'rcnn';
     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
    
-%     description = 'normal location and box, box adjust, primed agent pool, keep good scouts';
+%     description = 'normal location and box, box adjust, primed agent pool, keep good scouts, play with pool adjust rules';
 %     % this has a problem. it keeps good scouts and never samples new ones
 %     temp = p;
 %     temp.description = description;
-%     temp.prime_agent_pool = true;
-%     temp.post_eval_function = @(a) scout_post_eval_rule( a, .4 );
+%     temp.prime_agent_pool = true; % fills pool with array of boxes that have 2 sizes and 3 shapes, and cover the image
+%     temp_pool = prime_agent_pool( [round(sqrt( p.image_redim_px )), round(sqrt( p.image_redim_px ))] ); % just to estimate size
+%     temp.num_scouts = length(temp_pool);
+%     temp.scout_post_eval_function = @(a) scout_post_eval_rule( a, .3 ); % if an agent has internal support over .4, keep it, and give it urgency = to internal support
 %     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
-    
+%     
 %     description = 'uniform location and box, box adjust';
 %     temp = p;
 %     temp.description = description;

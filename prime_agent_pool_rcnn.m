@@ -5,8 +5,17 @@ function primed_agent_pool = prime_agent_pool_rcnn( im_size, im_fname, p )
     num_non_rcnn_agents     = 10; % total in initial pool
     
     rcnn_box_dir = {};
-    rcnn_box_dir{1} = 'rcnn box data/dogwalking, positive, portland all/';
-    rcnn_box_dir{2} = 'rcnn box data/dogwalking, negative, all/';
+    rcnn_box_dir{1}  = 'rcnn box data/dogwalking, negative, all/';
+    rcnn_box_dir{2}  = 'rcnn box data/dogwalking, positive, portland all/';
+    rcnn_box_dir{3}  = 'rcnn box data/dogwalking, positive, portland test/';
+    rcnn_box_dir{4}  = 'rcnn box data/dogwalking, positive, portland train/';
+    rcnn_box_dir{5}  = 'rcnn box data/dogwalking, positive, stanford/';
+    rcnn_box_dir{6}  = 'rcnn box data/handshaking leftright, negative/';
+    rcnn_box_dir{7}  = 'rcnn box data/handshaking leftright, positive all/';
+    rcnn_box_dir{8}  = 'rcnn box data/handshaking participants, positive all/';
+    rcnn_box_dir{9}  = 'rcnn box data/handshaking participants, sanity all/';
+    rcnn_box_dir{10} = 'rcnn box data/pingpong, negative/';
+    rcnn_box_dir{11} = 'rcnn box data/pingpong, positive/';
     
     situation_objects = p.situation_objects; % dogwalker dog leash
     situation_object_dirs = {'dog_walker','dog','leash'};

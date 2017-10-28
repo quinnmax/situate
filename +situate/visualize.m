@@ -186,6 +186,7 @@ function [h, return_status_string] = visualize( h, im, p, d, workspace, cur_agen
     subplot2(3,sp_cols,3,1,3,3);
     %plotting_subject = 'interest_iterations';
     plotting_subject = 'internal_support_dists';
+   
     switch plotting_subject
         
         case 'population_counts'
@@ -217,12 +218,37 @@ function [h, return_status_string] = visualize( h, im, p, d, workspace, cur_agen
             set( get( get( temp_h, 'Parent' ), 'Xlabel' ), 'Position',  [2 -.2 * yrange, -1] );
             
         case 'internal_support_dists'
-            support = [agent_pool.support];
-            internal_support = [support.internal];
-            interest = {agent_pool.interest};
-            inds_keep = ~isnan(internal_support) & cellfun(@(x) ~isempty(x), interest);
-            boxplot( internal_support(inds_keep), interest(inds_keep) );
-            ylim([-.2 1.2]);
+            
+            has_interest = ~cellfun( @isempty, {agent_pool.interest} );
+            urgencies = [agent_pool.urgency];
+            
+            x = linspace(.1,.9,5);
+            
+            m = hist(urgencies(has_interest),x);
+            n = hist(urgencies(~has_interest),x);
+            
+            subplot2(3,sp_cols,3,1,3,1);
+            % urgency of agents with an interest
+            stem(x,m);
+            xlim([-.1 1.1]);
+            ylim([0 1 + 1.1 * max([m n])]);
+            title('urgencies assigned');
+            
+            subplot2(3,sp_cols,3,2,3,2);
+            % urgency of agents without an interest
+            stem(x,n);
+            xlim([-.1 1.1]);
+            ylim([0 1 + 1.1 * max([m n])]);
+            title('urgencies unassigned');
+            
+            subplot2(3,sp_cols,3,3,3,3);
+            % dist of histories
+            [num_each_history, unique_histories] = counts( {agent_pool.history} );
+            h_temp = bar( 1:length(unique_histories), num_each_history );
+            h_temp.Parent.XTickLabel = unique_histories;
+            h_temp.Parent.XTickLabelRotation = 45;
+            xlim([0 max(3,length(unique_histories)+1)]);
+            title('history dist');
             
     end
     

@@ -1,19 +1,18 @@
 
-% 
-% rcnn_data_directory_pos = { '/Users/Max/Dropbox/AAAI2018/AllRcnnResults/handshaking leftright, positive all' };
-% rcnn_data_directory_neg = { '/Users/Max/Dropbox/AAAI2018/AllRcnnResults/handshaking leftright, negative' };
-% im_file_directory_pos   = { '/Users/Max/Documents/MATLAB/data/situate_images/Handshake_test' };
-% im_file_directory_neg   = { '/Users/Max/Documents/MATLAB/data/situate_images/Handshake_negative' };
-% 
+rcnn_data_directory_pos = { '/Users/Max/Dropbox/Projects/situate/rcnn box data/handshaking leftright, positive all' };
+rcnn_data_directory_neg = { '/Users/Max/Dropbox/Projects/situate/rcnn box data/handshaking leftright, negative' };
+im_file_directory_pos   = { '/Users/Max/Documents/MATLAB/data/situate_images/Handshake_test' };
+im_file_directory_neg   = { '/Users/Max/Documents/MATLAB/data/situate_images/Handshake_negative' };
+
 % rcnn_data_directory_pos = { '/Users/Max/Dropbox/Projects/situate/rcnn box data/dogwalking, positive, portland test/' };
 % rcnn_data_directory_neg = { '/Users/Max/Dropbox/Projects/situate/rcnn box data/dogwalking, negative, all/' };
 % im_file_directory_pos   = { '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_test/' };
 % im_file_directory_neg   = { '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_negative/' };
 
-rcnn_data_directory_pos = { '/Users/Max/Dropbox/Projects/situate/rcnn box data/dogwalking, positive, stanford/' };
-rcnn_data_directory_neg = { '/Users/Max/Dropbox/Projects/situate/rcnn box data/dogwalking, negative, all/' };
-im_file_directory_pos   = { '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_StanfordSimple/' };
-im_file_directory_neg   = { '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_negative/' };
+% rcnn_data_directory_pos = { '/Users/Max/Dropbox/Projects/situate/rcnn box data/dogwalking, positive, stanford/' };
+% rcnn_data_directory_neg = { '/Users/Max/Dropbox/Projects/situate/rcnn box data/dogwalking, negative, all/' };
+% im_file_directory_pos   = { '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_StanfordSimple/' };
+% im_file_directory_neg   = { '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_negative/' };
 
 fnames_include = [];
 
@@ -56,6 +55,8 @@ end
 for ni = 1:length(recall_at_vals)
     fprintf('average recall @%d:   %f\n',  recall_at_vals(ni), mean_recall_at(ni) );
 end
+
+display(['rcnn median recall score: ' num2str(median(pos_recall_scores))]);
 
 
 

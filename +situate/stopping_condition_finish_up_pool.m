@@ -1,4 +1,7 @@
-function [result, message] = stopping_condition_finish_up_pool( workspace, agent_pool, p )
+function [result, situation_found, message] = stopping_condition_finish_up_pool( workspace, agent_pool, p )
+
+    % if the condition is met, then evaluate whatever is still in the pool, but don't add anything
+    % to it
 
     result = false;
     message = '';
