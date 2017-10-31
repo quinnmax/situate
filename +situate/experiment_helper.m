@@ -243,11 +243,11 @@ function [] = experiment_helper(experiment_settings, parameterization_conditions
 
                         % display an update in the console
                         num_iterations_run = sum(~eq(0,[run_data_cur.agent_record.interest]));
-                        [~,sort_order] = sort( run_data_cur.workspace_final.labels );
-                        IOUs_of_last_run   = num2str(run_data_cur.workspace_final.GT_IOU(sort_order));
-                        %progress_string    = [cur_parameterization.description ', ' num2str(num_iterations_run), ' steps, ' num2str(toc) 's,', ' IOUs: [' IOUs_of_last_run ']'];
-                        %progress(cur_image_ind,length(fnames_im_test),progress_string);
-                        
+                        labels_missed = setdiff(cur_parameterization.situation_objects,run_data_cur.workspace_final.labels);
+                        labels_temp = [run_data_cur.workspace_final.labels labels_missed];
+                        GT_IOUs = [run_data_cur.workspace_final.GT_IOU nan(1,length(labels_missed))];
+                        [~,sort_order] = sort( labels_temp );
+                        IOUs_of_last_run = num2str(GT_IOUs(sort_order));
                         fprintf('%s, %3d / %d, %4d steps, %6.2fs,  IOUs: [%s] \n', cur_parameterization.description, cur_image_ind, length(fnames_im_test), num_iterations_run, toc, IOUs_of_last_run );
                         
                         cur_image_ind = cur_image_ind + 1;

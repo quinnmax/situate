@@ -45,7 +45,7 @@ function primed_agent_pool = prime_agent_pool( im_size )
     
     agent = situate.agent_initialize();
     agent.history = 'primed';
-    agent.urgency = 1;
+    agent.urgency = 5;
     primed_agent_pool = repmat(agent,size(primed_boxes_r0rfc0cf,1),1);
     for ai = 1:length(primed_agent_pool)
         

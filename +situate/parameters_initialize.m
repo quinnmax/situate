@@ -7,13 +7,13 @@ function p = parameters_initialize()
 
     p = [];
     p.description = 'default parameters';
-    p.image_redim_px = 500000;
+    p.image_redim_px = [];
     p.num_iterations = 1000;
     
     p.situation_objects                 = {};
     p.situation_objects_possible_labels = {{},{}};
     
-    p.post_eval_function = @(x) [];
+    p.scout_post_eval_function = @(x) [];
     
     p.agent_pool_adjustment_function = @(x) x;
     

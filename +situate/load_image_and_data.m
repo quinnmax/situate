@@ -110,11 +110,13 @@ function [im_data,im] = load_image_and_data( fname_in, p, use_resize )
         
         rows = image_info.Height;
         cols = image_info.Width;
-        ratio = sqrt( p.image_redim_px / (rows*cols) );
-        new_rows = round( rows * ratio );
-        new_cols = round( cols * ratio );
         
-        im_data   = situate.image_data_rescale( im_data, new_rows, new_cols );
+        if ~isempty(p.image_redim_px)
+            ratio = sqrt( p.image_redim_px / (rows*cols) );
+            new_rows = round( rows * ratio );
+            new_cols = round( cols * ratio );
+            im_data   = situate.image_data_rescale( im_data, new_rows, new_cols );
+        end
         
     end
     

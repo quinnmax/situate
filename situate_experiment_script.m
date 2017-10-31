@@ -16,7 +16,7 @@
     % situation, experiment title
     
         experiment_settings = [];
-        experiment_settings.title             = 'dogwalking, rcnn pool priming, visualize';
+        experiment_settings.title             = 'dogwalking, priming with alternate urgency plan';
         experiment_settings.situations_struct = situate.situation_definitions();
         
     % sources 
@@ -26,15 +26,15 @@
 %         data_path_train = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/';
 %         data_path_test  = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/';
   
-%         % dogwalking positive test
-%         experiment_settings.situation = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
-%         data_path_train = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/';
-%         data_path_test  = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_test/';
-
-        % dogwalking positive stanford
+        % dogwalking positive test
         experiment_settings.situation = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
         data_path_train = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/';
-        data_path_test  = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_StanfordSimple/';
+        data_path_test  = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_test/';
+
+%         % dogwalking positive stanford
+%         experiment_settings.situation = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
+%         data_path_train = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/';
+%         data_path_test  = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_StanfordSimple/';
 
 %         % dogwalking negative test
 %         experiment_settings.situation = 'dogwalking';  % look in experiment_settings.situations_struct to see the options
@@ -79,25 +79,26 @@
     % running limits
     
         experiment_settings.training_data_max = []; 
-        experiment_settings.testing_data_max  = []; % per fold, if empty all images used
+        experiment_settings.testing_data_max  = [100]; % per fold, if empty all images used
         experiment_settings.folds             = [1];   % list the folds, not how many. ie, [1] or [2,3,4]
         
         if isempty(experiment_settings.testing_data_max) ...
-        && ( (isnumeric( split_arg ) && ~isempty(split_arg)) || isequal( data_path_train, data_path_test ) )
+        && ( (isnumeric( split_arg ) && ~isempty(split_arg) ) ...
+        && isequal( data_path_train, data_path_test ) )
             error('need to specify how many images will be for testing');
         end
         
     % running parameters
     
-        experiment_settings.use_gui                         = true;
-        experiment_settings.use_parallel                    = false;
+        experiment_settings.use_gui                         = false;
+        experiment_settings.use_parallel                    = true;
         experiment_settings.run_analysis_after_completion   = false;
 
         % visualization specifics
 
             if experiment_settings.use_gui
                 viz_options.on_iteration          = true;
-                viz_options.on_iteration_mod      = 1;
+                viz_options.on_iteration_mod      = 20;
                 viz_options.on_workspace_change   = false;
                 viz_options.on_end                = true;
                 viz_options.start_paused          = true;
@@ -526,6 +527,8 @@
                 p.total_support_function{3} = @(internal,external) b(3,1) + b(3,2) * internal + b(3,3) * external + b(3,4) * internal * external;
             case 'AUROC based'
                 p.total_support_function = @(internal,external,AUROC) (AUROC^2 - .1) * internal + (1 - AUROC^2 + .1) * external;
+            case 'AUROC based 2'
+                p.total_support_function = @(internal,external,AUROC) (2*(AUROC-.5)-.1) * internal + ((1 - 2*(AUROC-.5))+.1) * external;
             case 'jointly learned external and total'
                 b = [0.9266   -0.0583    0.0453   -4.6040e-13    0.0063; ...
                      0.9177    0.0065    0.0654    1.7392e-12    0.0025; ...
@@ -570,8 +573,8 @@
                 p.thresholds.total_support_final       = .35; % workspace entry, final (search (maybe) ends) depends on p.situation_objects_urgency_post
             case 'custom'
                 p.thresholds.internal_support          = .2; % scout -> reviewer threshold
-                p.thresholds.total_support_provisional = .2; % workspace entry, provisional (search continues)
-                p.thresholds.total_support_final       = .5625; % workspace entry, final (search (maybe) ends) depends on p.situation_objects_urgency_post
+                p.thresholds.total_support_provisional = inf; % workspace entry, provisional (search continues)
+                p.thresholds.total_support_final       = .5; % workspace entry, final (search (maybe) ends) depends on p.situation_objects_urgency_post
             case 'parameter experiment findings'
                 p.thresholds.internal_support          = .2;   % scout -> reviewer threshold
                 p.thresholds.total_support_provisional = inf;   % workspace entry, provisional (search continues)
@@ -695,22 +698,36 @@
 %     temp.description = description;
 %     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
     
-    description = 'situate, AUROC total support, decay and drop';
-    temp = p;
-    temp.description = description;
-    temp.prime_agent_pool = 'rcnn';
-    if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
-   
-%     description = 'normal location and box, box adjust, primed agent pool, keep good scouts, play with pool adjust rules';
-%     % this has a problem. it keeps good scouts and never samples new ones
+%     description = 'situate, AUROC total support, decay and drop';
 %     temp = p;
 %     temp.description = description;
-%     temp.prime_agent_pool = true; % fills pool with array of boxes that have 2 sizes and 3 shapes, and cover the image
-%     temp_pool = prime_agent_pool( [round(sqrt( p.image_redim_px )), round(sqrt( p.image_redim_px ))] ); % just to estimate size
-%     temp.num_scouts = length(temp_pool);
-%     temp.scout_post_eval_function = @(a) scout_post_eval_rule( a, .3 ); % if an agent has internal support over .4, keep it, and give it urgency = to internal support
+%     temp.prime_agent_pool = 'rcnn';
 %     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
-%     
+    
+    description = 'normal location and box, box adjust, primed agent pool, keep good scouts, play with pool adjust rules';
+    % this has a problem. it keeps good scouts and never samples new ones
+    temp = p;
+    temp.description = description;
+    temp.num_iterations = 2000;
+    temp.prime_agent_pool = true; % fills pool with array of boxes that have 2 sizes and 3 shapes, and cover the image
+    temp_pool = prime_agent_pool( [100 100] ); % just to estimate num boxes, size doesn't actually matter for this
+    temp.num_scouts = length(temp_pool);
+    % urgency idea
+    temp.agent_urgency_defaults.scout = .02; % roughly the total support we get from a miss, so estimating expected value
+    temp.scout_post_eval_function = @(a) scout_post_eval_rule( a, .45 ); % if an agent has internal support over x, keep it with it's total support as urgency. keep this fairly low for weakly detectable objects
+    % urgency of a box-adjust proposal is just 1 for now, which is high compared to new, random samples
+    temp.agent_pool_adjustment_function = @(x) pool_funs.clear_high_generation(x,3);
+    probability_of_uniform_after_conditioning = .1;
+    temp.situation_model.learn  = @(a,b) situation_models.uniform_normal_mix_fit(a,b,probability_of_uniform_after_conditioning);        
+    temp.situation_model.update = @situation_models.uniform_normal_mix_condition; 
+    temp.situation_model.sample = @situation_models.uniform_normal_mix_sample;  
+    temp.situation_model.draw   = @situation_models.uniform_normal_mix_draw;
+    temp.total_support_function = @(internal,external,AUROC) (2*(AUROC-.5)-.1) * internal + (1 - 2*(AUROC-.5)+.1) * external;
+    temp.thresholds.internal_support          = .2; % scout -> reviewer threshold
+    temp.thresholds.total_support_provisional = inf; % workspace entry, provisional (search continues)
+    temp.thresholds.total_support_final       = .56; % workspace entry, final (search (maybe) ends) depends on p.situation_objects_urgency_post
+    if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+    
 %     description = 'uniform location and box, box adjust';
 %     temp = p;
 %     temp.description = description;

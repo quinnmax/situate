@@ -53,7 +53,7 @@ function [fname_out] = cnn_feature_extractor( directory_in, directory_out, p )
     
 %% get stats on shape,size for each object type
 
-    use_resize = true;
+    use_resize = ~isempty(p.image_redim_px) && p.image_redim_px ~= 0;
     im_data = situate.load_image_and_data(fnames, p, use_resize );
     
     box_shapes = nan(length(im_data),num_situation_objects);

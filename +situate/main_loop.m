@@ -277,7 +277,7 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
                     end
 
             % decide what to do with the evaluated agent (default is remove)
-                post_eval_agent = p.post_eval_function( agent_pool(agent_index) );
+                post_eval_agent = p.scout_post_eval_function( agent_pool(agent_index) );
                 if isempty(post_eval_agent)
                     agent_pool(agent_index) = [];
                 else
