@@ -27,13 +27,19 @@ function h = draw_workspace( input, p, workspace, font_size )
         if ~isempty(input)
             switch class(input)
                 case 'char'
-                    x = imresize_px( imread(input), p.image_redim_px );
+                    x = imread(input);
+                    if ~isempty(p.image_redim_px) && p.image_redim_px ~= 0
+                        x = imresize_px( x, p.image_redim_px );
+                    end
                     h(1) = imshow( x, [] );
                 case {'double', 'uint8'}
                     if all(ishandle(input))
                         axes(input);
                     else
-                        x = imresize_px( input, p.image_redim_px );
+                        x = imread(input);
+                        if ~isempty(p.image_redim_px) && p.image_redim_px ~= 0
+                            x = imresize_px( x, p.image_redim_px );
+                        end
                         h(1) = imshow( x, [] );
                     end
                 case 'matlab.graphics.axis.Axes'

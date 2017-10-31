@@ -78,6 +78,13 @@ function situate_experiment_analysis( results_directory, show_final_workspaces, 
         situation_objects = p_condition.situation_objects;
         num_situation_objects = length(situation_objects );
         
+        for ti = 1:length(temp_data)
+            unrun_workspaces = cellfun(@isempty, temp_data{ti}.workspaces_final );
+            temp_data{ti}.fnames_im_test(unrun_workspaces) = [];
+            temp_data{ti}.workspaces_final(unrun_workspaces) = [];
+            temp_data{ti}.agent_records(unrun_workspaces) = [];
+        end
+        
         workspaces_final = cellfun( @(x) x.workspaces_final, temp_data, 'UniformOutput', false);
         workspaces_final = cellfun( @(x) [x{:}], workspaces_final, 'UniformOutput', false);
         workspaces_final = [workspaces_final{:}];
@@ -88,7 +95,11 @@ function situate_experiment_analysis( results_directory, show_final_workspaces, 
         
         fnames_test = cellfun( @(x) x.fnames_im_test, temp_data, 'UniformOutput', false);
         fnames_test = cellfun( @(x) x', fnames_test,'UniformOutput',false);
-        fnames_test = [fnames_test{:}];
+        try
+            fnames_test = [fnames_test{:}];
+        catch
+            fnames_test = vertcat(fnames_test{:});
+        end
         fnames_test = fnames_test(:)';
         
         for wi = 1:length(workspaces_final)
