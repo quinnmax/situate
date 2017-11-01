@@ -456,6 +456,14 @@ end
 %% eval scout 
 
 function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, p, d, im, label, learned_models ) 
+% function [agents_out, updated_distribution_structure ] = agents.evaluate_scout( agent_in, object_dist_model, image, classifier_struct )
+%
+% move inclusion of gt iou outside of agent.
+% update the oracle to include loading up all of the label data as the training proceedure, and
+% application will just be a lookup and compare
+%
+% agents out will start with the updated agent_in, then any reviewers that were spawned off from it
+
 
     % a few different behaviors depending on what the scout has baked in. 
     
@@ -472,8 +480,8 @@ function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, p, d, i
     has_box      = ~isempty( cur_agent.box.r0rfc0cf );
     
     sample_interest = false;
-    sample_box = false;
-    update_density = false;
+    sample_box      = false;
+    update_density  = false;
 
     if has_interest &&  has_box
         sample_interest = false;
@@ -543,6 +551,7 @@ function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, p, d, i
     % figure out the internal support
     
         if iscell(cur_agent.interest)
+            
             % we need to eval for a included interests and pick one
             
             % because the apply function should keep track of being called with the same image and
@@ -561,6 +570,7 @@ function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, p, d, i
             [~,winning_oi] = max( classification_scores );
             classification_score = classification_scores(winning_oi);
             cur_agent.interest = cur_agent.interest{winning_oi};
+            
             % now that we have an interest, we can eval the box density w/ respect to that interest
             di = find(strcmp({d.interest},cur_agent.interest));
             [~, cur_agent.support.sample_densities] = p.situation_model.sample( d(di).distribution, d(di).interest, 1, [size(im,1), size(im,2)], agent_pool(agent_index).box.r0rfc0cf ); 
@@ -583,7 +593,7 @@ function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, p, d, i
         internal_support_adjustment = @(x) floor(x * 100)/100; % rounding to nearest .01 for consistency between display and internal behavior
         cur_agent.support.internal = internal_support_adjustment( classification_score );
     
-    % figure out GROUND_TRUTH support. this is the oracle response. 
+    % figure out GROUND_TRUTH support
     % getting it for displaying progress during a run, or if we're using IOU-oracle as our eval method
     
         if ~isempty(label) && ismember( cur_agent.interest, label.labels_adjusted )
@@ -602,8 +612,7 @@ function [agent_pool,d] = agent_evaluate_scout( agent_pool, agent_index, p, d, i
         
     % upate the agent pool based on what we found
     
-        % update anything that changed about the current agent for the
-        % visualizer (ie, the sampled box, the support, etc
+        % replace the agent in the agent pool
         agent_pool(agent_index) = cur_agent;
         
         % consider adding a reviewer to the pool
@@ -620,7 +629,9 @@ end
 %% eval reviewer 
 
 function [agent_pool] = agent_evaluate_reviewer( agent_pool, agent_index, p, workspace, d, learned_models ) 
-    
+% function [ agents_out ] = agents.evaluate_reviewer( agent_in, object_dist_model )    
+
+
     % the reviewer checks to see how compatible a proposed object is with
     % our understanding of the relationships between objects. if the
     % porposal is sufficiently compatible, we send ut off to a builder.

@@ -6,14 +6,20 @@
 % if there is more than one method run on the positive set, there should be matching methods run for
 % the negative set. 
 
-path_pos = '/Users/Max/Dropbox/Projects/situate/results/dogwalking, test, single attempt, positives';
-path_neg = '/Users/Max/Dropbox/Projects/situate/results/dogwalking, negatives';
+%path_pos = '/Users/Max/Dropbox/Projects/situate/results/dogwalking, test, single attempt, positives';
+%path_neg = '/Users/Max/Dropbox/Projects/situate/results/dogwalking, negatives';
 
 % path_pos = '/Users/Max/Dropbox/Projects/situate/results/dogwalking, stanford positives, single attempt';
 % path_neg = '/Users/Max/Dropbox/Projects/situate/results/dogwalking, negatives';
 
 % path_neg = '/Users/Max/Dropbox/Projects/situate/results/handshaking_handshaking, retest, negative_2017.10.26.11.20.06/';
 % path_pos = '/Users/Max/Dropbox/Projects/situate/results/handshaking_handshaking, retest_2017.10.25.15.14.25/';
+
+%path_pos = '/Users/Max/Desktop/mm results files/OldSituatePSU';
+path_pos = '/Users/Max/Desktop/mm results files/NewSituatePSU';
+path_neg = '/Users/Max/Desktop/mm results files/OldSituateNegative';
+treat_as_single_parameterization = true;
+
 
 output_directory = 'results/';
 if ~exist(output_directory,'dir')
@@ -37,6 +43,24 @@ group_field = 'p_condition';
 fnames = vertcat(fnames_temp{:});
 %fnames(strcmp(fnames,'/Users/Max/Dropbox/Projects/situate/results/handshaking unsided, test, positives/uniform location and box, box adjust_fold_01_2017.09.09.14.58.56.mat')) = [];
 temp = cellfun( @(x) load(x, group_field), fnames );
+
+% need to make sure the p_condition structs have the same fields
+    shared_fields = fields(temp(1).p_condition);
+    for i = 2:length(temp)
+        shared_fields = intersect( shared_fields, fields(temp(i).p_condition) );
+    end
+    for i = 1:length(temp)
+        excess_fields = setdiff( fields(temp(i).p_condition), shared_fields );
+        temp(i).p_condition = rmfield( temp(i).p_condition, excess_fields );
+    end
+
+if exist('treat_as_single_parameterization','var') && treat_as_single_parameterization
+    warning('treating all files as if they had the same parameterization');
+    for i = 1:length(temp)
+        temp(i).p_condition.description = 'same';
+    end
+end
+   
 group_field_data = arrayfun( @(x) x.description, [temp.p_condition], 'UniformOutput', false );
 
 [param_descriptions,~,IA,IB] = unique_cell( group_field_data );
@@ -52,6 +76,17 @@ for mi = 1:num_methods
     
     group_data = cellfun( @(x) load(x,'workspaces_final','fnames_im_test'), fnames( eq( mi, IA ) ) );
     temp = [group_data.workspaces_final];
+    
+    % make sure all workspaces share fields
+    shared_fields = fields(temp{1});
+    for i = 2:length(temp)
+        shared_fields = intersect( shared_fields, fields(temp{i}) );
+    end
+    for i = 1:length(temp)
+        excess_fields = setdiff( fields(temp{i}), shared_fields );
+        temp{i} = rmfield( temp{i}, excess_fields );
+    end
+        
     workspaces_final{mi}  = [temp{:}];
     situation_support{mi} = [workspaces_final{mi}.situation_support];
     
@@ -109,6 +144,8 @@ title('PR using situation support (100+,400-)');
 
 saveas(gcf,fullfile( output_directory, 'dogwalking pos neg PR unbalanced.png'),'png')
    
+
+
 %% generate precision recall with balanced pos/neg images (repeat runs on positives)
 
 pos_count = sum(is_positive);
@@ -349,7 +386,7 @@ end
 
 for ci = 1:num_methods
     fprintf('method: %s \n', p_structs(ci).description );
-        fprintf('median rank:   %f\n', recall_at_vals(ni), median_rank(ci) );
+    fprintf('median rank:   %f\n', median_rank(ci) );
     fprintf('\n');
 end
 

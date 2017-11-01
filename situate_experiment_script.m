@@ -16,7 +16,7 @@
     % situation, experiment title
     
         experiment_settings = [];
-        experiment_settings.title             = 'dogwalking, priming with alternate urgency plan';
+        experiment_settings.title             = 'dogwalking, default';
         experiment_settings.situations_struct = situate.situation_definitions();
         
     % sources 
@@ -62,10 +62,10 @@
         %   -a seed value that's used to randomly divide the files into training and testing
         
             if isequal( data_path_train, data_path_test )
-                split_arg = 1; % randomly generated with seed value 1
+                % split_arg = 1; % randomly generated with seed value 1
                 % split_arg = now; % randomly generated with time-based seed value
                 % split_arg = uigetdir(pwd); % pick a folder in the gui
-                % split_arg = 'split_validation/'; % existing validation set for dogwalking images (hard)
+                split_arg = 'split_validation/'; % existing validation set for dogwalking images (hard)
             else
                 split_arg = [];
             end
@@ -79,8 +79,8 @@
     % running limits
     
         experiment_settings.training_data_max = []; 
-        experiment_settings.testing_data_max  = [100]; % per fold, if empty all images used
-        experiment_settings.folds             = [1];   % list the folds, not how many. ie, [1] or [2,3,4]
+        experiment_settings.testing_data_max  = [100];  % per fold, if empty all images used
+        experiment_settings.folds             = [1]; % list the folds, not how many. ie, [1] or [2,3,4]
         
         if isempty(experiment_settings.testing_data_max) ...
         && ( (isnumeric( split_arg ) && ~isempty(split_arg) ) ...
@@ -91,14 +91,14 @@
     % running parameters
     
         experiment_settings.use_gui                         = false;
-        experiment_settings.use_parallel                    = true;
+        experiment_settings.use_parallel                    = false;
         experiment_settings.run_analysis_after_completion   = false;
 
         % visualization specifics
 
             if experiment_settings.use_gui
                 viz_options.on_iteration          = true;
-                viz_options.on_iteration_mod      = 20;
+                viz_options.on_iteration_mod      = 1;
                 viz_options.on_workspace_change   = false;
                 viz_options.on_end                = true;
                 viz_options.start_paused          = true;
@@ -109,12 +109,7 @@
                 viz_options.on_end                = false;
                 viz_options.start_paused          = false;
             end
-            
-    % results directory
-    
-        experiment_settings.results_directory = fullfile('results',[experiment_settings.situation '_' experiment_settings.title '_' datestr(now,'yyyy.mm.dd.HH.MM.SS')]);                                                                                          
-        if ~exist(experiment_settings.results_directory,'dir') && ~experiment_settings.use_gui, mkdir(experiment_settings.results_directory); display(['made results directory ' experiment_settings.results_directory]); end
-
+        
         
 
 %% Data directories and splits 
@@ -193,30 +188,33 @@
 %% Situate parameters: initialize, iterations, pipeline 
 
     p = situate.parameters_initialize;
+    
     % add viz parameters
     p.viz_options = viz_options;
-    p.num_scouts = 10;
-    % add seeds
+    
+    % add seeds to parameters struct
     p.seed_test  = RandStream.shuffleSeed;  % generates a seed based on current time, stores it into p_structures
     p.seed_train = seed_train;
-    % add situation info
+    
+    % add situation info to parameters struct
     p.situation_objects                 = experiment_settings.situations_struct.(experiment_settings.situation).situation_objects;
     p.situation_objects_possible_labels = experiment_settings.situations_struct.(experiment_settings.situation).situation_objects_possible_labels;
        
     % pipeline
     
-        p.num_iterations = 1000; % maximum, will stop after this many no matter what the specified stopping condition     
-        p.use_direct_scout_to_workspace_pipe = true; % hides stochastic agent stuff a bit     
+        % p.num_scouts = 10; % default: 10 % can go over this, but will refill to here if it's ever below
+        % p.num_iterations = 1000; % default: 1000 % will stop after this many no matter what the specified stopping condition     
+        % p.use_direct_scout_to_workspace_pipe = true; % default: true % hides stochastic agent stuff a bit     
         
     % stopping conditions
     
         % [stop_now?] = stopping_condition_function(  workspace, agent_pool, p );
     
-        %p.stopping_condition = @situate.stopping_condition_null;                % use all iterations, don't stop on detection
-        %p.stopping_condition = @situate.stopping_condition_situation_found;     % stop once the situation is checked-in
-        p.stopping_condition = @situate.stopping_condition_finish_up_pool;      % stop once the situation is checked-in and residual agents have been evaluated
+        % p.stopping_condition = @situate.stopping_condition_finish_up_pool;  % default % stop once the situation is checked-in and residual agents have been evaluated
+        % p.stopping_condition = @situate.stopping_condition_situation_found; % stop once the situation is checked-in
+        % p.stopping_condition = @situate.stopping_condition_null;            % use all iterations, don't stop on workspace completion
         
-
+        
         
 %% Situate parameters: situation model 
 %
@@ -227,7 +225,7 @@
     
     % situation model
     
-        p.situation_model.description = 'uniform normal mix';
+        p.situation_model.description = 'uniform normal mix'; % default: uniform normal mix
         
         switch p.situation_model.description
             
@@ -348,9 +346,9 @@
             case 'none'
                 assert(0==1);
                 
-                
             otherwise
                 assert(0==1);
+                
         end
         
         
@@ -386,21 +384,23 @@
         p.classifier.description = 'IOU ridge regression';
         
         switch p.classifier.description
-            case 'noisy oracle'
+            case 'noisy oracle' 
                 p.classifier.train     = @classifiers.oracle_train; 
                 p.classifier.apply     = @classifiers.oracle_apply;
                 p.classifier.directory = 'default_models/';
-            case 'cnn svm'
+            case 'cnn svm' 
                 p.classifier.train     = @classifiers.cnnsvm_train; 
                 p.classifier.apply     = @classifiers.cnnsvm_apply;
                 p.classifier.directory = 'default_models/';
-            case 'IOU ridge regression'
+            case 'IOU ridge regression' 
                 p.classifier.train     = @classifiers.IOU_ridge_regression_train;
                 p.classifier.apply     = @classifiers.IOU_ridge_regression_apply;
                 p.classifier.directory = 'default_models/';
-            otherwise
+            otherwise 
                 assert(1==0);
         end
+        
+        
         
         % classifier_struct = classifier.train( p, fnames_in, saved_models_directory )
         %
@@ -454,7 +454,7 @@
     
         p.external_support_function_description    = 'atan fit';
         
-        p.total_support_function_description         = 'AUROC based';
+        p.total_support_function_description         = 'AUROC based 2';
         % p.total_support_function_description       = 'regression experiment dogwalking';
         % p.total_support_function_description       = 'mostly internal';
         
@@ -693,10 +693,10 @@
     p_conditions = [];
     p_conditions_descriptions = {};
 
-%     description = 'situate, AUROC total support, decay and drop';
-%     temp = p;
-%     temp.description = description;
-%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+    description = 'situate, AUROC total support, decay and drop';
+    temp = p;
+    temp.description = description;
+    if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
     
 %     description = 'situate, AUROC total support, decay and drop';
 %     temp = p;
@@ -704,29 +704,29 @@
 %     temp.prime_agent_pool = 'rcnn';
 %     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
     
-    description = 'normal location and box, box adjust, primed agent pool, keep good scouts, play with pool adjust rules';
-    % this has a problem. it keeps good scouts and never samples new ones
-    temp = p;
-    temp.description = description;
-    temp.num_iterations = 2000;
-    temp.prime_agent_pool = true; % fills pool with array of boxes that have 2 sizes and 3 shapes, and cover the image
-    temp_pool = prime_agent_pool( [100 100] ); % just to estimate num boxes, size doesn't actually matter for this
-    temp.num_scouts = length(temp_pool);
-    % urgency idea
-    temp.agent_urgency_defaults.scout = .02; % roughly the total support we get from a miss, so estimating expected value
-    temp.scout_post_eval_function = @(a) scout_post_eval_rule( a, .45 ); % if an agent has internal support over x, keep it with it's total support as urgency. keep this fairly low for weakly detectable objects
-    % urgency of a box-adjust proposal is just 1 for now, which is high compared to new, random samples
-    temp.agent_pool_adjustment_function = @(x) pool_funs.clear_high_generation(x,3);
-    probability_of_uniform_after_conditioning = .1;
-    temp.situation_model.learn  = @(a,b) situation_models.uniform_normal_mix_fit(a,b,probability_of_uniform_after_conditioning);        
-    temp.situation_model.update = @situation_models.uniform_normal_mix_condition; 
-    temp.situation_model.sample = @situation_models.uniform_normal_mix_sample;  
-    temp.situation_model.draw   = @situation_models.uniform_normal_mix_draw;
-    temp.total_support_function = @(internal,external,AUROC) (2*(AUROC-.5)-.1) * internal + (1 - 2*(AUROC-.5)+.1) * external;
-    temp.thresholds.internal_support          = .2; % scout -> reviewer threshold
-    temp.thresholds.total_support_provisional = inf; % workspace entry, provisional (search continues)
-    temp.thresholds.total_support_final       = .56; % workspace entry, final (search (maybe) ends) depends on p.situation_objects_urgency_post
-    if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
+%     description = 'normal location and box, box adjust, primed agent pool, keep good scouts, play with pool adjust rules';
+%     % this has a problem. it keeps good scouts and never samples new ones
+%     temp = p;
+%     temp.description = description;
+%     temp.num_iterations = 2000;
+%     temp.prime_agent_pool = true; % fills pool with array of boxes that have 2 sizes and 3 shapes, and cover the image
+%     temp_pool = prime_agent_pool( [100 100] ); % just to estimate num boxes, size doesn't actually matter for this
+%     temp.num_scouts = length(temp_pool);
+%     % urgency idea
+%     temp.agent_urgency_defaults.scout = .02; % roughly the total support we get from a miss, so estimating expected value
+%     temp.scout_post_eval_function = @(a) scout_post_eval_rule( a, .45 ); % if an agent has internal support over x, keep it with it's total support as urgency. keep this fairly low for weakly detectable objects
+%     % urgency of a box-adjust proposal is just 1 for now, which is high compared to new, random samples
+%     temp.agent_pool_adjustment_function = @(x) pool_funs.clear_high_generation(x,3);
+%     probability_of_uniform_after_conditioning = .1;
+%     temp.situation_model.learn  = @(a,b) situation_models.uniform_normal_mix_fit(a,b,probability_of_uniform_after_conditioning);        
+%     temp.situation_model.update = @situation_models.uniform_normal_mix_condition; 
+%     temp.situation_model.sample = @situation_models.uniform_normal_mix_sample;  
+%     temp.situation_model.draw   = @situation_models.uniform_normal_mix_draw;
+%     temp.total_support_function = @(internal,external,AUROC) (2*(AUROC-.5)-.1) * internal + (1 - 2*(AUROC-.5)+.1) * external;
+%     temp.thresholds.internal_support          = .2; % scout -> reviewer threshold
+%     temp.thresholds.total_support_provisional = inf; % workspace entry, provisional (search continues)
+%     temp.thresholds.total_support_final       = .56; % workspace entry, final (search (maybe) ends) depends on p.situation_objects_urgency_post
+%     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
     
 %     description = 'uniform location and box, box adjust';
 %     temp = p;
@@ -740,6 +740,12 @@
 %     temp.total_support_function = @(internal,external) 1.0 * internal + 0 * external;
 %     if isempty( p_conditions ), p_conditions = temp; else p_conditions(end+1) = temp; end
   
+
+%% Make results directory
+
+    experiment_settings.results_directory = fullfile('results',[experiment_settings.situation '_' experiment_settings.title '_' datestr(now,'yyyy.mm.dd.HH.MM.SS')]);                                                                                          
+    if ~exist(experiment_settings.results_directory,'dir') && ~experiment_settings.use_gui, mkdir(experiment_settings.results_directory); display(['made results directory ' experiment_settings.results_directory]); end
+
 
 
 %% Run the experiment 

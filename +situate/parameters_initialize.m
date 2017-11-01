@@ -28,10 +28,18 @@ function p = parameters_initialize()
         p.stopping_condition = @situate.stopping_condition_finish_up_pool; % stop once the situation is checked-in and residual agents have been evaluated
         
     % situation model
+        % uniform/normal mix. 
+        %   Starts off with uniform location, normal shape/size
+        %   After detections, moves to conditioned normal
+        %   Still has some probability of sampling from a uniform location (.5)
         p.situation_model.learn  = @(a,b) situation_models.uniform_normal_mix_fit(a,b,.5);        
         p.situation_model.update = @situation_models.uniform_normal_mix_condition; 
         p.situation_model.sample = @situation_models.uniform_normal_mix_sample;  
         p.situation_model.draw   = @situation_models.uniform_normal_mix_draw;
+        
+     % object urgency 
+        p.situation_objects_urgency_pre  = 1.00;
+        p.situation_objects_urgency_post = 0.25;
         
     % classifier
         p.classifier.train     = @classifiers.IOU_ridge_regression_train;
@@ -67,9 +75,6 @@ function p = parameters_initialize()
         p.adjustment_model.train            = @(a,b,c,d) [];
         p.adjustment_model.apply            = @(cur_agent) assert(1==0);
         
-    % object urgency 
-        p.situation_objects_urgency_pre  = 1.00;
-        p.situation_objects_urgency_post = 0.25;
         
     % temperature
         p.temperature = [];
