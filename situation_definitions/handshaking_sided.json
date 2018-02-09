@@ -1,0 +1,38 @@
+{"situation" : {
+   
+    "description" : "handshaking_sided",
+   
+    "situation_objects" : {
+
+        "person_left": {
+            "urgency_pre"  : "1",
+            "urgency_post" : ".25",
+            "possible_labels" : [
+                "person-my-left"
+            ]
+        },
+       
+        "person_right": {
+            "urgency_pre"  : "1",
+            "urgency_post" : ".25",
+            "possible_labels" : [
+                "person-my-right"
+            ]
+        },
+       
+        "handshake": {
+            "urgency_pre" : "1",
+            "urgency_post" : ".25",
+            "possible_labels" : [
+                "handshake"
+            ]
+        }
+
+    },
+
+    "possible_training_data_paths" : [
+        "/Users/Max/Documents/MATLAB/data/situate_images/HandshakeLabeled/train/"
+    ]
+
+}}
+    

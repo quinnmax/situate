@@ -14,7 +14,7 @@ function [classifier_output, gt_iou, cnn_feature_vect]    = IOU_ridge_regression
             im = 255 * im;
         end
 
-        [success, box_r0rfc0cf] = situate.fix_box( box_r0rfc0cf, 'r0rfc0cf', [size(im,1) size(im,2)] );
+        [success, box_r0rfc0cf] = box_fix( box_r0rfc0cf, 'r0rfc0cf', [size(im,1) size(im,2)] );
         
         if ~success
             classifier_output=-1;

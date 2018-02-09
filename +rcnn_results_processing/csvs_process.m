@@ -75,7 +75,7 @@ function [confidences, gt_ious, boxes_xywh, output_labels, fnames_include] = csv
             
     end
     
-    situation_struct = situate.situation_definitions( situation );
+    situation_struct = situate.load_situation_definitions( situation );
     
     
     
@@ -134,7 +134,7 @@ function [confidences, gt_ious, boxes_xywh, output_labels, fnames_include] = csv
             label_fname = [];
         end
         if exist(label_fname,'file')
-            label_data = situate.load_image_and_data( label_fname, situation_struct, false );
+            label_data = situate.labl_load( label_fname, situation_struct );
         else
             label_data = [];
         end
@@ -143,7 +143,7 @@ function [confidences, gt_ious, boxes_xywh, output_labels, fnames_include] = csv
             workspace = [];
             workspace.labels     = output_labels;
             workspace.boxes_xywh = vertcat(boxes_xywh{fi,:});
-            workspace_updated    = situate.score_workspace( workspace, label_data, situation_struct );
+            workspace_updated    = situate.workspace_score( workspace, label_data, situation_struct );
             for wi = 1:length(workspace_updated.labels)
                 destination_ind = strcmp( workspace_updated.labels{wi}, output_labels );
                 gt_ious(fi,destination_ind) = workspace_updated.GT_IOU(wi);

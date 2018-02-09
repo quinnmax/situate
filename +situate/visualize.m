@@ -124,7 +124,7 @@ function [h, return_status_string] = visualize( h, im, p, d, workspace, cur_agen
         set(h,'UserData',UserData);
         
         % draw the workspace entries on the workspace image
-        temp_h = situate.draw_workspace( [], p, workspace, font_size );
+        temp_h = situate.workspace_draw( [], p, workspace, font_size );
         UserData.handles(end+1:end+length(temp_h)) = temp_h;
      
         % draw the current agent on the workspace image

@@ -8,9 +8,8 @@ function model = normal_fit( p, data_in )
         clear situation_models.normal_draw; % clears out peristent variables used in the drawing function
 
         if ~exist('p','var') || isempty(p)
-            p = situate.parameters_initialize();
-            situation = situate.situation_definitions;
-            situation = situation.('dogwalking');
+            p = situate.parameters_initialize_default();
+            situation = situate.load_situation_definitions('dogwalking');
             p.situation_objects = situation.situation_objects;
             p.situation_objects_possible_labels = situation.situation_objects_possible_labels;
             warning('situation_joint_model: using default situate parameters and situation');
@@ -24,9 +23,8 @@ function model = normal_fit( p, data_in )
         end
     
     % get image data from a directory
-        image_data_a = situate.image_data(data_in);
-        image_data = situate.image_data_label_adjust(image_data_a, p);
-
+        image_data = situate.labl_load(data_in, p);
+       
     % turn data into a single matrix
         row_description = {'r0' 'rc' 'rf' 'c0' 'cc' 'cf' 'log w' 'log h' 'log aspect ratio' 'log area ratio'};
         % extra row padding, diff rc1,rc2; diff rc2,rc3; diff rc1,rc3

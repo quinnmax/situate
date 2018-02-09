@@ -1,0 +1,52 @@
+{"situation" : {
+   
+    "description" : "pingpong",
+
+    "situation_objects" : {
+
+        "player1": {
+            "urgency_pre"  : "1",
+            "urgency_post" : ".25",
+            "possible_labels" : [
+                "player-front",
+                "player-back",
+                "player-my-left",
+                "player-my-right"
+            ]
+        },
+       
+        "player2": {
+            "urgency_pre"  : "1",
+            "urgency_post" : ".25",
+            "possible_labels" : [
+                "player-front",
+                "player-back",
+                "player-my-left",
+                "player-my-right"
+            ]
+        },
+       
+        "table": {
+            "urgency_pre" : "1",
+            "urgency_post" : ".25",
+            "possible_labels" : [
+                "table"
+            ]
+        },
+
+        "net": {
+            "urgency_pre" : "1",
+            "urgency_post" : ".25",
+            "possible_labels" : [
+                "net"
+            ]
+        }
+
+    },
+
+    "possible_training_data_paths" : [
+        "/Users/Max/Documents/MATLAB/data/situate_images/PingPongLabeled/Labels/train/"
+    ]
+
+}}
+    

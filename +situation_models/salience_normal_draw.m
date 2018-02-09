@@ -1,5 +1,4 @@
 function h = salience_normal_draw( d, object_string, what_to_draw, input_agent, box_format_arg, initial_draw  )
-% h = uniform_then_normal_draw( d, object_string, what_to_draw, format_arg, [box_r0rfc0cf], [box_format_arg], [initial_draw] );
 %
 %   what to draw can be 'xy', 'shape', or 'size'
 %       xy will be a heat map the shape of the image

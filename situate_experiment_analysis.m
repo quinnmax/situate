@@ -14,6 +14,7 @@ function situate_experiment_analysis( results_directory, show_final_workspaces, 
         show_final_workspaces = true;
     end
     
+    
 
 %% data source 
 
@@ -30,15 +31,17 @@ function situate_experiment_analysis( results_directory, show_final_workspaces, 
 
     temp = dir(fullfile(results_directory, '*.mat'));
     fn = cellfun( @(x) fullfile(results_directory,x), {temp.name}, 'UniformOutput', false );
-
+    
+    
+    
 %% group on condition
    
     % just get the description for grouping
-    p_conditions_temp = cell(1,length(fn));
+    p_conditions_per_file = cell(1,length(fn));
     p_conditions_descriptions_temp = cell(1,length(fn));
     for fi = 1:length(fn) % file ind
         temp = load(fn{fi},'p_condition');
-        p_conditions_temp{fi} = temp.p_condition;
+        p_conditions_per_file{fi} = temp.p_condition;
         p_conditions_descriptions_temp{fi} = temp.p_condition.description;
         progress(fi,length(fn),'loading parameterization data');
     end
@@ -46,20 +49,22 @@ function situate_experiment_analysis( results_directory, show_final_workspaces, 
     [p_conditions_descriptions,~,condition_indices] = unique(p_conditions_descriptions_temp);
     num_conditions = length(p_conditions_descriptions);
     
+    
+    
 %% reshape the data
 
-    results_per_condition = [];
-    results_per_condition.condition = '';
-    results_per_condition.iou_thresholds = [];
-    results_per_condition.detections_at_iou = [];
+    results_per_condition                           = [];
+    results_per_condition.condition                 = '';
+    results_per_condition.iou_thresholds            = [];
+    results_per_condition.detections_at_iou         = [];
     results_per_condition.first_iteration_over_threshold = [];
     results_per_condition.first_iteration_over_threshold_desc = '';
-    results_per_condition.final_ious = [];
-    results_per_condition.final_ious_desc = '';
-    results_per_condition.support_record.internal = [];
-    results_per_condition.support_record.external = [];
-    results_per_condition.support_record.total    = [];
-    results_per_condition.support_record.gt_iou   = [];
+    results_per_condition.final_ious                = [];
+    results_per_condition.final_ious_desc           = '';
+    results_per_condition.support_record.internal   = [];
+    results_per_condition.support_record.external   = [];
+    results_per_condition.support_record.total      = [];
+    results_per_condition.support_record.gt_iou     = [];
     results_per_condition = repmat( results_per_condition, 1, num_conditions);
     
     % load up related files, combine
@@ -78,11 +83,13 @@ function situate_experiment_analysis( results_directory, show_final_workspaces, 
         situation_objects = p_condition.situation_objects;
         num_situation_objects = length(situation_objects );
         
+        original_file_ind = [];
         for ti = 1:length(temp_data)
             unrun_workspaces = cellfun(@isempty, temp_data{ti}.workspaces_final );
             temp_data{ti}.fnames_im_test(unrun_workspaces) = [];
             temp_data{ti}.workspaces_final(unrun_workspaces) = [];
             temp_data{ti}.agent_records(unrun_workspaces) = [];
+            original_file_ind(end+1:end+length(temp_data{ti}.workspaces_final)) = cur_files_inds( ti );
         end
         
         workspaces_final = cellfun( @(x) x.workspaces_final, temp_data, 'UniformOutput', false);
@@ -107,7 +114,7 @@ function situate_experiment_analysis( results_directory, show_final_workspaces, 
             if ~exist(labl_fname,'file')
                 [path,name,ext] = fileparts(labl_fname);
                 switch path
-                    case '/Users/Max/Documents/MATLAB/data/situate_images/PortlandSimpleDogWalking_test'
+                    case {'/Users/Max/Documents/MATLAB/data/situate_images/PortlandSimpleDogWalking_test','/Users/mm/Desktop/PortlandSimpleDogWalking'}
                         path = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_test/';
                     otherwise
                         error('need to correct some more paths');
@@ -115,128 +122,14 @@ function situate_experiment_analysis( results_directory, show_final_workspaces, 
                 labl_fname = fullfile(path,[name ext]);
             end
             
-            workspaces_final(wi) = situate.score_workspace( workspaces_final(wi), labl_fname, p_condition );
+            workspaces_final(wi) = situate.workspace_score( workspaces_final(wi), labl_fname, p_conditions_per_file{original_file_ind(wi)} );
+            p_conditions_per_file{original_file_ind(wi)}.image_redim_px
             
         end
         
         
         results_per_condition(ci).condition = p_condition.description;
-        
-        
-        
-        
-        
-        % take a look at external support function
-        
-        recompute_external_support_function = false;
-        
-        if recompute_external_support_function
-            
-            % hand drawn activation function for external support
-            % allow for eventual saturation, ignore the bottom half of values
-            figure;
-            resampling_bins = 10;
-            temp = agent_records(:);
-            for oi = 1:num_situation_objects
-                
-                obj_inds = eq(oi,[temp.interest]);
-                support_temp  = [temp(obj_inds).support];
-                density_temp  = [support_temp.sample_densities];
-                external_temp = [support_temp.external     ];
-                gt_iou_temp   = [support_temp.GROUND_TRUTH ];
-
-                [inds_out] = resample_to_uniform( gt_iou_temp, [], resampling_bins );
-                gt_iou_resampled   = gt_iou_temp(inds_out)';
-                density_resampled  = density_temp(inds_out)';
-                external_resampled = external_temp(inds_out)';
-                
-                x = sort(density_resampled);
-                num_samples = length(x);
-                
-                x_hand = [ 0  .5  .9   1 ];
-                y_hand = [ 0   0   1   1 ];
-                y_interp = interp1(x_hand,y_hand,linspace(0,1,num_samples));
-                y_interp = y_interp';
-
-                activation_function = @(x,b) b(1) + b(2) * atan( b(3) * (x-b(4)) );
-                b0 = [ 0.0480    0.5567    3.6761e-11   -0.0514]; % based on old findings
-
-                bf = fminsearch( @(b) sum( (y_interp - activation_function(x,b)) .^2 ), b0 );
-
-                updated_external_support = activation_function( x, bf );
-
-                subplot2(2,num_situation_objects,1,oi);
-                hist(external_resampled);
-                xlim([-.1 1.1]);
-                subplot2(2,num_situation_objects,2,oi);
-                hist(updated_external_support);
-                xlim([-.1 1.1]);
-                
-                display(bf);
-                
-            end
-            
-        end
-        
-        
-        
-        
-        
-        % take a look at total support function
-        
-        recompute_total_support_function = false;
-        
-        if recompute_total_support_function
-            
-            resampling_bins = 10;
-            use_mixing = true;
-            
-            if use_mixing
-                total_support_func = @(b, internal, external) b(1) + b(2) .* internal + b(3) .* external + b(4) .* internal .* external;
-                num_coeffs = 4;
-            else
-                total_support_func = @(b, internal, external) b(1) + b(2) .* internal + b(3) .* external;
-                num_coeffs = 5;
-            end
-
-            temp = agent_records(:);
-            figure;
-            total_support_b = zeros( num_situation_objects, num_coeffs );
-            for oi = 1:num_situation_objects
-                obj_inds = eq(oi,[temp.interest]);
-                support_temp  = [temp(obj_inds).support];
-                internal_temp = [support_temp.internal     ];
-                external_temp = [support_temp.external     ];
-                total_temp    = [support_temp.total        ];
-                gt_iou_temp   = [support_temp.GROUND_TRUTH ];
-
-                [inds_out] = resample_to_uniform( gt_iou_temp, [], resampling_bins );
-                internal_resampled = internal_temp(inds_out)';
-                external_resampled = external_temp(inds_out)';
-                total_resampled    = total_temp(inds_out)';
-                gt_iou_resampled   = gt_iou_temp(inds_out)';
-
-                if use_mixing
-                    total_support_b(oi,:) = ridge( gt_iou_resampled, [internal_resampled, external_resampled, internal_resampled .* external_resampled ], 1000, 0 );
-                else
-                    total_support_b(oi,:) = ridge( gt_iou_resampled, [internal_resampled, external_resampled ], 1000, 0 );
-                end
-                updated_total_support = total_support_func( total_support_b(oi,:), internal_resampled, external_resampled );
-
-                subplot(1,num_situation_objects,oi);
-                plot(gt_iou_resampled,updated_total_support,'.');
-                title(situation_objects{oi});
-                xlabel('gt iou (resampled to uniform)');
-                ylabel('total support (updated)');
-                
-            end
-            
-            display(total_support_b);
-
-        end
-        
-        
-        
+        results_per_condition(ci).workspaces_final = workspaces_final;
         
         
         % detections at threshold, iteration
@@ -311,8 +204,6 @@ function situate_experiment_analysis( results_directory, show_final_workspaces, 
             
             end
             
-            
-        
             if any(isnan(first_iteration_over_threshold(ii,1:num_situation_objects,ti)))
                 first_iteration_over_threshold(ii,end,ti) = nan;
             else
@@ -417,11 +308,14 @@ function situate_experiment_analysis( results_directory, show_final_workspaces, 
                 % condition, threshold, object, iteration
         end
     
+        
+        
     %%
     
     clear temp_data;
     clear agent_records;
     clear temp;
+    
     
     
 %% median detection times
@@ -435,6 +329,8 @@ for oi = 1:num_situation_objects + 1
 end
 end
     
+
+
 %% include rcnn results
 
 % include jordan's rcnn data source
@@ -444,14 +340,6 @@ if include_rcnn_results
     error('need to update rcnn inclusion');
     testing_image_file_directory = '?';
     [confidences, gt_ious, boxes_xywh, output_labels, per_row_fnames] = rcnn_csvs_process( rcnn_csv_results_directory, fnames_test, testing_image_file_directory );
-    
-%     rcnn_object_detections_at_threshold = zeros( length(iou_thresholds), num_situation_objects );
-%     rcnn_situation_detections_at_threshold = zeros( length(iou_thresholds), 1 );
-%     for ti = 1:length(iou_thresholds)
-%         rcnn_object_detections_at_threshold(ti,:) = sum( rcnn_gt_ious >= iou_thresholds(ti) );
-%         rcnn_situation_detections_at_threshold(ti) = sum(all(rcnn_gt_ious >= iou_thresholds(ti),2));
-%     end
-%     rcnn_detections_at_threshold = [rcnn_object_detections_at_threshold rcnn_situation_detections_at_threshold];
     
 end
     
@@ -472,7 +360,6 @@ end
     
     % define color space
     colors = zeros( num_conditions,3); % all black
-    
     
     
     
@@ -527,7 +414,6 @@ end
     end
     
     h2.Position = [440 537 560 220];
-    %print(h2,fullfile(results_directory,'situate_experiment_figure'),'-r300', '-dpdf','-bestfit' );
     saveas(h2,fullfile(results_directory,'situate_experiment_figure detections at iteration'),'png');
     
     max_val = max([.01; max(reshape(detection_rate_at_num_proposals(:,iou_threshold_index,num_situation_objects+1,:),1,[]))]);
@@ -535,91 +421,8 @@ end
         max_val = max( max_val, rcnn_detection_rate );
     end
     ylim([0, 1.1*max_val ]);
-    %print(h2,fullfile(results_directory,'situate_experiment_figure_zoomed'),'-r300', '-dpdf','-bestfit' );
     saveas(h2,fullfile(results_directory,'situate_experiment_figure detections at iteration zoomed'),'png');
     
-    
-    
-
-
-%% table: medians over conditions 
-
-%     clear temp_a temp_b temp_c
-%     fprintf('Median time to first detection\n')
-%     fprintf('  location: box shape; conditioning \n');
-%     for ci = display_order
-%         temp_a = reshape(detection_order_times(ci,:,1),1,[]);
-%         temp_b = prctile(temp_a,50);
-%         fprintf( '  %-50s  ', p_conditions_descriptions{ci} );
-%         fprintf( '%*.1f\n',10, temp_b );
-%     end
-%     fprintf('\n\n');
-%     
-%     clear temp_a temp_b temp_c
-%     fprintf('Median time to second detection \n')
-%     fprintf('  location: box shape; conditioning \n');
-%     for ci = display_order
-%         temp_a = reshape(detection_order_times(ci,:,2),1,[]);
-%         temp_b = prctile( temp_a, 50 );
-%         fprintf( '  %-50s  ', p_conditions_descriptions{ci} );
-%         fprintf( '%*.1f\n',10, temp_b );
-%     end
-%     fprintf('\n\n');
-%     
-%     if size( detection_order_times, 4 ) >= 3
-%         clear temp_a temp_b temp_c
-%         fprintf('Median time to third detection \n')
-%         fprintf('  location: box shape; conditioning \n');
-%         for mi = display_order
-%             temp_a = reshape(detection_order_times(mi,:,3),1,[]);
-%             temp_b = prctile( temp_a, 50 );
-%             fprintf( '  %-50s  ', p_conditions_descriptions{mi} );
-%             fprintf( '%*.1f\n',10, temp_b );
-%         end
-%         fprintf('\n\n');
-%     end
-%     
-%     clear temp_a temp_b temp_c
-%     fprintf('Median time from first to second detection \n')
-%     fprintf('  location: box shape; conditioning \n');
-%     for ci = display_order
-%         temp_a = reshape(detection_order_times(ci,:,1),1,[]);
-%         temp_b = reshape(detection_order_times(ci,:,2),1,[]);
-%         rem_NaNs = temp_b - temp_a;
-%         rem_NaNs(isnan(rem_NaNs)) = inf;
-%         temp_c = prctile( rem_NaNs, 50 );
-%         fprintf( '  %-50s  ', p_conditions_descriptions{ci} );
-%         fprintf( '%*.1f\n',10, temp_c );
-%     end
-%     fprintf('\n\n');
-%     
-%     if size( detection_order_times, 4 ) >= 3
-%         clear temp_a temp_b temp_c
-%         fprintf('Median time from second to third detection \n')
-%         fprintf('  location: box shape; conditioning \n');
-%         for mi = display_order
-%             temp_a = reshape(detection_order_times(mi,:,2),1,[]);
-%             temp_b = reshape(detection_order_times(mi,:,3),1,[]);
-%             rem_NaNs = temp_b - temp_a;
-%             rem_NaNs(isnan(rem_NaNs)) = inf;
-%             temp_c = prctile( temp_b - temp_a, 50 );
-%             fprintf( '  %-50s  ', p_conditions_descriptions{mi} );
-%             fprintf( '%*.1f\n',10, temp_c );
-%         end
-%         fprintf('\n\n');
-%     end
-%     
-%     clear temp_a temp_b temp_c
-%     fprintf('Number of failed detections \n')
-%     fprintf('  location: box shape; conditioning \n');
-%     for ci = display_order
-%         temp_a = sum( reshape(successful_completion(ci,:),1,[]) );
-%         temp_b = numel( successful_completion(ci,:) );
-%         temp_c = temp_b - temp_a;
-%         fprintf( '  %-50s  ', p_conditions_descriptions{ci} );
-%         fprintf( '%*d\n',10, temp_c );
-%     end
-%     fprintf('\n\n');
 
     
 %% figure: object detections at various Ground Truth IOU at thresholds
@@ -649,6 +452,8 @@ end
     end
     saveas(h3,fullfile(results_directory,'object_detections_vs_iou_threshold'),'png')
    
+    
+    
 %% figure: repeat detections
 
     [fnames_unique,fname_counts,fname_assignment_inds] = unique_cell( fnames_test );
@@ -676,53 +481,6 @@ end
     end
         
     
-    
-
-
-%     num_repeat_runs = num_images / length(unique(fnames_test_images{1}));
-%     
-%     %if num_repeat_runs > 1
-%     
-%         sum_completions = zeros(num_conditions,length(unique(fnames_test_images{1})));
-%         sum_obj_detections = zeros(num_conditions,length(unique(fnames_test_images{1})),length(situation_objects) );
-%         
-%         for ci = 1:num_conditions
-%             temp = fnames_test_images{ci};
-%             [~,~,im_inds] = unique(temp);
-%             for imi = 1:length(unique(fnames_test_images{1}))
-%                 sum_completions(ci,imi) = sum(successful_completion(ci,eq(im_inds,imi)));
-%                 for oi = 1:length(situation_objects)
-%                     sum_obj_detections(ci,imi,oi) = sum(object_detections(ci,eq(im_inds,imi),oi));
-%                 end
-%             end  
-%         end
-%         
-%         figure;
-%         
-%         for ci = 1:num_conditions
-%         for oi = 1:length(situation_objects)
-%             subplot2( length(situation_objects)+1,num_conditions,oi,ci);
-%             stem(sort(sum_obj_detections(ci,:,oi)));
-%             xlabel(situation_objects{oi});
-%             if ci == 1, ylabel({'times detected'; ['(' num2str(num_repeat_runs) ' attempts)']}); end
-%             if oi == 1, title(p_conditions_descriptions{ci}); end
-%             ylim([0 1.1*num_repeat_runs]);
-%             xlim([0 length(unique(fnames_test_images{1}))]);
-%         end
-%         end
-%         
-%         for ci = 1:num_conditions
-%             subplot2( length(situation_objects)+1,num_conditions,length(situation_objects)+1,ci);
-%             stem(sort(sum_completions(ci,:)));
-%             xlabel('full situation');
-%             if ci == 1, ylabel({'times detected'; ['(' num2str(num_repeat_runs) ' attempts)']}); end
-%             ylim([0 1.1*num_repeat_runs]);
-%             xlim([0 length(unique(fnames_test_images{1}))]);
-%         end
-%         
-%     %end
-%     
-%     display('.');
 
     
     
@@ -761,10 +519,12 @@ end
     fig_title = 'detections per iteration at multiple thresholds';
     h5 = figure('color','white','Name',fig_title,'position',[720 2 900 600]);
     for ti = 1:num_thresholds
-    for oi = 1:num_situation_objects
+    for oi = 1:num_situation_objects+1
             
-        subplot2( num_situation_objects+1, num_thresholds, oi, ti )
-        if oi == num_situation_objects, subplot2( num_situation_objects+1, num_thresholds, oi, ti, oi+1, ti ); end
+        % first_iteration_over_threshold( condition_ind, image_ind, object_ind, threshold_ind )
+        
+        subplot2( num_situation_objects+2, num_thresholds, oi, ti )
+        if oi == num_situation_objects+1, subplot2( num_situation_objects+2, num_thresholds, oi, ti, oi+1, ti ); end
 
         for ci = 1:num_conditions
         
@@ -780,15 +540,21 @@ end
             plot(iteration_thresholds,cumulative_detection_ratio);
             hold on;
 
-            if oi == 1, title( ['detection threshold: ' num2str(iou_thresholds(ti))] ); end
-            if ci == 1, ylabel( situation_objects{oi} ); end
+            if oi == 1, title( ['iou > ' num2str(iou_thresholds(ti))] ); end
+            if ci == 1 
+                if oi < length(situation_objects)
+                    ylabel( situation_objects{oi} ); 
+                else
+                    ylabel('full situation');
+                end
+            end 
             xlabel('iteration number');
             xlim([0 max(first_iteration_over_threshold(:))]);
             ylim([0 1]);
         end
         
         
-        if oi == num_situation_objects, legend(p_conditions_descriptions,'location','southoutside'); end
+        if oi == num_situation_objects + 1 && ti == num_thresholds, legend(p_conditions_descriptions,'location','southeast'); end
         
         
     end
@@ -804,14 +570,27 @@ end
     
         for ci = 1:num_conditions
 
-            max_to_show = 25;
+            max_to_show = 16;
             num_to_show = min(max_to_show,length(fnames_test));
             
             figure;
-            
             for imi = 1:num_to_show
                 subplot_lazy(num_to_show,imi);
-                situate.draw_workspace( fnames_test{imi}, p_conditions_temp{ci}, workspaces_final(ci,imi), 12 );
+                if ~exist(fnames_test{imi},'file')
+                    [fpath,fname,ext] = fileparts( fnames_test{imi} );
+                    switch fpath
+                        case '/Users/Max/Documents/MATLAB/data/situate_images/PortlandSimpleDogWalking_test'
+                            fpath = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_test';
+                        otherwise
+                            error('having an image path problem');
+                    end
+                    cur_fname = fullfile( fpath, [fname ext] );
+                else
+                    cur_fname = fnames_test{imi};
+                end
+                
+                situate.workspace_draw( cur_fname, p_conditions_per_file{ci}, results_per_condition(ci).workspaces_final(imi), 12 );
+                
             end
 
         end

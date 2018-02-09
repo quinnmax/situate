@@ -1,4 +1,9 @@
-function model_out = salience_normal_condition( model_in, object_type, workspace, image )
+function model_out = salience_normal_condition( model_in, varargin )
+
+    object_type = varargin{1};
+    workspace   = varargin{2};
+    image       = varargin{3};
+
 
     persistent image_backup;
     persistent salience_map;

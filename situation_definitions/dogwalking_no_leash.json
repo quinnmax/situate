@@ -1,0 +1,38 @@
+{"situation" : {
+   
+    "description" : "dogwalking_no_leash",
+   
+    "situation_objects" : {
+
+        "dogwalker": {
+            "urgency_pre"  : "1",
+            "urgency_post" : ".25",
+            "possible_labels" : [
+                "dog-walker front",
+                "dog-walker back",
+                "dog-walker my-left",
+                "dog-walker my-right"]
+        },
+       
+        "dog": {
+            "urgency_pre"  : "1",
+            "urgency_post" : ".25",
+            "possible_labels" : [
+                "dog front",
+                "dog back",
+                "dog my-left",
+                "dog my-right"]
+        }
+        
+    },
+
+    "possible_training_data_paths" : [
+        "/Users/mm/Desktop/PortlandSimpleDogWalking/",
+        "/stash/mm-group/evan/crop_learn/data/PortlandSimpleDogWalking/",
+        "/Users/Max/Documents/MATLAB/data/situate_images/PortlandSimpleDogWalking/",
+        "/home/rsoiffer/Desktop/Matlab/DogWalkingData/PortlandSimpleDogWalking/",
+        "/home/maxq/Documents/MATLAB/data/PortlandSimpleDogWalking/"
+    ]
+
+}}
+    

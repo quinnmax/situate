@@ -1,4 +1,7 @@
-function model_out = uniform_normal_mix_condition( model_in, object_type, workspace )
+function model_out = uniform_normal_mix_condition( model_in, varargin )
+
+    object_type = varargin{1};
+    workspace   = varargin{2};
 
     if isempty( setsub( workspace.labels, object_type) )
     

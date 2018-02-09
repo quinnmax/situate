@@ -72,7 +72,7 @@ function [boxes_r0rfc0cf, sample_density, model] = salience_normal_sample( model
     
      % ugh, if you've goofed this bad, just do it over
     if (r0>=rf) || (c0>=cf)
-        [boxes_r0rfc0cf, sample_density] = situation_models.uniform_then_normal_sample( model, object_type, n, im_dims );
+        [boxes_r0rfc0cf, sample_density] = situation_models.salience_normal_sample( model, object_type, n, im_dims );
     end
   
 end

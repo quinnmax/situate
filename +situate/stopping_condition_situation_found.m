@@ -1,11 +1,12 @@
-function [result, message] = stopping_condition_situation_found( workspace, ~, p )
+function [hard_stop, soft_stop, message] = stopping_condition_situation_found( workspace, ~, p )
 
-    result = false;
+    hard_stop = false;
+    soft_stop = false;
     message = '';
 
     if isequal( sort(workspace.labels), sort(p.situation_objects) ) ...
     && all( workspace.total_support >= p.thresholds.total_support_final )
-        result = true;
+        hard_stop = true;
         message = 'situation found';
     end
        
