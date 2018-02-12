@@ -66,7 +66,7 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
         fnames_lb_train = cellfun( @(x) fullfile(experiment_struct.experiment_settings.directory_train, x), data_split_struct(fi).fnames_lb_train, 'UniformOutput', false );
         fnames_im_test  = cellfun( @(x) fullfile(experiment_struct.experiment_settings.directory_test,  x), data_split_struct(fi).fnames_im_test,  'UniformOutput', false );
         
-        [~, fnames_fail, exceptions, failed_inds] = labl_validate( fnames_lb_train, situation_struct );
+        [~, fnames_fail, exceptions, failed_inds] = situate.labl_validate( fnames_lb_train, situation_struct );
         if ~isempty(fnames_fail)
             error('some label files failed validation');
         end
@@ -182,7 +182,12 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
                 % save off results every condition and fold
                 %   current fold and 
                 %   experimental condition
-                save_fname = fullfile(experiment_struct.results_directory, [cur_parameterization.description '_fold_' num2str(fi,'%02d') '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
+                if ~isempty(strfind(cur_parameterization.description,'.'))
+                    cur_param_desc = cur_parameterization.description(1:strfind(cur_parameterization.description,'.')-1);
+                else
+                    cur_param_desc = cur_parameterization.description;
+                end
+                save_fname = fullfile(experiment_struct.results_directory, [cur_param_desc '_fold_' num2str(fi,'%02d') '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
                 
                 results_struct = [];
                 results_struct.p_condition      = cur_parameterization;

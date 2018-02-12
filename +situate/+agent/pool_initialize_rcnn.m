@@ -86,9 +86,9 @@ function primed_agent_pool = pool_initialize_rcnn( p, im, im_fname )
     
     
     total_primed_agents = num_rcnn_primed_agents + num_non_rcnn_agents;
-    agent = situate.agent_initialize();
-    agent.urgency = 1;
-    primed_agent_pool = repmat( agent, total_primed_agents, 1 );
+    cur_agent = situate.agent.initialize();
+    cur_agent.urgency = 1;
+    primed_agent_pool = repmat( cur_agent, total_primed_agents, 1 );
     agents_remove = false( size( primed_agent_pool ) );
     ai = 1;
     for oi = 1:length(situation_objects)

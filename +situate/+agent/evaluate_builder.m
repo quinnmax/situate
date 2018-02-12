@@ -1,5 +1,5 @@
 
-function [workspace,agent_pool,object_was_added] = agent_evaluate_builder( agent_pool, agent_index, workspace ) 
+function [workspace,agent_pool,object_was_added] = evaluate_builder( agent_pool, agent_index, workspace ) 
  
     % The builder checks to see if a proposed object, which has passed both
     % scout and reviewer processes, is actually an improvement over what

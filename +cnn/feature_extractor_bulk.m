@@ -1,7 +1,7 @@
 
-function [fname_out] = cnn_feature_extractor( directory_in, directory_out, situation_struct )
+function [fname_out] = feature_extractor_bulk( directory_in, directory_out, situation_struct )
 
-    % fname_out = cnn_feature_extractor( directory_in, directory_out, situation_struct );
+    % fname_out = cnn.feature_extractor_bulk( directory_in, directory_out, situation_struct );
     %
     %   the situation struct tells us 
     %       what objects are of interest and 

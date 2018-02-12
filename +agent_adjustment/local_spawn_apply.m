@@ -1,7 +1,7 @@
 
-function agent_pool = generate_agents( model, agent_to_expand, agent_pool, image  )
+function agent_pool = local_spawn_apply( model, agent_to_expand, agent_pool, image  )
         
-    % agent_pool = generate_agents( model, agent_to_expand, agent_pool, image  );
+    % agent_pool = local_spawn_apply( model, agent_to_expand, agent_pool, image  );
     %
     % this is meant to take an agent and spawn a set of scouts that are
     % focusesed on the same object, but nearby boxes. those boxes are:

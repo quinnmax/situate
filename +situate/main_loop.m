@@ -11,6 +11,7 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
     % load an image, label
         label = situate.labl_load( im_fname, p );
         im = imread( im_fname );
+        if mean(im(:)) < 1, im = 255 * im; end
         im_size = [size(im,1), size(im,2)];
     
     % initialize workspace
@@ -23,7 +24,8 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
     
     % initialize agent pool
     
-        agent_pool = agent.pool_initialize_default( p, im, im_fname );
+        %agent_pool = situate.agent.pool_initialize_default( p, im, im_fname );
+        agent_pool = p.agent_pool_initialization_function( p, im, im_fname );
         
     % initialize record keeping 
     
@@ -65,7 +67,7 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
             % these changes would be included in dist_structs
             agent_index        = sample_1d( [agent_pool.urgency], 1 );
             workspace_snapshot = workspace;
-            [agent_pool,dist_structs,workspace] = agent.evaluate( agent_pool, agent_index, im, label, dist_structs, p, workspace, learned_models );
+            [agent_pool,dist_structs,workspace] = situate.agent.evaluate( agent_pool, agent_index, im, label, dist_structs, p, workspace, learned_models );
             current_agent_snapshot              = agent_pool(agent_index);
 
         % update dist_structs and support for existing workspace objects
@@ -125,7 +127,7 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
             % add new agents based on findings
             % remove (or reinsert) evaluated agent
             % apply user-defined pool adjustments (like removing low priority agents)
-            agent_pool = agent.pool_update( agent_pool, agent_index, p, workspace, current_agent_snapshot, im, learned_models );
+            agent_pool = situate.agent.pool_update( agent_pool, agent_index, p, workspace, current_agent_snapshot, im, learned_models );
 
         % check stopping condition
             [hard_stop, soft_stop] = p.stopping_condition( workspace, agent_pool, p );
@@ -156,9 +158,9 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
             % refill the pool if we're continuing on and the pool is under size
                 while ~soft_stop && sum( strcmp( 'scout', {agent_pool.type} ) ) < p.num_scouts
                     if isempty(agent_pool)
-                        agent_pool = agent.initialize(p); 
+                        agent_pool = situate.agent.initialize(p); 
                     else
-                        agent_pool(end+1) = agent.initialize(p); 
+                        agent_pool(end+1) = situate.agent.initialize(p); 
                     end
                 end
             

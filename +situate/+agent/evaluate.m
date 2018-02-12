@@ -6,15 +6,15 @@ function [agent_pool, d, workspace, object_was_added] = evaluate( agent_pool, ag
     switch( agent_pool(agent_index).type )
         case 'scout'
             % sampling from d may change it, so we include it as an output
-            [agent_pool, d] = agent.evaluate_scout( agent_pool, agent_index, p, d, im, label, learned_models );
+            [agent_pool, d] = situate.agent.evaluate_scout( agent_pool, agent_index, p, d, im, label, learned_models );
         case 'reviewer'
             % reviewers do not modify the distributions
-            [agent_pool] = agent.evaluate_reviewer( agent_pool, agent_index, p, learned_models );
+            [agent_pool] = situate.agent.evaluate_reviewer( agent_pool, agent_index, p, learned_models );
         case 'builder'
             % builders modify d by changing the prior on scout interests,
             % and by focusing attention on box sizes and shapes similar to
             % those that have been found to be reasonable so far.
-            [workspace,agent_pool,object_was_added] = agent.evaluate_builder( agent_pool, agent_index, workspace );
+            [workspace,agent_pool,object_was_added] = situate.agent.evaluate_builder( agent_pool, agent_index, workspace );
         otherwise
             error('situate:main_loop:agent_evaluate:agentTypeUnknown','agent does not have a known type field'); 
     end
@@ -49,7 +49,7 @@ function [agent_pool, d, workspace, object_was_added] = evaluate( agent_pool, ag
         end
         
         assert( isequal( agent_pool(end).type, 'reviewer' ) );
-        [agent_pool] = agent.evaluate_reviewer( agent_pool, length(agent_pool), p, learned_models );
+        [agent_pool] = situate.agent.evaluate_reviewer( agent_pool, length(agent_pool), p, learned_models );
         % this gets us external and total support values.
         % it might also add a builder to the end of the agent pool.
         agent_pool(agent_index).support.external = agent_pool(end).support.external;
@@ -60,7 +60,7 @@ function [agent_pool, d, workspace, object_was_added] = evaluate( agent_pool, ag
         if isequal(agent_pool(end).type,'builder') && agent_pool(agent_index).support.internal >= p.thresholds.internal_support
             % the reviewer did spawn a builder, so evaluate it
             assert(isequal(agent_pool(end).type,'builder'));
-            [workspace, agent_pool, object_was_added] = agent.evaluate_builder( agent_pool, length(agent_pool), workspace );
+            [workspace, agent_pool, object_was_added] = situate.agent.evaluate_builder( agent_pool, length(agent_pool), workspace );
             % feed the total support back to the scout, since this bonkers
             % process is in effect and the addition to the workspace needs
             % to be justified with a final score. alternatively, we could

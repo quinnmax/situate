@@ -61,7 +61,7 @@ function classifier_struct = IOU_ridge_regression_train( p, fnames_in, saved_mod
             existing_features_fname = selected_datafile_fname;
         else
             disp('extracting cnn feature data');
-            existing_features_fname = cnn_feature_extractor_bulk( fileparts(fnames_in{1}), existing_feature_directory, p );
+            existing_features_fname = cnn.feature_extractor_bulk( fileparts(fnames_in{1}), existing_feature_directory, p );
         end
         
         % this crop extractor works on all images in the directory, not just the specified images.

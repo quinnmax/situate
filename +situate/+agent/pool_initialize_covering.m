@@ -44,10 +44,10 @@ function primed_agent_pool = pool_initialize_covering( ~, im, ~ )
             
     primed_boxes_r0rfc0cf(inds_remove,:) = [];
     
-    agent = situate.agent_initialize();
-    agent.history = 'primed';
-    agent.urgency = 5;
-    primed_agent_pool = repmat(agent,size(primed_boxes_r0rfc0cf,1),1);
+    cur_agent = situate.agent.initialize();
+    cur_agent.history = 'primed';
+    cur_agent.urgency = 5;
+    primed_agent_pool = repmat(cur_agent,size(primed_boxes_r0rfc0cf,1),1);
     for ai = 1:length(primed_agent_pool)
         
         r0 = primed_boxes_r0rfc0cf(ai,1);
@@ -69,13 +69,4 @@ function primed_agent_pool = pool_initialize_covering( ~, im, ~ )
         
     end
     
-end
-       
-
-    
-
-
-
-
-          
 end

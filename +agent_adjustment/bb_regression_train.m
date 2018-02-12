@@ -37,7 +37,7 @@ function model = bb_regression_train( p, fnames_in, saved_models_directory, trai
         existing_features_fname = selected_datafile_fname;
     else
         disp('extracting cnn feature data');
-        existing_features_fname = cnn_feature_extractor_bulk( [], existing_feature_directory, p );
+        existing_features_fname = cnn.feature_extractor_bulk( [], existing_feature_directory, p );
     end
     
     data = load(existing_features_fname);

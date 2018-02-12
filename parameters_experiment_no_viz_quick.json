@@ -2,7 +2,8 @@
 	"situation_definition_fname" : "situation_definitions/dogwalking.json",
 			
 	"situate_parameterizations_fnames" : [
-				"parameterization_situate_default.json"
+				//"parameters_situate_default.json"
+				"parameters_situate_w_pool_priming.json"
 			],	
 
 	"experiment_settings" : {

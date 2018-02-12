@@ -1,13 +1,6 @@
 function p = parameters_initialize_from_file( params_situate_fname )
 
 
-
-    if ~exist('params_situate_fname','var') || ~exist(params_situate_fname,'file')
-        params_situate_fname = 'parameters_situate_default.json';
-    end
-    
-    
-    
     %% parameters from situate param file
     
     d_json = jsondecode_file( params_situate_fname );
@@ -27,6 +20,8 @@ function p = parameters_initialize_from_file( params_situate_fname )
     else
         p.agent_pool_adjustment_function = str2func( params_in.agent_pool_adjustment_rule );
     end
+    
+    p.agent_pool_initialization_function = str2func( params_in.agent_pool_initialization_function );
     
     p.num_scouts = params_in.min_number_of_scouts;
     p.agent_urgency_defaults.scout    = params_in.agent_urgency_defaults.scout;

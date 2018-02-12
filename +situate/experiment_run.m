@@ -1,11 +1,12 @@
 
-function situate_experiment_script_new( experiment_file_fname )
+function experiment_run( experiment_file_fname )
 
-
+    % situate.experiment_run( experiment_file_fname.json )
 
     if ~exist('experiment_file_fname','var') || isempty(experiment_file_fname)
 
-        experiment_file_fname = 'parameters_experiment_no_viz_quick.json';
+        experiment_file_fname = 'parameters_experiment_viz.json';
+        %experiment_file_fname = 'parameters_experiment_no_viz_quick.json';
 
     end
 

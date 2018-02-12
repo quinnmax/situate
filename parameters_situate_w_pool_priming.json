@@ -120,7 +120,7 @@
 		//		options:
 		//			situate.agent.pool_initialize_rcnn
 		//			situate.agent.pool_initialize_covering
-		"agent_pool_initialization_function" : "situate.agent.pool_initialize_default",
+		"agent_pool_initialization_function" : "situate.agent.pool_initialize_covering",
 
 		// agent pool adjustment rules
 		//		this defines what happens to the agent pool at the end of each iteration.
