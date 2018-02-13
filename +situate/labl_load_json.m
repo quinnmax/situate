@@ -58,7 +58,7 @@ function data = labl_load_json( label_file_name, varargin )
 
         % if it's a jpeg, look for the labl file matching it
             if strcmp('jpg',label_file_name(end-2:end))
-                label_file_name = [labl_load_json(1:end-3) 'json'];
+                label_file_name = [label_file_name(1:end-3) 'json'];
             end
     
             
@@ -75,59 +75,36 @@ function data = labl_load_json( label_file_name, varargin )
             im_w = initial_struct.im_w;
             im_h = initial_struct.im_h;
 
-        % loop through for box specifications
-        
-            field_names = fieldnames( initial_struct );
-            field_names( cellfun( @(x) ~contains(x, 'object_'), field_names ) ) = [];
+        % gather box info
+            n          = length(initial_struct.objects);
+            boxes_xywh = [initial_struct.objects.box_xywh]';
+            labels_raw = {initial_struct.objects.desc};
+            
+            x = boxes_xywh(:,1);
+            y = boxes_xywh(:,2);
+            w = boxes_xywh(:,3);
+            h = boxes_xywh(:,4);
            
-            num_objects             = length( field_names );
-            boxes_xywh              = zeros(num_objects,4);
-            boxes_r0rfc0c0f         = zeros(num_objects,4);
-            boxes_xcycwh            = zeros(num_objects,4);
-
-            boxes_normalized_xywh       = zeros(num_objects,4);
-            boxes_normalized_r0rfc0cf	= zeros(num_objects,4);
-            boxes_normalized_xcycwh     = zeros(num_objects,4);
-
-            box_area_ratio          = zeros(num_objects,1);
-            box_aspect_ratio        = zeros(num_objects,1);
+            xc = x+w/2;
+            yc = y+h/2;
             
-            labels_raw = cell(num_objects,1);
+            boxes_xcycwh = [ xc yc w h];
+
+            r0 = max(y,1);
+            rf = min(y+h,im_h);
+            c0 = max(x,1);
+            cf = min(x+w,im_w);
             
-            for oi = 1:num_objects
-                
-                cur_obj = initial_struct.(field_names{oi});
-                
-                labels_raw{oi} = cur_obj.desc;
-                
-                x = cur_obj.box_xywh(1);
-                y = cur_obj.box_xywh(2);
-                w = cur_obj.box_xywh(3);
-                h = cur_obj.box_xywh(4);
-                boxes_xywh(oi,:) = [x y w h];
-                
-                xc = x + w/2;
-                yc = y + h/2;
-                boxes_xcycwh(oi,:) = [xc yc w h];
+            boxes_r0rfc0c0f = [r0 rf c0 cf];
 
-                r0 = max(y,1);
-                rf = min(y+h,im_h);
-                c0 = max(x,1);
-                cf = min(x+w,im_w);
-                boxes_r0rfc0c0f(oi,:) = [r0 rf c0 cf];
+            r = sqrt(1./(im_w.*im_h));
 
-                r = sqrt(1/(im_w*im_h));
+            boxes_normalized_xywh     = r * ([x y w h]     - repmat([im_w/2 im_h/2 0 0],n,1));
+            boxes_normalized_xcycwh   = r * ([xc yc w h]   - repmat([im_w/2 im_h/2 0 0],n,1));
+            boxes_normalized_r0rfc0cf = r * ([r0 rf c0 cf] - repmat([im_h/2 im_h/2 im_w/2 im_w/2],n,1));
 
-                boxes_normalized_xywh(oi,:)     = r * ([x y w h] - [im_w/2 im_h/2 0 0]);
-                boxes_normalized_xcycwh(oi,:)   = r * ([xc yc w h] - [im_w/2 im_h/2 0 0]);
-                boxes_normalized_r0rfc0cf(oi,:) = r * ([r0 rf c0 cf] - [im_h/2 im_h/2 im_w/2 im_w/2]);
-
-                box_area_ratio(oi) = (w*h) / (im_w*im_h);
-                box_aspect_ratio(oi) = w/h;
-
-                si = si + 4; % iterate for the next box
-
-            end
+            box_area_ratio = (w.*h) ./ (im_w*im_h);
+            box_aspect_ratio = w./h;
 
         % generate the return structure
             data.labels_raw = labels_raw;

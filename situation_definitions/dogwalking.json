@@ -28,6 +28,8 @@
             "urgency_pre" : "1",
             "urgency_post" : ".25",
             "possible_labels" : [
+                "leash-my-right",
+                "leash-my-left",
                 "leash-/",
                 "leash-\\"
             ]

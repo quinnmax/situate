@@ -1,7 +1,9 @@
 
 function [] = labl_old_to_json( labl_fname )
 
-    % labl_fname = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/dog-walking1.labl';
+    % [] = labl_old_to_json( labl_fname );
+    % 
+    % saves a json label file to the existing directory
     
     label_data = situate.labl_load( labl_fname );
 
@@ -14,12 +16,17 @@ function [] = labl_old_to_json( labl_fname )
     restructured_data = [];
     restructured_data.im_w = label_data.im_w;
     restructured_data.im_h = label_data.im_h;
+    objects = [];
     for oi = 1:length(label_data.labels_raw)
-        obj_str = sprintf('object_%03d',oi);
-        restructured_data.(obj_str) = [];
-        restructured_data.(obj_str).desc = label_data.labels_raw{oi};
-        restructured_data.(obj_str).box_xywh = label_data.boxes_xywh(oi,:);
+        if isempty(objects), objects.desc = label_data.labels_raw{oi}; 
+        else objects(oi).desc = label_data.labels_raw{oi}; end
+        objects(oi).box_xywh = label_data.boxes_xywh(oi,:);
+        %obj_str = sprintf('object_%03d',oi);
+        %restructured_data.(obj_str) = [];
+        %restructured_data.(obj_str).desc = label_data.labels_raw{oi};
+        %restructured_data.(obj_str).box_xywh = label_data.boxes_xywh(oi,:);
     end
+    restructured_data.objects = objects;
 
     json_text = jsonencode( restructured_data );
 
