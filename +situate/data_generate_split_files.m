@@ -1,43 +1,85 @@
 
 function data_folds = data_generate_split_files( data_path, varargin )
-% data_folds = data_generate_split_files( data_path, [num_folds], [output_directory] );
+% data_folds = data_generate_split_files( data_path, 'num_folds', num_folds );
+% data_folds = data_generate_split_files( data_path, 'test_im_per_fold', test_im_per_fold );
+% data_folds = data_generate_split_files( data_path, 'testing_ratio', testing_ratio );
+%
+% data_folds = data_generate_split_files( data_path, 'output_directory', output_directory );
+%
+% if not specified, num folds will be 1
+% if test_im_per_fold and testing_ratio aren't specified and num folds is 1, 25% will be for testing
 
-    if length(varargin) >= 1
-        num_folds = varargin{1};
-    else
-        num_folds = 1;
-    end
-    
-    if length(varargin) >= 2
-        output_directory = varargin{2};
-    else
-        output_directory = [];
-    end
+    % process the input
 
+        for vi = 1:2:length(varargin)
+            switch varargin{vi}
+                case 'num_folds'
+                    num_folds = varargin{vi + 1};
+                case 'test_im_per_fold'
+                    test_im_per_fold = varargin{vi + 1};
+                case 'testing_ratio'
+                    testing_ratio = varargin{vi + 1};
+                case 'output_directory'
+                    output_directory = varargin{vi + 1};
+                otherwise
+                    error('unknown arg')
+            end
+        end
+
+        if ~exist('num_folds','var'),        num_folds        = 1; end
+        if ~exist('test_im_per_fold','var'), test_im_per_fold = []; end
+        if ~exist('testing_ratio','var'),    testing_ratio    = []; end
+        if ~exist('output_directory','var'), output_directory = []; end
+   
     % get the file names
         
         % get the label files
-        dir_data = dir(fullfile(data_path, '*.labl'));
+        dir_data = dir(fullfile(data_path, '*.json'));
         fnames_lb = {dir_data.name};
         assert(~isempty(fnames_lb));
         
         % get the associated image files
-        is_missing_image_file = false(1,length(fnames_lb));
-        for fi = 1:length(fnames_lb)
-            is_missing_image_file(fi) = ~exist( fullfile(data_path, [fnames_lb{fi}(1:end-5) '.jpg' ]),'file');
-        end
+        is_missing_image_file = cellfun( @(x) ~exist(fullfile( data_path, [fileparts_mq(x,'name') '.jpg']),'file'), fnames_lb );
         fnames_lb(is_missing_image_file) = [];
         
         % shuffle
         rp = randperm( length(fnames_lb) );
         fnames_lb = fnames_lb(rp);
         
-    % generate training/testing splits for cross validation
-
         n = length(fnames_lb);
+        
+    % oof, the logic of these options
+    
+        if isempty(test_im_per_fold) ...
+        && isempty(testing_ratio) ...
+        
+            % we'll try to set up folds, but we'll use 25% testing data if there's just 1
+    
+            if num_folds == 1
+                testing_ratio = .25;
+                test_im_per_fold = floor(testing_ratio * n);
+            else
+                testing_ratio = 1/num_folds;
+                test_im_per_fold = floor(testing_ratio * n);
+            end
+            
+        elseif ~isempty(testing_im_per_fold)
+            % good to go
+        
+        elseif ~isempty(testing_ratio)
+            test_im_per_fold = floor(testing_ratio * n);
+            
+        end
+            
+    % generate training/testing splits multiple folds
+    
         step = floor( n / num_folds );
-        fold_inds_start = (0:step:n-step)+1;
-        fold_inds_end   = fold_inds_start + step - 1;
+        test_groups_start = (0:step:n-step)+1;
+        if test_im_per_fold < step
+            test_groups_end   = test_groups_start + test_im_per_fold - 1;
+        else
+            test_groups_end   = test_groups_start + step - 1;
+        end
         
         data_folds = [];
         data_folds.fnames_im_train = [];
@@ -46,8 +88,9 @@ function data_folds = data_generate_split_files( data_path, varargin )
         data_folds.fnames_lb_test  = [];
         data_folds = repmat(data_folds,1,num_folds);
         for i = 1:num_folds
-            data_folds(i).fnames_lb_test  = fnames_lb( fold_inds_start(i):fold_inds_end(i) );
+            data_folds(i).fnames_lb_test  = fnames_lb( test_groups_start(i):test_groups_end(i) );
             data_folds(i).fnames_lb_train = setdiff( fnames_lb, data_folds(i).fnames_lb_test );
+            
             data_folds(i).fnames_im_test  = cellfun( @(x) [x(1:end-5) '.jpg'], data_folds(i).fnames_lb_test,  'UniformOutput', false );
             data_folds(i).fnames_im_train = cellfun( @(x) [x(1:end-5) '.jpg'], data_folds(i).fnames_lb_train, 'UniformOutput', false );
         end

@@ -3,7 +3,6 @@
 
 function data = labl_load( label_file_name, varargin )
 
-
     % data = labl_load( label_file_name, [situation_struct]  );
     %     data.labels_raw = labels_raw;
     % 
@@ -28,10 +27,10 @@ function data = labl_load( label_file_name, varargin )
     %       situation_struct should have fields
     %           situation_objects
     %           situation_objects_possible labels
+
     
     
-    
-    %% input proccessing
+    %% input proccessing and routing
 
         if isempty(varargin) || isempty(varargin{1})
             situation_struct = [];
@@ -39,90 +38,96 @@ function data = labl_load( label_file_name, varargin )
             situation_struct = varargin{1};
         end
 
-        % if it's a directory, get data from each label in the directory
+        % if it's a directory, get data from each label
             if ischar(label_file_name) && isdir(label_file_name)
                 data_path = label_file_name;
-                dir_data = dir([data_path '*.labl']);
+                dir_data = dir([data_path '*.json']);
                 path_and_fnames = cellfun( @(x) fullfile( data_path, x ), {dir_data.name}, 'UniformOutput', false );
                 data = situate.labl_load(path_and_fnames,situation_struct);
+                
+                if isempty( data )
+                    data = situate.labl_load_old( label_file_name, varargin );
+                    if ~isempty(data)
+                        warning('only found old label format, using that');
+                        return;
+                    end
+                end
+                  
                 return;
             end
 
-        % if it's a cell, recursively apply to each entry
+        % if it's a cell, get data from each entry
             if iscell(label_file_name)
                 data = cellfun( @(x) situate.labl_load(x,situation_struct), label_file_name );
                 return;
             end
 
-        % if it's a jpeg, look for the labl file matching it
-            if strcmp('jpg',label_file_name(end-2:end))
-                label_file_name = [label_file_name(1:end-3) 'labl'];
+        % if it's a single file, see if we can find the associated label file
+            [~,~,ext] = fileparts( label_file_name);
+            if strcmp( ext, '.json' )
+                % carry on
+            else
+                % if it's anything else, like jpg or labl, see if the json is there
+                if exist( [label_file_name(1:end-length(ext)) '.json'], 'file' )
+                    label_file_name = [label_file_name(1:end-length(ext)) '.json'];
+
+                elseif exist( [label_file_name(1:end-length(ext)) '.labl'], 'file' )
+                    label_file_name = [label_file_name(1:end-5) '.labl'];
+                    warning('only found old label format, using that');
+                    data = situate.labl_load_old(label_file_name,situation_struct);
+                    return
+                else
+                    error('label file not found');
+                end
             end
-    
+
+        % alright, at this point, we should just have a json label file
+            
+       
             
             
     %% parse the label file
 
-        % get label information
+        % get the struct
             fid = fopen( label_file_name );
             specification_string = fgetl(fid);
-            spec = strsplit( specification_string, '|' );
+            initial_struct = jsondecode( specification_string );
             fclose(fid);
+            
+        % gather image info
+            im_w = initial_struct.im_w;
+            im_h = initial_struct.im_h;
 
-         % gather image info
-            im_w = str2double( spec{1} );
-            im_h = str2double( spec{2} );
+        % gather box info
+            n          = length(initial_struct.objects);
+            boxes_xywh = [initial_struct.objects.box_xywh]';
+            labels_raw = {initial_struct.objects.desc};
+            
+            x = boxes_xywh(:,1);
+            y = boxes_xywh(:,2);
+            w = boxes_xywh(:,3);
+            h = boxes_xywh(:,4);
+           
+            xc = x+w/2;
+            yc = y+h/2;
+            
+            boxes_xcycwh = [ xc yc w h];
 
-        % loop through for box specifications
-            num_boxes = str2double( spec{3} );
-            si = 4; % start index for the box specifications
-            boxes_xywh              = zeros(num_boxes,4);
-            boxes_r0rfc0c0f         = zeros(num_boxes,4);
-            boxes_xcycwh            = zeros(num_boxes,4);
+            r0 = max(y,1);
+            rf = min(y+h,im_h);
+            c0 = max(x,1);
+            cf = min(x+w,im_w);
+            
+            boxes_r0rfc0c0f = [r0 rf c0 cf];
 
-            boxes_normalized_xywh       = zeros(num_boxes,4);
-            boxes_normalized_r0rfc0cf	= zeros(num_boxes,4);
-            boxes_normalized_xcycwh     = zeros(num_boxes,4);
+            r = sqrt(1./(im_w.*im_h));
 
-            box_area_ratio          = zeros(num_boxes,1);
-            box_aspect_ratio        = zeros(num_boxes,1);
-            for bi = 1:num_boxes
+            boxes_normalized_xywh     = r * ([x y w h]     - repmat([im_w/2 im_h/2 0 0],n,1));
+            boxes_normalized_xcycwh   = r * ([xc yc w h]   - repmat([im_w/2 im_h/2 0 0],n,1));
+            boxes_normalized_r0rfc0cf = r * ([r0 rf c0 cf] - repmat([im_h/2 im_h/2 im_w/2 im_w/2],n,1));
 
-                x = str2double( spec{si+0} );
-                y = str2double( spec{si+1} );
-                w = str2double( spec{si+2} );
-                h = str2double( spec{si+3} );
-
-                assert(w>1);
-                assert(h>1);
-
-                boxes_xywh(bi,:) = [x y w h];
-
-                xc = x + w/2;
-                yc = y + h/2;
-                boxes_xcycwh(bi,:) = [xc yc w h];
-
-                r0 = max(y,1);
-                rf = min(y+h,im_h);
-                c0 = max(x,1);
-                cf = min(x+w,im_w);
-                boxes_r0rfc0c0f(bi,:) = [r0 rf c0 cf];
-
-                r = sqrt(1/(im_w*im_h));
-
-                boxes_normalized_xywh(bi,:)     = r * ([x y w h] - [im_w/2 im_h/2 0 0]);
-                boxes_normalized_xcycwh(bi,:)   = r * ([xc yc w h] - [im_w/2 im_h/2 0 0]);
-                boxes_normalized_r0rfc0cf(bi,:) = r * ([r0 rf c0 cf] - [im_h/2 im_h/2 im_w/2 im_w/2]);
-
-                box_area_ratio(bi) = (w*h) / (im_w*im_h);
-                box_aspect_ratio(bi) = w/h;
-
-                si = si + 4; % iterate for the next box
-
-            end
-
-        % gather box labels
-            labels_raw = spec( end-num_boxes+1 : end );
+            box_area_ratio = (w.*h) ./ (im_w*im_h);
+            box_aspect_ratio = w./h;
 
         % generate the return structure
             data.labels_raw = labels_raw;

@@ -225,8 +225,8 @@ function [fname_out] = feature_extractor_bulk( directory_in, directory_out, situ
     tic;
     for imi = 1:num_images
         
-        im = imread( strrep( fnames{imi}, 'labl', 'jpg' ) );
-        cur_im_data = situate.labl_load( fnames{imi}, p );
+        im = imread( strrep( strrep( fnames{imi}, 'labl', 'jpg' ), 'json', 'jpg') ); % ugh
+        cur_im_data = situate.labl_load( fnames{imi}, situation_struct );
         
         for oi  = 1:num_situation_objects
 
@@ -314,7 +314,6 @@ function [fname_out] = feature_extractor_bulk( directory_in, directory_out, situ
     output_struct = [];
     output_struct.fnames                        = fnames;
     output_struct.object_labels                 = situation_objects;
-    output_struct.p                             = p;
     output_struct.box_proposals_r0rfc0cf        = box_proposals_r0rfc0cf;
     output_struct.box_sources_r0rfc0cf          = box_sources_r0rfc0cf;
     output_struct.box_source_obj_type           = box_source_obj_type;

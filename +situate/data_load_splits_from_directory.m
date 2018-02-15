@@ -4,14 +4,15 @@ function data_folds = data_load_splits_from_directory( split_file_directory )
 
        % Load the folds from files rather than generating new ones
 
-        fnames_splits_train = dir(fullfile(split_file_directory, '*_fnames_split_*_train.txt'));
-        fnames_splits_test  = dir(fullfile(split_file_directory, '*_fnames_split_*_test.txt' ));
-        fnames_splits_train = cellfun( @(x) fullfile(split_file_directory, x), {fnames_splits_train.name}, 'UniformOutput', false );
-        fnames_splits_test  = cellfun( @(x) fullfile(split_file_directory, x), {fnames_splits_test.name},  'UniformOutput', false );
-
-        assert( length(fnames_splits_train) > 0 );
+        fnames_splits_train = dir(fullfile(split_file_directory, '*fnames_split_*_train.txt'));
+        fnames_splits_test  = dir(fullfile(split_file_directory, '*fnames_split_*_test.txt' ));
+       
+        assert( ~isempty(fnames_splits_train) );
         assert( length(fnames_splits_train) == length(fnames_splits_test) );
 
+        fnames_splits_train = cellfun( @(x) fullfile(split_file_directory, x), {fnames_splits_train.name}, 'UniformOutput', false );
+        fnames_splits_test  = cellfun( @(x) fullfile(split_file_directory, x), {fnames_splits_test.name},  'UniformOutput', false );
+        
         fprintf('using training splits from: \t%s\n', fnames_splits_train{:});
         fprintf('using testing  splits from: \t%s\n', fnames_splits_test{:} );
 

@@ -1,7 +1,7 @@
 
-function situations_struct = load_situation_definitions_all(arg)
+function situations_struct = situation_struct_load_all(arg)
 
-    % function out = situate_situation_definitions();
+    % situations_struct = situation_struct_load_all([situation_description])
 
     % this looks in the situation definitions directory and tries to match the specified situation with
     % its definition.

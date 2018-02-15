@@ -10,12 +10,12 @@ function model = bb_regression_train( p, fnames_in, saved_models_directory, trai
     
     %% check for existing model
     
-    fnames_in_pathless = cellfun( @(x) x( last(strfind(x,filesep()))+1:end), fnames_in, 'UniformOutput', false );
+    fnames_in_stripped = fileparts_mq(fnames_in, 'name');
     
     model_description = 'box_adjust';
     selected_model_fname = situate.check_for_existing_model(...
         {saved_models_directory,'default_models'}, ...
-        'fnames_train',fnames_in_pathless,...
+        'fnames_train',fnames_in_stripped,...
         'model_description',model_description, ...
         'object_types', situation_objects, ...
         'IOU_threshold', training_IOU_threshold);
@@ -33,7 +33,7 @@ function model = bb_regression_train( p, fnames_in, saved_models_directory, trai
         existing_feature_directory, 'object_labels', sort(situation_objects) );
    
     if ~isempty(selected_datafile_fname)
-        display(['loaded cnn feature data from ' selected_datafile_fname]);
+        display(['loading cnn feature data from ' selected_datafile_fname]);
         existing_features_fname = selected_datafile_fname;
     else
         disp('extracting cnn feature data');
@@ -54,9 +54,10 @@ function model = bb_regression_train( p, fnames_in, saved_models_directory, trai
     model.feature_descriptions = {'delta x in widths','delta y in heights','log w ratio','log h ratio'};
     model.weight_vectors = cell( length(model.object_types), length(model.feature_descriptions) );
     
-    fnames_file_pathless = cellfun( @(x) x(last(strfind(x,filesep()))+1:end), data.fnames, 'UniformOutput',false);
-    fnames_in_pathless = cellfun( @(x) x(last(strfind(x,filesep()))+1:end), fnames_in, 'UniformOutput',false);
-    fnames_train_inds = find(ismember( fnames_file_pathless, fnames_in_pathless ));
+    fnames_file_stripped = fileparts_mq(data.fnames, 'name' );
+    fnames_in_stripped   = fileparts_mq(fnames_in, 'name' );
+    
+    fnames_train_inds = find(ismember( fnames_file_stripped, fnames_in_stripped ));
     training_box_inds = ismember( data.fname_source_index, fnames_train_inds );
     
     boxes_over_IOU_threshold_inds = ge( data.IOUs_with_source, training_IOU_threshold );

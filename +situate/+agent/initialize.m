@@ -1,4 +1,4 @@
-function agent = agent_initialize(p)
+function agent = initialize(p)
 
     persistent agent_base;
     persistent p_old;

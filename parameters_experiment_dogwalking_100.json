@@ -2,12 +2,14 @@
 	"situation_definition_fname" : "situation_definitions/dogwalking.json",
 			
 	"situate_parameterizations_fnames" : [
-				"parameterization_situate_default.json"
+				//"parameters_situate_default.json"
+				//"parameters_situate_w_pool_priming.json"
+				"parameters_situate_mm.json"
 			],	
 
 	"experiment_settings" : {
 
-			"description" : "dogwalking_validation_with_visualization",
+			"description" : "dogwalking_validation_no_viz_quick_mm_settings",
 
 			"directory_train" : "/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/",
 			"directory_test"  : "/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/",
@@ -16,7 +18,7 @@
 			
 			"run_analysis_after_completion"	: 0,
 
-			"use_visualizer" : 1,
+			"use_visualizer" : 0,
 
 			// additional visualization options
 		 	"viz_options" : {
@@ -29,7 +31,7 @@
 			// training / testing image lists
 			// 	if directory_train and directory_test are the same, 
 			// 	then the division of images specified in this directory will be used
-			"training_testing_split_directory" : "data_splits/dogwalking_validation/",
+			"training_testing_split_directory" : "data_splits/dogwalking_validation_quick/",
 
 			// number of folds
 			// 	if image lists were provided
@@ -39,7 +41,7 @@
 			//		training/testing image lists
 			"num_folds" : 1,
 
-			"max_testing_images" : "",
+			"max_testing_images" : 100,
 			
 			// if specified, this will be used to seed the RNG during testing.
 			// otherwise, each parameterization will get a different time-based seed

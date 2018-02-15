@@ -3,7 +3,7 @@ function [] = labl_old_to_json( labl_fname )
 
     % [] = labl_old_to_json( labl_fname );
     % 
-    % saves a json label file to the existing directory
+    % takes an old .labl text label and saves a .json label file to the existing directory
     
     label_data = situate.labl_load( labl_fname );
 

@@ -33,13 +33,14 @@ function selected_model_fname = check_for_existing_model( possible_paths, vararg
                     file_data =  matobj.(varargin{vari});
                     
                     % for a list of filenames with paths, this forces it to compare only the file names, 
-                    % not the whole path. 
+                    % not the whole path and extension 
                     % this was coming up because we were checking that the intended
                     % training images matched against a model trained on a different machine
                     % with a different directory structure. if images are just numbered, it will
                     % definitely be a problem.
                     if iscellstr( file_data )   
-                        a = cellfun( @(x) x(last(strfind(x,filesep()))+1:end), file_data, 'UniformOutput', false);
+                        %a = cellfun( @(x) x(last(strfind(x,filesep()))+1:end), file_data, 'UniformOutput', false);
+                        a = fileparts_mq( file_data, 'name' );
                         b = varargin{vari+1};
                         assert( all(ismember(a,b)) & all(ismember(b,a)) );
                     else

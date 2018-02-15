@@ -6,7 +6,8 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
     
     % make parameterization structs compatible with the old struct that had everything in one pile
         situate_params_array = situate.parameters_struct_new_to_old( experiment_struct, situation_struct, situate_params_array );
-    
+        situate.parameters_struct_validate( situate_params_array );
+        
     %% generate training/testing sets
     
         if ~isempty( experiment_struct.experiment_settings.training_testing_split_directory )
@@ -16,21 +17,33 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
             % then split up the images into a training / testing set based on the training seed
             % value and the number of folds specified
             data_path = experiment_struct.experiment_settings.directory_train;
-            output_directory = fullfile('data_splits/', [experiment_struct.experiment_settings.description '_' datestr(now,'YYYY.MM.DD.hh.mm.ss')] );
-            num_folds = 2;
-            data_split_struct = situate.data_generate_split_files( data_path, num_folds, output_directory);
+            output_directory = fullfile('data_splits/', [situation_struct.desc '_' datestr(now,'YYYY.MM.DD.hh.mm.ss')]);
+            num_folds = experiment_struct.experiment_settings.num_folds;
+            max_images_per_fold = experiment_struct.experiment_settings.max_testing_images;
+            if ~isempty(max_images_per_fold)
+                data_split_struct = situate.data_generate_split_files( data_path, 'num_folds', num_folds, 'test_im_per_fold', max_images_per_fold, 'output_directory', output_directory );
+            else
+                data_split_struct = situate.data_generate_split_files( data_path, 'num_folds', num_folds, 'output_directory', output_directory );
+            end
         else
             % use everything in training/testing directories
             data_split_struct = [];
-            data_split_struct.fnames_lb_train = arrayfun( @(x) x.name, dir([experiment_struct.experiment_settings.directory_train, '*.labl']), 'UniformOutput', false );
-            data_split_struct.fnames_lb_test  = arrayfun( @(x) x.name, dir([experiment_struct.experiment_settings.directory_test,  '*.labl']), 'UniformOutput', false );
+            data_split_struct.fnames_lb_train = arrayfun( @(x) x.name, dir([experiment_struct.experiment_settings.directory_train, '*.json']), 'UniformOutput', false );
+            data_split_struct.fnames_lb_test  = arrayfun( @(x) x.name, dir([experiment_struct.experiment_settings.directory_test,  '*.json']), 'UniformOutput', false );
             data_split_struct.fnames_im_train = arrayfun( @(x) x.name, dir([experiment_struct.experiment_settings.directory_train, '*.jpg']),  'UniformOutput', false );
             data_split_struct.fnames_im_test  = arrayfun( @(x) x.name, dir([experiment_struct.experiment_settings.directory_test,  '*.jpg']),  'UniformOutput', false );
         end
         
+        if isempty(experiment_struct.experiment_settings.specific_folds)
+            fold_inds = 1:experiment_struct.experiment_settings.num_folds;
+        else
+            fold_inds = experiment_struct.experiment_settings.specific_folds;
+        end
+        
         % if we've specified a lower number of testing images, enforce that here
         if ~isempty(experiment_struct.experiment_settings.max_testing_images)
-            for fi = experiment_struct.experiment_settings.num_folds
+            for fii = 1:length(fold_inds)
+                fi = fold_inds(fii);
                 if experiment_struct.experiment_settings.max_testing_images < length(data_split_struct(fi).fnames_lb_test)
                     data_split_struct(fi).fnames_lb_test = data_split_struct(fi).fnames_lb_test(1 : experiment_struct.experiment_settings.max_testing_images );
                     data_split_struct(fi).fnames_im_test = data_split_struct(fi).fnames_im_test(1 : experiment_struct.experiment_settings.max_testing_images );
@@ -40,7 +53,8 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
     
         % make sure all files exist in the specified directories
         %   note: turns out this is fine if the fnames_lb_test set is empty (as long as it's still a cell)
-        for fi = experiment_struct.experiment_settings.num_folds
+        for fii = 1:length(fold_inds)
+            fi = fold_inds(fii);
             assert( all( cellfun( @(x) exist(fullfile(experiment_struct.experiment_settings.directory_train, x), 'file' ), data_split_struct(fi).fnames_lb_train) ) );
             assert( all( cellfun( @(x) exist(fullfile(experiment_struct.experiment_settings.directory_train, x), 'file' ), data_split_struct(fi).fnames_im_train) ) );
             assert( all( cellfun( @(x) exist(fullfile(experiment_struct.experiment_settings.directory_test,  x), 'file' ), data_split_struct(fi).fnames_lb_test)  ) );
@@ -48,7 +62,8 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
         end
 
         % make sure all training labels and images have their partners
-        for fi = experiment_struct.experiment_settings.num_folds
+        for fii = 1:length(fold_inds)
+            fi = fold_inds(fii);
             assert( isequal( ...
                 sort(cellfun( @(x) x(1:strfind(x,'.')), data_split_struct(fi).fnames_lb_train, 'UniformOutput', false )), ...
                 sort(cellfun( @(x) x(1:strfind(x,'.')), data_split_struct(fi).fnames_im_train, 'UniformOutput', false )) ) );
@@ -58,7 +73,9 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
         
 %% run through folds
 
- for fi = experiment_struct.experiment_settings.num_folds
+for fii = 1:length(fold_inds)
+    
+        fi = fold_inds(fii);
         
         learned_models = []; % contains everything we gather from training data, so is reset at the start of each fold
         learned_models_training_functions = []; % used to see if we can skip on re-training models
@@ -161,7 +178,8 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
                         
                     end
 
-                    if cur_image_ind > experiment_struct.experiment_settings.max_testing_images
+                    if cur_image_ind > experiment_struct.experiment_settings.max_testing_images ...
+                    || cur_image_ind > length(fnames_im_test)
                         keep_going = false;
                         if experiment_struct.experiment_settings.use_visualizer
                             msgbox('out of testing images');

@@ -17,10 +17,11 @@ function [fnames_pass, ...
     end
     
     label_data = situate.labl_load( fnames_in, situation_struct );
+    fnames_in_all = {label_data.fname_lb};
     
-    failed_inds = false(1,length(fnames_in));
-    exceptions = cell(1,length(fnames_in));
-    for fi = 1:length(fnames_in)
+    failed_inds = false(1,length(fnames_in_all));
+    exceptions = cell(1,length(fnames_in_all));
+    for fi = 1:length(fnames_in_all)
         
         try
             assert( all( label_data(fi).boxes_r0rfc0cf(:,1) >= 1 ), 'row_initial too low' );
@@ -39,8 +40,9 @@ function [fnames_pass, ...
         
     end
     
-    fnames_pass = fnames_in(~failed_inds);
-    fnames_fail = fnames_in( failed_inds);
+    
+    fnames_pass = fnames_in_all(~failed_inds);
+    fnames_fail = fnames_in_all( failed_inds);
     exceptions = exceptions( failed_inds);
     
     if ~isempty(fnames_fail)

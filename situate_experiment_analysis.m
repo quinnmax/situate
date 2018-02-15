@@ -15,7 +15,7 @@ function situate_experiment_analysis( results_directory, show_final_workspaces, 
     end
     
     
-
+    
 %% data source 
 
     if ~exist( 'results_directory', 'var' ) || isempty(results_directory) || ~isdir(results_directory)
@@ -110,27 +110,14 @@ function situate_experiment_analysis( results_directory, show_final_workspaces, 
         fnames_test = fnames_test(:)';
         
         for wi = 1:length(workspaces_final)
-            labl_fname = [fnames_test{wi}(1:end-3) 'labl'];
-            if ~exist(labl_fname,'file')
-                [path,name,ext] = fileparts(labl_fname);
-                switch path
-                    case {'/Users/Max/Documents/MATLAB/data/situate_images/PortlandSimpleDogWalking_test','/Users/mm/Desktop/PortlandSimpleDogWalking'}
-                        path = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_test/';
-                    otherwise
-                        error('need to correct some more paths');
-                end
-                labl_fname = fullfile(path,[name ext]);
-            end
-            
+            [path, name, ext] = fileparts( fnames_test{wi} );
+            labl_fname = fullfile( path, [name '.json'] );
             workspaces_final(wi) = situate.workspace_score( workspaces_final(wi), labl_fname, p_conditions_per_file{original_file_ind(wi)} );
-            p_conditions_per_file{original_file_ind(wi)}.image_redim_px
-            
+            %p_conditions_per_file{original_file_ind(wi)}.image_redim_px
         end
-        
         
         results_per_condition(ci).condition = p_condition.description;
         results_per_condition(ci).workspaces_final = workspaces_final;
-        
         
         % detections at threshold, iteration
         num_thresholds = 10;
@@ -310,7 +297,7 @@ function situate_experiment_analysis( results_directory, show_final_workspaces, 
     
         
         
-    %%
+%% clean up a little
     
     clear temp_data;
     clear agent_records;
@@ -480,8 +467,6 @@ end
         stem( sort( per_image_detection_counts( ci,: ) ) );
     end
         
-    
-
     
     
 %% figure: object detections vs time at fixed IOU threshold    

@@ -24,7 +24,6 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
     
     % initialize agent pool
     
-        %agent_pool = situate.agent.pool_initialize_default( p, im, im_fname );
         agent_pool = p.agent_pool_initialization_function( p, im, im_fname );
         
     % initialize record keeping 

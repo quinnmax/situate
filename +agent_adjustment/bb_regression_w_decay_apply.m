@@ -1,8 +1,8 @@
-function [ new_agent, adjusted_box_r0rfc0cf, delta_xywh ] = apply_w_decay( model, current_agent_snapshot, agent_pool, image, cnn_features )
+function [ new_agent, adjusted_box_r0rfc0cf, delta_xywh ] = bb_regression_w_decay_apply( model, current_agent_snapshot, agent_pool, image, cnn_features )
 
-    % [ agent_pool, adjusted_box_r0rfc0cf, delta_xywh ] = apply( model, current_agent_snapshot, agent_pool, image, cnn_features );
+    % [ agent_pool, adjusted_box_r0rfc0cf, delta_xywh ] = bb_regression_w_decay_apply( model, current_agent_snapshot, agent_pool, image, cnn_features );
 
-    % [adjusted_box_r0rfc0cf, delta_xywh] = apply( model, object_type, box_r0rfc0cf, image, cnn_features );
+    % [adjusted_box_r0rfc0cf, delta_xywh] = bb_regression_w_decay_apply( model, object_type, box_r0rfc0cf, image, cnn_features );
     %
     % adjusted_box_r0rfc0cf: the adjusted bounding box is returned in r0rfc0cf format
     % delta_xywh: the delta used to generate the adjusted box

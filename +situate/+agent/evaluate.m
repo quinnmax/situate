@@ -70,7 +70,19 @@ function [agent_pool, d, workspace, object_was_added] = evaluate( agent_pool, ag
         elseif isequal(agent_pool(end).type,'builder')
             % the reviewer spawned a builder, but it really shouldn't have, so remove it and the
             % reviewer
-            error('we really shouldn''t get here, so try to figure out how we did');
+            %
+            % note: we only get here if we're 
+            %   a) using direct scout to workspace pipe
+            %   b) the scout was under threshold to spawn a reviewer
+            %   c) we spawned one anyway to get it's external and total support
+            %   d) the total support ended up being high enough to spawn a builder
+            %
+            % what it tells us is: the internal support is low, but the external is very high and,
+            % as far as total support is concerned, it should go in the workspace...
+            %
+            % we should talk about this possiblility coming up.
+            % I'm going to go ahead and not build the proposal, as it was low internal support and
+            % this makes it functionally different from the fully agent-based approach
             agent_pool([end-1 end]) = [];
         elseif isequal(agent_pool(end).type,'reviewer')
             % the reviewer failed to spawn a builder, 

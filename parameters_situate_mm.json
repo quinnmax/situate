@@ -20,7 +20,7 @@
 		
 		"use_direct_scout_to_workspace_pipeline" : "true",
 
-		"maximum_iterations" : 500,
+		"maximum_iterations" : 300,
 		
 		"stopping_condition" : "situate.stopping_condition_finish_up_pool",
 		
@@ -35,7 +35,7 @@
 		},
 
 		// classifier
-
+		
 		"classifier" : {
 			"train" : "classifiers.IOU_ridge_regression_train", 
 			"apply" : "classifiers.IOU_ridge_regression_apply",
@@ -49,7 +49,7 @@
 		"support_function_total" : "support_functions_total.AUROC_based",
 
 		"support_function_full_situation" : "support_functions_situation.geometric_mean_padded",
-		
+
 		// support thresholds
 
 		"support_thresholds" : {
@@ -60,10 +60,10 @@
 		},
 
 		// agent pool initialization function
-		"agent_pool_initialization_function" : "situate.agent.pool_initialize_covering",
+		"agent_pool_initialization_function" : "situate.agent.pool_initialize_rcnn",
 
 		// agent pool adjustment rules
-		"agent_pool_adjustment_rule" : "@(x) situate.agent.pool_clear_high_generation( x, 3 )",
+		"agent_pool_adjustment_rule" : "@(x) situate.agent.pool_clear_low_urgency( x, .3 );",
 		
 		// clear scouts with internal support under threshold. 
 		"scout_internal_support_keep_threshold" : "inf",

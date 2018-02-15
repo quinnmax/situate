@@ -2,7 +2,7 @@ function primed_agent_pool = pool_initialize_covering( ~, im, ~ )
 
     im_size = [ size(im,1), size(im,2) ];
 
-    box_size_width_ratios = [.2 .5];
+    box_size_width_ratios = [.2 .4];
     box_size_urgencies = (1./(1-box_size_width_ratios)).^2;
     
     box_shapes = [1/2 1/1 2/1];
