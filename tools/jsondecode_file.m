@@ -19,7 +19,12 @@ function d_json = jsondecode_file( fname_in )
             text_linesplit{li} = text_linesplit{li}(1:comment_positions{li}-1);
         end
     end
-    lines_keep = cellfun( @(x) ~isempty(strip(x)), text_linesplit);
+    
+    try
+        lines_keep = cellfun( @(x) ~isempty(strip(x)), text_linesplit);
+    catch
+        lines_keep = cellfun( @(x) ~isempty(strtrim(x)), text_linesplit);
+    end
     text_cleaned = strjoin( text_linesplit(lines_keep), '\n');
     d_json = jsondecode(text_cleaned);
     
