@@ -34,7 +34,7 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
             data_split_struct.fnames_im_test  = arrayfun( @(x) x.name, dir([experiment_struct.experiment_settings.directory_test,  '*.jpg']),  'UniformOutput', false );
         end
         
-        if isempty(experiment_struct.experiment_settings.specific_folds)
+        if ~isfield(experiment_struct.experiment_settings,'specific_folds') || isempty(experiment_struct.experiment_settings.specific_folds)
             fold_inds = 1:experiment_struct.experiment_settings.num_folds;
         else
             fold_inds = experiment_struct.experiment_settings.specific_folds;
@@ -82,6 +82,10 @@ for fii = 1:length(fold_inds)
 
         fnames_lb_train = cellfun( @(x) fullfile(experiment_struct.experiment_settings.directory_train, x), data_split_struct(fi).fnames_lb_train, 'UniformOutput', false );
         fnames_im_test  = cellfun( @(x) fullfile(experiment_struct.experiment_settings.directory_test,  x), data_split_struct(fi).fnames_im_test,  'UniformOutput', false );
+        
+        if isempty( experiment_struct.experiment_settings.max_testing_images )
+            experiment_struct.experiment_settings.max_testing_images = length(fnames_im_test);
+        end
         
         [~, fnames_fail, exceptions, failed_inds] = situate.labl_validate( fnames_lb_train, situation_struct );
         if ~isempty(fnames_fail)

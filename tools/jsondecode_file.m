@@ -6,7 +6,13 @@ function d_json = jsondecode_file( fname_in )
 
     raw_text = fileread(fname_in);
     text_linesplit = strsplit( raw_text, '\n' );
-    text_linesplit = cellfun( @strip, text_linesplit, 'UniformOutput', false );
+    
+    try
+        text_linesplit = cellfun( @strip, text_linesplit, 'UniformOutput', false );
+    catch
+        text_linesplit = cellfun( @strtrim, text_linesplit, 'UniformOutput', false );
+    end
+    
     comment_positions = cellfun( @(x) strfind(x,'//'), text_linesplit, 'UniformOutput', false );
     for li = 1:length(text_linesplit)
         if ~isempty(comment_positions{li})

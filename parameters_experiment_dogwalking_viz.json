@@ -1,10 +1,10 @@
 {
-
-	
 	"situation_definition_fname" : "situation_definitions/dogwalking.json",
 			
 	"situate_parameterizations_fnames" : [
-				"parameterization_situate_default.json"
+				"parameters_situate_default.json"
+				//"parameters_situate_w_pool_priming.json"
+				//"parameters_situate_mm.json"
 			],	
 
 	"experiment_settings" : {
@@ -40,6 +40,8 @@
 			//	if image list is not provided, this will be used when generating 
 			//		training/testing image lists
 			"num_folds" : 1,
+
+			"specific_folds" : [1],
 
 			"max_testing_images" : "",
 			

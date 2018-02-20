@@ -31,7 +31,7 @@
 			// training / testing image lists
 			// 	if directory_train and directory_test are the same, 
 			// 	then the division of images specified in this directory will be used
-			"training_testing_split_directory" : "data_splits/dogwalking_validation_quick/",
+			"training_testing_split_directory" : "data_splits/dogwalking_validation/",
 
 			// number of folds
 			// 	if image lists were provided
@@ -40,6 +40,8 @@
 			//	if image list is not provided, this will be used when generating 
 			//		training/testing image lists
 			"num_folds" : 1,
+
+			"specific_folds" : [1],
 
 			"max_testing_images" : 100,
 			

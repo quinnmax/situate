@@ -4,7 +4,7 @@
 	
 	"situate_parameterization":{
 
-		"description" : "defaults",
+		"description" : "w_pool_priming",
 
 		// situation model
 
@@ -55,7 +55,7 @@
 		"support_thresholds" : {
 			"internal_support"          : ".2",
 			"internal_support_retain"   : "inf",
-			"total_support_provisional" : "inf",
+			"total_support_provisional" : ".3",
 			"total_support_final"       : ".5"
 		},
 

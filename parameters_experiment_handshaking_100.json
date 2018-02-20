@@ -1,21 +1,15 @@
 {
-
-
 	"situation_definition_fname" : "situation_definitions/handshaking.json",
 	
-
-
 	"situate_parameterizations_fnames" : [
 				//"parameters_situate_default.json"
 				"parameters_situate_w_pool_priming.json"
 				//"parameters_situate_mm.json"
 			],	
 
-
-
 	"experiment_settings" : {
 
-			"description" : "handshaking_mm_settings_validation",
+			"description" : "handshaking, pool priming, provisional check-in",
 
 			"directory_train" : "/Users/Max/Documents/MATLAB/data/situate_images/Handshaking_train/",
 			"directory_test"  : "/Users/Max/Documents/MATLAB/data/situate_images/Handshaking_train/",
@@ -34,35 +28,25 @@
 		 		"start_paused"        : 1
 	 		},
 
+ 			// training / testing image lists
+			// 	if directory_train and directory_test are the same, 
+			// 	then the division of images specified in this directory will be used
+			"training_testing_split_directory" : "data_splits/dogwalking_validation/",
 
+			// number of folds
+			// 	if image lists were provided
+			// 		if this is empty, then all of them will be used.
+			//  	if this is not empty, it will be a limit on how many to use.
+			//	if image list is not provided, this will be used when generating 
+			//		training/testing image lists
+			"num_folds" : 1,
 
- 			// training / testing setup
+			"specific_folds" : [1],
 
-				// directory of file lists
-				"training_testing_split_directory" : "data_splits/handshaking_validation",
-
-				// number of folds
-				//	if image lists were not provided, used to generate lists 
-				// 	if image lists were provided, how many folds to use
-				"num_folds" : 4,
-				
-				// specific folds to run
-				// if empty, all folds specified in the lists will run
-				// if not, this is a list of the folds to run
-				// "specific_folds" : "",
-				"specific_folds" : [2],
-				//" specific_folds" : [2, 4],
-
-			// how many testing images to run (per fold)
-			// if specified folds, this will be used to define them
-			// if empty, then as many images as possible will be used
 			"max_testing_images" : 100,
-
-
-
-
+			
 			// if specified, this will be used to seed the RNG during testing.
-			// otherwise, each situate parameterization will get a different time-based seed
+			// otherwise, each parameterization will get a different time-based seed
 			"testing_seed"  : ""
 
 	}

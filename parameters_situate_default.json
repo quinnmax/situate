@@ -1,11 +1,10 @@
 { 
+
+
+	
 	"situate_parameterization":{
 
 		"description" : "defaults",
-
-
-
-
 
 		// situation model
 
@@ -17,94 +16,39 @@
 			"draw"   : "situation_models.uniform_normal_mix_draw"
 			},
 
-		// "situation_model" : {
-		// "description" : "normal distribution",
-		// "learn"  : "situation_models.normal_fit",
-		// "update" : "situation_models.normal_condition",
-		// "sample" : "situation_models.normal_sample",
-		// "draw"   : "situation_models.normal_draw"
-		// },
-
-		// "situation_model" : {
-		// "description" : "uniform",
-		// "learn"  : "situation_models.uniform_fit",
-		// "update" : "situation_models.uniform_condition",
-		// "sample" : "situation_models.uniform_sample",
-		// "draw"   : "situation_models.uniform_draw"
-		// },
-
-		
-
-
-
 		// pipeline options
 		
 		"use_direct_scout_to_workspace_pipeline" : "true",
 
-		"maximum_iterations" : 1000,
+		"maximum_iterations" : 500,
 		
 		"stopping_condition" : "situate.stopping_condition_finish_up_pool",
-		// "stopping_condition" : "situate.stopping_condition_situation_found",
-		// "stopping_condition" : "situate.stopping_condition_null",
 		
+		"image_resize_pixels" : "",
+
 		"min_number_of_scouts" : 10,
+		
 		"agent_urgency_defaults" : {
 			"scout"    : 1,
 			"reviewer" : 5,
 			"builder"  : 10
 		},
 
-
-
 		// classifier
-		//
-		// "classifier options" : [
-		// 		["oracle_train", "oracle_apply"],
-		// 		["cnnsvm_train", "cnnsvm_apply"], 
-		// 		["IOU_ridge_regression_train", "IOU_ridge_regression_apply"]
-		// ],
-
+		
 		"classifier" : {
 			"train" : "classifiers.IOU_ridge_regression_train", 
 			"apply" : "classifiers.IOU_ridge_regression_apply",
 			"store" : "default_models/"
 		},
 		
-		// image redim
-		// 		if the input image should be resized, give an approximate size in pixels
-		//		if empty, there will be no image resizing
-		"image_resize_pixels" : "",
-
-
-
-
-
 		// support functions
 
-		// support function external 
-		//		options :
-		//			support_functions_external.atan_fit
-		//			support_functions_external.logistic_normalized_dist
-		//			support_functions_external.identity
 		"support_function_external" : "support_functions_external.atan_fit",
 
-		// support function total 
-		//		options : 
-		//			support_functions_total.internal_only
-		//			support_functions_total.even
-		//			support_functions_total.custom
-		//			support_functions_total.regression_experiment_dogwalking
-		//			support_functions_total.AUROC_based
 		"support_function_total" : "support_functions_total.AUROC_based",
 
-		// support function full situation
-		//		options :
-		// 			support_functions_situation.geometric_mean_padded
 		"support_function_full_situation" : "support_functions_situation.geometric_mean_padded",
-		
-
-
-
 
 		// support thresholds
 
@@ -112,58 +56,25 @@
 			"internal_support"          : ".2",
 			"internal_support_retain"   : "inf",
 			"total_support_provisional" : "inf",
-			"total_support_final"       : ".5625"
+			"total_support_final"       : ".5"
 		},
 
 		// agent pool initialization function
-		//		if empty, then the default rule will be used
-		//		options:
-		//			situate.agent.pool_initialize_rcnn
-		//			situate.agent.pool_initialize_covering
 		"agent_pool_initialization_function" : "situate.agent.pool_initialize_default",
 
 		// agent pool adjustment rules
-		//		this defines what happens to the agent pool at the end of each iteration.
-		//		most generally, we want to refill the pool with possible agents.
-		//		if we retain agents based on their internal support, we might want to 
-		//		clear some out at the end of an iteration.
-		//		a few options we've played with are in:
-		//			"situate.agent.pool_clear_low_urgency",
-		//			"situate.agent.pool_clear_and_refill.m",
-		"agent_pool_adjustment_rule" : "@(x) x",
+		"agent_pool_adjustment_rule" : "@(x) situate.agent.pool_clear_low_urgency( x, .3 );",
 		
 		// clear scouts with internal support under threshold. 
-		// 		the idea is to keep good bounding boxes for future consideration,
-		//		rather than just dumping them. the problem: the pool fills up with repeats
-		// 		of the same good boxes for an object. there needs to be some sort of culling.
-		//		
-		//		the solution might just be checking for intersection over union with other
-		//		boxes in the pool. if IOU is over .3, keep the one with higher confidence
 		"scout_internal_support_keep_threshold" : "inf",
 		
-
 		// agent adjustment model
-		// 		need to pull all of these out into independent functions
-
-		// "agent_adjustment_model" : {
-		// 	"activation_logic" 	: "@(cur_agent,workspace,p) agent_adjustment.activation_logic( cur_agent, workspace, p.thresholds.internal_support, 1.0 )",
-		// 	"train"				: "@(a,b,c) agent_adjustment.bb_regression_train(a,b,c,.1)",
-		// 	"apply" 			: "agent_adjustment.bb_regression_apply",
-		// 	"store" 			: "default_models/" 
-		// },
-
-		// two tone, training thresholds .1 and up, .6 and up
-		// model selection threshold is per object and based on results on training data
 		"agent_adjustment_model" : {
-			"activation_logic" 	: "@(cur_agent,workspace,p) agent_adjustment.activation_logic( cur_agent, workspace, p.thresholds.internal_support, 1.0 )",
+			"activation_logic" 	: "@(cur_agent,workspace,p) agent_adjustment.activation_logic( cur_agent, workspace, .2, 1.0 )",
 			"train"				: "@(a,b,c) agent_adjustment.bb_regression_two_tone_train(a,b,c,[.1 .6])",
 			"apply" 			: "agent_adjustment.bb_regression_two_tone_w_decay_apply",
 			"store" 			: "default_models/" 
 		},
-
-
-
-
 
 		// temperature adjustment rules
 		"temperature" : {

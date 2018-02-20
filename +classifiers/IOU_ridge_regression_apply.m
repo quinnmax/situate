@@ -38,8 +38,8 @@ function [classifier_output, gt_iou, cnn_feature_vect]    = IOU_ridge_regression
     model_ind = strcmp( classifier_struct.classes, target_class );
     classifier_output = [1 cnn_feature_vect'] * classifier_struct.models{model_ind};
     
-    if classifier_output > 5 || classifier_output < -1
-       warning('classifiers.IOU_ridge_regression_apply is giving some extreme values'); 
+    if classifier_output > 5 || classifier_output < -1.5
+       warning(sprintf('classifiers.IOU_ridge_regression_apply is giving some extreme values: %f',classifier_output)); 
     end
     
     if exist('lb','var') && ~isempty(lb) && any(ismember(lb.labels_adjusted,target_class))
