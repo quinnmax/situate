@@ -10,12 +10,14 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
         
     %% generate training/testing sets
     
-        if ~isempty( experiment_struct.experiment_settings.training_testing_split_directory )
-            % then load up the image lists from the specified directory
+        if isequal( experiment_struct.experiment_settings.directory_train, experiment_struct.experiment_settings.directory_test ) && ...
+           ~isempty( experiment_struct.experiment_settings.training_testing_split_directory )
+            % if the train and test directories are the same, and the split files are provided, use
+            % them
             data_split_struct = situate.data_load_splits_from_directory( experiment_struct.experiment_settings.training_testing_split_directory );
         elseif isequal( experiment_struct.experiment_settings.directory_train, experiment_struct.experiment_settings.directory_test )
-            % then split up the images into a training / testing set based on the training seed
-            % value and the number of folds specified
+            % if the train and test are equal and no split is provided,
+            % generate a split
             data_path = experiment_struct.experiment_settings.directory_train;
             output_directory = fullfile('data_splits/', [situation_struct.desc '_' datestr(now,'YYYY.MM.DD.hh.mm.ss')]);
             num_folds = experiment_struct.experiment_settings.num_folds;

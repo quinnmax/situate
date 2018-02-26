@@ -9,23 +9,36 @@ function experiment_handler_parrallel( experiment_struct, situation_struct, situ
     
     %% generate training/testing sets
     
-        if ~isempty( experiment_struct.experiment_settings.training_testing_split_directory )
-            % then load up the image lists from the specified directory
+        if isequal( experiment_struct.experiment_settings.directory_train, experiment_struct.experiment_settings.directory_test ) && ...
+           ~isempty( experiment_struct.experiment_settings.training_testing_split_directory )
+            % if the train and test directories are the same, and the split files are provided, use
+            % them
             data_split_struct = situate.data_load_splits_from_directory( experiment_struct.experiment_settings.training_testing_split_directory );
         elseif isequal( experiment_struct.experiment_settings.directory_train, experiment_struct.experiment_settings.directory_test )
-            % then split up the images into a training / testing set based on the training seed
-            % value and the number of folds specified
+            % if the train and test are equal and no split is provided,
+            % generate a split
             data_path = experiment_struct.experiment_settings.directory_train;
-            output_directory = fullfile('data_splits/', [experiment_struct.experiment_settings.description '_' datestr(now,'YYYY.MM.DD.hh.mm.ss')] );
-            num_folds = 2;
-            data_split_struct = situate.data_generate_split_files( data_path, num_folds, output_directory);
+            output_directory = fullfile('data_splits/', [situation_struct.desc '_' datestr(now,'YYYY.MM.DD.hh.mm.ss')]);
+            num_folds = experiment_struct.experiment_settings.num_folds;
+            max_images_per_fold = experiment_struct.experiment_settings.max_testing_images;
+            if ~isempty(max_images_per_fold)
+                data_split_struct = situate.data_generate_split_files( data_path, 'num_folds', num_folds, 'test_im_per_fold', max_images_per_fold, 'output_directory', output_directory );
+            else
+                data_split_struct = situate.data_generate_split_files( data_path, 'num_folds', num_folds, 'output_directory', output_directory );
+            end
         else
             % use everything in training/testing directories
             data_split_struct = [];
-            data_split_struct.fnames_lb_train = arrayfun( @(x) x.name, dir([experiment_struct.experiment_settings.directory_train, '*.labl']), 'UniformOutput', false );
-            data_split_struct.fnames_lb_test  = arrayfun( @(x) x.name, dir([experiment_struct.experiment_settings.directory_test,  '*.labl']), 'UniformOutput', false );
+            data_split_struct.fnames_lb_train = arrayfun( @(x) x.name, dir([experiment_struct.experiment_settings.directory_train, '*.json']), 'UniformOutput', false );
+            data_split_struct.fnames_lb_test  = arrayfun( @(x) x.name, dir([experiment_struct.experiment_settings.directory_test,  '*.json']), 'UniformOutput', false );
             data_split_struct.fnames_im_train = arrayfun( @(x) x.name, dir([experiment_struct.experiment_settings.directory_train, '*.jpg']),  'UniformOutput', false );
             data_split_struct.fnames_im_test  = arrayfun( @(x) x.name, dir([experiment_struct.experiment_settings.directory_test,  '*.jpg']),  'UniformOutput', false );
+        end
+        
+        if ~isfield(experiment_struct.experiment_settings,'specific_folds') || isempty(experiment_struct.experiment_settings.specific_folds)
+            fold_inds = 1:experiment_struct.experiment_settings.num_folds;
+        else
+            fold_inds = experiment_struct.experiment_settings.specific_folds;
         end
         
         % if we've specified a lower number of testing images, enforce that here

@@ -3,8 +3,6 @@
     
 %% pick out training images
 
-
-
     situation_file = 'situation_definitions/dogwalking.json';
     im_dir = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/';
     data_split_dir = 'data_splits/dogwalking_validation';
@@ -19,8 +17,6 @@
     
 
 %% train classifier
-    
-
     
     fnames_data = fileparts_mq(data.fnames,'name');
     
@@ -94,8 +90,6 @@
     
 %% load IOU regressor and box-adjust model
 
-
-
         classifier_struct = classifiers.IOU_ridge_regression_train( situation_struct, fnames_train, 'saved_models/');
         models = classifier_struct.models;
         classification_model_mat = horzcat(models{:});
@@ -107,13 +101,9 @@
         
 %%
 
-
-
     temp = cnn.cnn_process( imread('cameraman.tif') );
     num_cnn_features = length(temp);
     
-    
-
     for imi = 1:length(fnames_test)
         
         % load label, get gt boxes
