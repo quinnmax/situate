@@ -1,7 +1,7 @@
 function primed_agent_pool = pool_initialize_covering( ~, im, ~ )
 % primed_agent_pool = situate.agent.primed_agent_pool = pool_initialize_covering( ~, im, ~ );
 
-    box_area_ratios = [.2 .4].^2; % .2 width of image, .4 width of image
+    box_area_ratios = [1/16 1/4];
     box_aspect_ratios = [1/2 1/1 2/1];
     overlap_ratio = .5;
     
@@ -10,9 +10,6 @@ function primed_agent_pool = pool_initialize_covering( ~, im, ~ )
     box_urgency_function = @(box_area_ratio) box_area_ratio;
     primed_box_urgencies = box_urgency_function( params(:,2) );
     primed_box_urgencies = primed_box_urgencies / min(primed_box_urgencies);
-    
-    display( sum( primed_box_urgencies( eq( primed_box_urgencies, primed_box_urgencies(1) ) ) ) );
-    display( sum( primed_box_urgencies( eq( primed_box_urgencies, primed_box_urgencies(end) ) ) ) );
     
     inds_remove = primed_boxes_r0rfc0cf(:,1) < 1 ...
                 | primed_boxes_r0rfc0cf(:,3) < 1 ...
@@ -43,7 +40,7 @@ function primed_agent_pool = pool_initialize_covering( ~, im, ~ )
         primed_agent_pool(ai).box.xywh     = [x y w h];
         primed_agent_pool(ai).box.xcycwh   = [xc yc w h];
         primed_agent_pool(ai).box.aspect_ratio = w/h;
-        primed_agent_pool(ai).box.area_ratio   = (w*h)/prod(im_size);
+        primed_agent_pool(ai).box.area_ratio   = (w*h)/prod(size(im,1)*size(im,2));
         primed_agent_pool(ai).urgency = urgency_multiplier * primed_box_urgencies(ai);
         
     end

@@ -32,7 +32,7 @@ function out = fileparts_mq( file, part )
         case 'ext'
             out = ext;
         case 'name.ext'
-            out = [name '.' ext];
+            out = [name ext];
         otherwise
             error('specified part not recognized');
     end

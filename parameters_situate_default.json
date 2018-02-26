@@ -39,7 +39,7 @@
 		"classifier" : {
 			"train" : "classifiers.IOU_ridge_regression_train", 
 			"apply" : "classifiers.IOU_ridge_regression_apply",
-			"store" : "default_models/"
+			"store" : "saved_models/"
 		},
 		
 		// support functions
@@ -73,7 +73,7 @@
 			"activation_logic" 	: "@(cur_agent,workspace,p) agent_adjustment.activation_logic( cur_agent, workspace, .2, 1.0 )",
 			"train"				: "@(a,b,c) agent_adjustment.bb_regression_two_tone_train(a,b,c,[.1 .6])",
 			"apply" 			: "agent_adjustment.bb_regression_two_tone_w_decay_apply",
-			"store" 			: "default_models/" 
+			"store" 			: "saved_models/" 
 		},
 
 		// temperature adjustment rules

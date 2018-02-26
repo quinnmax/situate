@@ -1,7 +1,7 @@
 function z = last( input )
-% last returns the last element of an array
+% returns the last element of an array
     if isempty(input)
-        z = 0;
+        z = [];
     elseif iscell(input)
         z = input{end};
     else

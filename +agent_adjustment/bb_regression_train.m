@@ -1,20 +1,20 @@
 
-function model = bb_regression_train( p, fnames_in, saved_models_directory, training_IOU_threshold )
+function model = bb_regression_train( situation_struct, fnames_in, saved_models_directory, training_IOU_threshold )
 
-% model = bb_regression_train( p, fnames_in, saved_models_directory, training_IOU_threshold )
+% model = bb_regression_train( situation_struct, fnames_in, saved_models_directory, training_IOU_threshold )
 %
 % load or train a box_adjust model. currently requires an existing
 % cnn_features file that's hard coded in
  
-    situation_objects = p.situation_objects;
-    
+    situation_objects = situation_struct.situation_objects;
+
     %% check for existing model
     
     fnames_in_stripped = fileparts_mq(fnames_in, 'name');
     
     model_description = 'box_adjust';
     selected_model_fname = situate.check_for_existing_model(...
-        {saved_models_directory,'default_models'}, ...
+        saved_models_directory, ...
         'fnames_train',fnames_in_stripped,...
         'model_description',model_description, ...
         'object_types', situation_objects, ...
@@ -37,7 +37,7 @@ function model = bb_regression_train( p, fnames_in, saved_models_directory, trai
         existing_features_fname = selected_datafile_fname;
     else
         disp('extracting cnn feature data');
-        existing_features_fname = cnn.feature_extractor_bulk( [], existing_feature_directory, p );
+        existing_features_fname = cnn.feature_extractor_bulk( [], existing_feature_directory, situation_struct );
     end
     
     data = load(existing_features_fname);
