@@ -10,14 +10,14 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
         
     %% generate training/testing sets
     
-        if isequal( experiment_struct.experiment_settings.directory_train, experiment_struct.experiment_settings.directory_test ) && ...
-           ~isempty( experiment_struct.experiment_settings.training_testing_split_directory )
-            % if the train and test directories are the same, and the split files are provided, use
-            % them
+        train_test_dirs_match = isequal(  experiment_struct.experiment_settings.directory_train, experiment_struct.experiment_settings.directory_test );
+        have_training_split_dir = ~isempty( experiment_struct.experiment_settings.training_testing_split_directory ) && exist( experiment_struct.experiment_settings.training_testing_split_directory , 'dir' );
+    
+        if train_test_dirs_match && have_training_split_dir
+            % load from saved splits
             data_split_struct = situate.data_load_splits_from_directory( experiment_struct.experiment_settings.training_testing_split_directory );
-        elseif isequal( experiment_struct.experiment_settings.directory_train, experiment_struct.experiment_settings.directory_test )
-            % if the train and test are equal and no split is provided,
-            % generate a split
+        elseif train_test_dirs_match && ~have_training_split_dir
+            % make new splits save them off
             data_path = experiment_struct.experiment_settings.directory_train;
             output_directory = fullfile('data_splits/', [situation_struct.desc '_' datestr(now,'YYYY.MM.DD.hh.mm.ss')]);
             num_folds = experiment_struct.experiment_settings.num_folds;
@@ -27,15 +27,15 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
             else
                 data_split_struct = situate.data_generate_split_files( data_path, 'num_folds', num_folds, 'output_directory', output_directory );
             end
-        else
-            % use everything in training/testing directories
+        elseif ~train_test_dirs_match
+            % use everything in directories
             data_split_struct = [];
             data_split_struct.fnames_lb_train = arrayfun( @(x) x.name, dir([experiment_struct.experiment_settings.directory_train, '*.json']), 'UniformOutput', false );
             data_split_struct.fnames_lb_test  = arrayfun( @(x) x.name, dir([experiment_struct.experiment_settings.directory_test,  '*.json']), 'UniformOutput', false );
             data_split_struct.fnames_im_train = arrayfun( @(x) x.name, dir([experiment_struct.experiment_settings.directory_train, '*.jpg']),  'UniformOutput', false );
             data_split_struct.fnames_im_test  = arrayfun( @(x) x.name, dir([experiment_struct.experiment_settings.directory_test,  '*.jpg']),  'UniformOutput', false );
         end
-        
+       
         if ~isfield(experiment_struct.experiment_settings,'specific_folds') || isempty(experiment_struct.experiment_settings.specific_folds)
             fold_inds = 1:experiment_struct.experiment_settings.num_folds;
         else
