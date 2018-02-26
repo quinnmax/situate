@@ -57,7 +57,7 @@ function [boxes_r0rfc0cf, params] = boxes_covering( imsize_rc, box_aspect_ratios
         boxes_r0rfc0cf(:,3) > cols;
     
     boxes_r0rfc0cf(boxes_remove,:) = [];
-    params(boxes_remove) = [];
+    params(boxes_remove,:) = [];
     
 end
         

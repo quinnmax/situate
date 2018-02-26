@@ -29,6 +29,7 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
             end
         elseif ~train_test_dirs_match
             % use everything in directories
+            display('using all images from training / testing directories');
             data_split_struct = [];
             data_split_struct.fnames_lb_train = arrayfun( @(x) x.name, dir([experiment_struct.experiment_settings.directory_train, '*.json']), 'UniformOutput', false );
             data_split_struct.fnames_lb_test  = arrayfun( @(x) x.name, dir([experiment_struct.experiment_settings.directory_test,  '*.json']), 'UniformOutput', false );

@@ -14,6 +14,10 @@ function [ new_agent, adjusted_box_r0rfc0cf, delta_xywh ] = bb_regression_apply(
    
     % get adjusted box
     [ adjusted_box_r0rfc0cf, delta_xywh ] = agent_adjustment.bb_regression_adjust_box( weight_vectors, input_agent.box.r0rfc0cf, image, cnn_features );
+    adjusted_x = adjusted_box_r0rfc0cf(3);
+    adjusted_y = adjusted_box_r0rfc0cf(1);
+    adjusted_w = adjusted_box_r0rfc0cf(4) - adjusted_box_r0rfc0cf(3) + 1;
+    adjusted_h = adjusted_box_r0rfc0cf(2) - adjusted_box_r0rfc0cf(1) + 1;
     
     % construct a new agent based on the input agent
     new_agent = input_agent;
