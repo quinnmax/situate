@@ -148,7 +148,8 @@ function [agent_pool,d] = evaluate_scout( agent_pool, agent_index, p, d, im, lab
             
         end
     
-        internal_support_adjustment = @(x) floor(x * 100)/100; % rounding to nearest .01 for consistency between display and internal behavior
+        %internal_support_adjustment = @(x) floor(x * 100)/100; % rounding to nearest .01 for consistency between display and internal behavior
+        internal_support_adjustment = @(x) x;
         cur_agent.support.internal = internal_support_adjustment( classification_score );
     
         
@@ -158,12 +159,8 @@ function [agent_pool,d] = evaluate_scout( agent_pool, agent_index, p, d, im, lab
     
         if ~isempty(label) && ismember( cur_agent.interest, label.labels_adjusted )
             relevant_label_ind = find(strcmp(cur_agent.interest,label.labels_adjusted),1,'first');
-            ground_truth_box_xywh = label.boxes_xywh(relevant_label_ind,:);
-            if ~isempty(cur_agent.box.xywh)
-                cur_agent.support.GROUND_TRUTH = intersection_over_union( cur_agent.box.xywh, ground_truth_box_xywh, 'xywh' );
-            else
-                cur_agent.support.GROUND_TRUTH = intersection_over_union( cur_agent.box.r0rfc0cf, ground_truth_box_xywh, 'r0rfc0cf', 'xywh' );
-            end
+            ground_truth_box_r0rfc0cf = label.boxes_r0rfc0cf(relevant_label_ind,:);
+            cur_agent.support.GROUND_TRUTH = intersection_over_union( cur_agent.box.r0rfc0cf, ground_truth_box_r0rfc0cf, 'r0rfc0cf', 'r0rfc0cf' );
             cur_agent.GT_label_raw = label.labels_raw{relevant_label_ind};
         else
             cur_agent.support.GROUND_TRUTH = nan;

@@ -162,6 +162,25 @@
             title(situation_objects{oi});
         end
         
+        
+%         % apply non max supression
+%         IOU_suppression_threshold = .25;
+%         temp = [agent_pool.box];
+%         boxes_r0rfc0cf = vertcat(temp.r0rfc0cf);
+%         temp = [agent_pool.support];
+%         box_scores = vertcat(temp.internal);
+%         inds_keep = false(length(agent_pool),length(p.situation_objects));
+%         for oi = 1:length(p.situation_objects)
+%             cur_obj_rows = strcmp({agent_pool.interest}, p.situation_objects{oi});
+%             temp_scores = box_scores;
+%             temp_scores(~cur_obj_rows) = 0;
+%             inds_keep(:,oi) = non_max_supression( boxes_r0rfc0cf, temp_scores, IOU_suppression_threshold, 'r0rfc0cf' );
+%         end
+%         inds_keep = any(inds_keep,2);
+%         agent_pool = agent_pool(inds_keep);
+
+        
+        
         % do local non-max supression
         IOU_suppression_threshold = .25;
         IOUs_nms = IOUs_est;

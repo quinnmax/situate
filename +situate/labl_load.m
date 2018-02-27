@@ -77,7 +77,10 @@ function data = labl_load( label_file_name, varargin )
                     data = situate.labl_load_old(label_file_name,situation_struct);
                     return
                 else
-                    error('label file not found');
+                    warning('label file not found');
+                    data = [];
+                    return;
+                    
                 end
             end
 

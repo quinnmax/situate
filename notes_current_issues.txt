@@ -1,0 +1,13 @@
+when situate tries to load models from "saved_models," if that directory exists, it crashes.
+make sure that it just creates that directory if it doesn't already exist.
+
+the gt IOU is not correct in the workspace. 
+check for when it's adjusted to make sure the correct boxes are being compared (and that the workspace entry is being properly updated when something goes in and is replaced)
+
+add the new RCNN pre-computed box files, make sure that pipeline works properly
+
+
+
+
+
+
