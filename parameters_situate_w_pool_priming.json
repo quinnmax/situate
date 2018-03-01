@@ -60,7 +60,7 @@
 		},
 
 		// agent pool initialization function
-		"agent_pool_initialization_function" : "situate.agent.pool_initialize_covering",
+		"agent_pool_initialization_function" : "situate.agent.pool_initialize_covering_rcnn_like",
 
 		// agent pool adjustment rules
 		"agent_pool_adjustment_rule" : "@(x) situate.agent.pool_clear_high_generation( x, 3 )",

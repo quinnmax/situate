@@ -49,7 +49,7 @@ function agent_pool = pool_initialize_covering_rcnn_like( p, im, im_fname, learn
     
     
     
-    display('do RCNN like stuff here');
+    %display('do RCNN like stuff here');
     
     % apply classifier to each box for internal support
     classifier_output = nan(length(agent_pool),length(p.situation_objects));
@@ -64,21 +64,25 @@ function agent_pool = pool_initialize_covering_rcnn_like( p, im, im_fname, learn
             cnn_feature_vects(ai,:) = cnn_feature_vect;
         end
     end
-    progress(ai,length(agent_pool));
+    if mod(ai,50)==0 || ai == length(agent_pool), progress(ai,length(agent_pool)); end
     end
+    
     % assign most likely object to each box
     [internal_support,obj_assignment] = max( classifier_output,[],2);
+    
     % apply box adjust to each box 
     for ai = 1:length( agent_pool )
         agent_pool(ai).interest = p.situation_objects{obj_assignment(ai)};
         agent_pool(ai).support.internal = internal_support(ai);
         agent_pool(ai) = p.adjustment_model.apply( learned_models.adjustment_model, agent_pool(ai), agent_pool, im, cnn_feature_vects(ai,:) );
     end
+    
     % apply classifier to resulting boxes
     for ai = 1:length(agent_pool)
         agent_pool(ai).support.internal = p.classifier.apply( learned_models.classifier_model, agent_pool(ai).interest, im, agent_pool(ai).box.r0rfc0cf );
-        if mod(ai,10)==0 || ai == length(agent_pool), progress(ai,length(agent_pool)); end
+        if mod(ai,50)==0 || ai == length(agent_pool), progress(ai,length(agent_pool)); end
     end
+    
     % apply non max supression
     IOU_suppression_threshold = .25;
     temp = [agent_pool.box];

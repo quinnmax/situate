@@ -23,9 +23,11 @@
 % image_file_directory        = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train';
 % output_directory = fullfile( fileparts( situate_results_file_fname), 'workspaces_final' );
 
-situate_results_file_fname  = '/Users/Max/Dropbox/Projects/situate/results/dogwalking_dogwalking, agent pool policy playing_2017.10.18.12.31.15/stable pool, moderate provisional threshold, even total support, run all iterations_fold_01_2017.10.18.12.42.59.mat';
-image_file_directory        = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train';
-output_directory = fullfile( fileparts( situate_results_file_fname), 'workspaces_final' );
+% situate_results_file_fname  = '/Users/Max/Dropbox/Projects/situate/results/dogwalking_dogwalking, agent pool policy playing_2017.10.18.12.31.15/stable pool, moderate provisional threshold, even total support, run all iterations_fold_01_2017.10.18.12.42.59.mat';
+% image_file_directory        = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train';
+% output_directory = fullfile( fileparts( situate_results_file_fname), 'workspaces_final' );
+
+
 
 
 situate_results_data = load(situate_results_file_fname,'fnames_im_test','workspaces_final','p_condition');
