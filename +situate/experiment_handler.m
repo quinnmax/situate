@@ -10,13 +10,15 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
         
     %% generate training/testing sets
     
-        train_test_dirs_match = isequal(  experiment_struct.experiment_settings.directory_train, experiment_struct.experiment_settings.directory_test );
+        train_test_dirs_match   = isequal(  experiment_struct.experiment_settings.directory_train, experiment_struct.experiment_settings.directory_test );
         have_training_split_dir = ~isempty( experiment_struct.experiment_settings.training_testing_split_directory ) && exist( experiment_struct.experiment_settings.training_testing_split_directory , 'dir' );
     
         if train_test_dirs_match && have_training_split_dir
             % load from saved splits
             data_split_struct = situate.data_load_splits_from_directory( experiment_struct.experiment_settings.training_testing_split_directory );
-        elseif train_test_dirs_match && ~have_training_split_dir
+        end
+        
+        if train_test_dirs_match && ~have_training_split_dir
             % make new splits save them off
             data_path = experiment_struct.experiment_settings.directory_train;
             output_directory = fullfile('data_splits/', [situation_struct.desc '_' datestr(now,'YYYY.MM.DD.hh.mm.ss')]);
@@ -27,7 +29,9 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
             else
                 data_split_struct = situate.data_generate_split_files( data_path, 'num_folds', num_folds, 'output_directory', output_directory );
             end
-        elseif ~train_test_dirs_match
+        end
+        
+        if ~train_test_dirs_match && ~have_training_split_dir
             % use everything in directories
             display('using all images from training / testing directories');
             data_split_struct = [];
@@ -36,14 +40,20 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
             data_split_struct.fnames_im_train = arrayfun( @(x) x.name, dir([experiment_struct.experiment_settings.directory_train, '*.jpg']),  'UniformOutput', false );
             data_split_struct.fnames_im_test  = arrayfun( @(x) x.name, dir([experiment_struct.experiment_settings.directory_test,  '*.jpg']),  'UniformOutput', false );
         end
+        
+        if ~train_test_dirs_match && have_training_split_dir
+            % respect the provided splits
+            data_split_struct = situate.data_load_splits_from_directory( experiment_struct.experiment_settings.training_testing_split_directory );
+        end
        
+        % if specific folds are specified, then limit to those folds
         if ~isfield(experiment_struct.experiment_settings,'specific_folds') || isempty(experiment_struct.experiment_settings.specific_folds)
             fold_inds = 1:experiment_struct.experiment_settings.num_folds;
         else
             fold_inds = experiment_struct.experiment_settings.specific_folds;
         end
         
-        % if we've specified a lower number of testing images, enforce that here
+        % if a maximum number of testing images was specified, enforce here
         if ~isempty(experiment_struct.experiment_settings.max_testing_images)
             for fii = 1:length(fold_inds)
                 fi = fold_inds(fii);
@@ -53,9 +63,10 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
                 end
             end
         end
-    
+        
         % make sure all files exist in the specified directories
-        %   note: turns out this is fine if the fnames_lb_test set is empty (as long as it's still a cell)
+        %   note: turns out the third assertion is fine as fnames_lb_test may be empty, and
+        %   assert( all( [] ) ) passes.
         for fii = 1:length(fold_inds)
             fi = fold_inds(fii);
             assert( all( cellfun( @(x) exist(fullfile(experiment_struct.experiment_settings.directory_train, x), 'file' ), data_split_struct(fi).fnames_lb_train) ) );

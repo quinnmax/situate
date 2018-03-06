@@ -58,7 +58,8 @@
 		},
 
 		// agent pool initialization function
-		"agent_pool_initialization_function" : "situate.agent.pool_initialize_rcnn",
+		// situate.agent.pool_initialize_rcnn(a,b,c,d, num_rcnn_agents_per_obj, num_additional_agents )
+		"agent_pool_initialization_function" : "@(a,b,c,d) situate.agent.pool_initialize_rcnn(a,b,c,d,10,30);",
 
 		// agent pool adjustment rules
 		"agent_pool_adjustment_rule" : "@(x) situate.agent.pool_clear_low_urgency( x, .3 );",

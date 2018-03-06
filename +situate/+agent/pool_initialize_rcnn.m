@@ -1,14 +1,31 @@
-function primed_agent_pool = pool_initialize_rcnn( p, im, im_fname, varargin )
+function primed_agent_pool = pool_initialize_rcnn( p, im, im_fname, ~, varargin )
+
+% primed_agent_pool = pool_initialize_rcnn( p, im, im_fname, learned_models, [num_rcnn_agents_per_obj], [num_non_rcnn_agents] );
+%
+% num_rcnn_agents_per_obj [optionally] sets how many of the top rcnn boxes are added to the initial agent pool
+%   default is 10
+% num_non_rcnn_agents [optionally] is the number of unassigned agents. they will sample and interest and location
+%   default is 30
         
 
-
+    if length(varargin) >= 1
+        num_rcnn_agents_per_obj = varargin{1};
+    else
+        num_rcnn_agents_per_obj = 10;
+    end
+    
+    if length(varargin) >= 2
+        num_non_rcnn_agents = varargin{2};
+    else
+        num_non_rcnn_agents     = 30; % total in initial pool
+    end
+    
+    
+    
+    
+    
     im_size = [ size(im,1), size(im,2) ];
     situation_objects = p.situation_objects;
-    
-    num_rcnn_agents_per_obj = 10;
-    num_non_rcnn_agents     = 30; % total in initial pool
-    
-    
     
     situation_objects_str = sort(p.situation_objects);
     situation_objects_str = [situation_objects_str{:}];

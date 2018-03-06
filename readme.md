@@ -1,12 +1,16 @@
 
 # Situate
 
-Situate is a system for active grounding of situations in images. 
+Situate is a system for active grounding of situations in images.     
+[edit: link to icsc paper]
+
+
+
 
 
 # Running Situate
 
-### Experiment parameters file
+### Experiment parameters
 	
 The *experiment parameters* file specifies:
 - the situation definition
@@ -16,7 +20,7 @@ The *experiment parameters* file specifies:
 	
 example: "parameters_experiment_dogwalking_viz.json"
 	
-#### Situation definition file
+#### Situation definition
 	
 The *situation definition* file specifies 
 - the situation objects that make up the situation
@@ -24,7 +28,7 @@ The *situation definition* file specifies
 
 example: "situation_definitions/dogwalking.json"
 
-#### Situate running parameters file
+#### Situate running parameters
 	
 The *Situate running parameters* file defines the functions that are used by situate. These includes the functions used to train and apply the classifier, to define and apply the conditional relationships among objects, and numerous others.
 
@@ -59,11 +63,11 @@ To run Situate, call with an experiment parameters file
 
 # Defining a Situation
 
-Defining a new situation requires a file that defines the situation and positive training images that have labels specifying the relevant objects in the image. 
+Defining a new situation requires a file that defines the situation and set of positive training example images that have labels specifying the relevant objects in each image. 
 
 ### Situation definition file
 
-Situation definition files are in JSON format. They include a simple description of the situation and a list of constituent objects. The constituent objects have a list of labels that may be present in the training data.
+Situation definition files are in JSON format. They include a description of the situation and a list of constituent objects. The constituent objects have a list of labels that may be present in the training data. 
 
 	{ 
 		"situation":{
@@ -95,12 +99,18 @@ Situation definition files are stored in *situation_definitions/*
 
 ### Labeled data
 
-Labels on training images define tight bounding boxes for situation objects in the image.
+The relationships between the constituent objects are inferred from the training data. Each training image should have a label file that specifies tight bounding boxes for situation objects in the image.
+
 Labels can be generated with the tool:
 	
 	labels_generate('my_image_directory/');
 
-These images and label files will be used to learn the relationships between objects (via the situation model), and classifiers for each of the constituent objects. The reliability of the individual classifiers is often used to weight the classifier output when using it to evaluate whether or not the situation is present in a testing image.
+These images and label files will be used to train:
+- the situation model
+- visual classifiers [edit:cite]
+- bounding box regressors [edit:cite]
+
+The reliability of the individual classifiers can be estimated and used to weight the classifiers contribution to situation detections.
 
 
 
@@ -110,10 +120,112 @@ These images and label files will be used to learn the relationships between obj
 
 Situate can take a bit of time to train models, so it's nice to identify when existing models for a particular training set can be used. To this end, there are several ways to specify the training and testing sets to be used by Situate.
 
-#### Specifying separate directories for training/testing
+Specifying images for training and testing is done with the following variables in an *experiment parameters* file:
+	
+	"directory_train"                  : "",
+	"directory_test"                   : "",
+	"training_testing_split_directory" : "",
+	"num_folds"                        : "",
+	"specific_folds"                   : [],
+	"max_testing_images"               : "",
+	"testing_seed"                     : ""
+
+Together, these over determine the specification of training and testing images, so below are a few things one might want to do, and how they would be specified.
+
+#### Separate directories for training/testing
+
+To train on all images in a directory (say, folder_a/) and test on all images in a separate directory (folder_b/), the parameters should be set as below:
+
+	"directory_train"                  : "folder_a/",
+	"directory_test"                   : "folder_b/",
+	"training_testing_split_directory" : "",
+	"num_folds"                        : "",
+	"specific_folds"                   : [],
+	"max_testing_images"               : "",
+	"testing_seed"                     : ""
+
 #### Specifying single directory, file list
+
+If all images are in a single directory and the training and testing images are specified by lists of image names in a file, the parameters should be set as below:
+
+	"directory_train"                  : "folder_a/",
+	"directory_test"                   : "folder_a/",
+	"training_testing_split_directory" : "data_splits/example_split/",
+	"num_folds"                        : "",
+	"specific_folds"                   : [],
+	"max_testing_images"               : "",
+	"testing_seed"                     : ""
+
+The folder *data_splits/example_split/* should contain at least two text files with the naming format 
+
+	[*]fnames_split_[n]_train.txt
+	[*]fnames_split_[n]_test.txt
+
+where *n* indicates which split these files specify, and contents that include one file name per line without path information. For example:
+
+	situate_fnames_split_1_train.txt
+
+	situation_image_001.jpg
+	situation_image_002.jpg
+	situation_image_003.jpg
+
+and
+
+	situate_fnames_split_1_test.txt
+
+	situation_image_004.jpg
+	situation_image_005.jpg
+
+#### Specifying separate directories and including file lists
+
+If you would like to use a subset of the available training and testing data present in separate directories, you can specify both separate folders and a folder contain file lists.  Parameters should be set as below:
+
+	"directory_train"                  : "folder_a/",
+	"directory_test"                   : "folder_b/",
+	"training_testing_split_directory" : "data_splits/example_split/",
+	"num_folds"                        : "",
+	"specific_folds"                   : [],
+	"max_testing_images"               : "",
+	"testing_seed"                     : ""
+
+#### Specifying specific folds to run
+
+If there are files that define multiple folds, then the variable *specific_folds* can be used to specify which folds should be run. For example, if there are five folds defined that have image file lists and you want to run only the 2nd and 4th folds, then the parameters should be set as below
+
+	"directory_train"                  : "folder_a/",
+	"directory_test"                   : "folder_a/",
+	"training_testing_split_directory" : "data_splits/example_split/",
+	"num_folds"                        : "",
+	"specific_folds"                   : [2,4],
+	"max_testing_images"               : "",
+	"testing_seed"                     : ""
+
 #### Specifying single directory, seed value
+
+If all images are in a single directory, and you'd like to have situate generate a split between training and testing images, then you have several options. 
+
+You can specify the number of folds, which in turn defines the number of training images per fold. That is, if you set *num_folds* to 3, then 2/3 of images will be used for training, 1/3 for testing. Note: if *num_folds* is set to 1, then 25% of the data is used for testing. 
+
+ parameters should be set as below:
+
+	"directory_train"                  : "folder_a/",
+	"directory_test"                   : "folder_a/",
+	"training_testing_split_directory" : "",
+	"num_folds"                        : "",
+	"specific_folds"                   : [],
+	"max_testing_images"               : "",
+	"testing_seed"                     : ""
+
+When the same folder is specified for training and testing and no split files are provided, split files will be generated and saved in 
+*data_splits/[situation description]_[time stamp]/*
+
 #### Including maximum number of testing images
+
+For any of the above methods, a maximum number of testing images to run on can be specified and will simply limit the number of images that Situate will run on. It will not change how many images are used for training. For example, if there are 100 images included in the testing image directory,
+
+	"max_testing_images" : 10,
+
+will cause Situate to run on only the first 10 images in that directory.
 
 
 
@@ -157,7 +269,7 @@ To run this script, you must provide the path to a directory containing results 
 
 	path_pos = 'results/my_experiment_pos/';
 	path_neg = 'results/my_experiment_neg/';
-	[ mean_recall_at, median_rank ] = situate_experiment_alysis_PR( path_pos, path_neg );
+	[ mean_recall_at, median_rank ] = situate_experiment_analysis_PR( path_pos, path_neg );
 
 CSV files containing the results are also written to 
 
