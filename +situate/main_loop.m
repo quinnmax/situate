@@ -71,6 +71,9 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
             % have sampling without replacement or a record of sampled locations.
             % these changes would be included in dist_structs
             agent_index        = sample_1d( [agent_pool.urgency], 1 );
+            
+            display(agent_index);
+            
             workspace_snapshot = workspace;
             [agent_pool,dist_structs,workspace] = situate.agent.evaluate( agent_pool, agent_index, im, label, dist_structs, p, workspace, learned_models );
             current_agent_snapshot              = agent_pool(agent_index);

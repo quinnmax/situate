@@ -1,6 +1,10 @@
 function inds_keep = non_max_supression( boxes, box_scores, IOU_suppression_threshold, box_format )
 % inds_suppress = non_max_supression( boxes, box_scores, IOU_suppression_threshold, box_format );
 
+    if ~exist('IOU_supression_threshold','var') || isempty(IOU_suppression_threshold)
+        IOU_suppression_threshold = .25;
+    end
+
     go_again = true;
     while go_again
         go_again = false;

@@ -82,16 +82,19 @@ function [boxes_r0rfc0cf, confidences, cnn_features] = rcnn_homebrew( im, box_ar
         progress(bi,size(boxes_r0rfc0cf,1));
     end
     
+    
+    %% process
+    
     % classify
     classification_score_matrix = padarray(cnn_features,[0,1],1,'pre') * horzcat(classifier_model.models{:});
     [estimated_iou,class_assignments] = max(classification_score_matrix,[],2);
     
+    % apply box adjust
     box_adjust_mats = cell(1,length(situation_struct.situation_objects));
     for oi = 1:length(situation_struct.situation_objects)
         box_adjust_mats{oi} = cell2mat(box_adjust_model.weight_vectors(oi,:));
     end
     
-    % apply box adjust
     boxes_adjusted_r0rfc0cf = nan(num_boxes,4);
     for bi = 1:num_boxes
         boxes_adjusted_r0rfc0cf(bi,:) = agent_adjustment.bb_regression_adjust_box( box_adjust_mats{class_assignments(bi)}, boxes_r0rfc0cf(bi,:), im, cnn_features(bi,:) );
@@ -99,10 +102,11 @@ function [boxes_r0rfc0cf, confidences, cnn_features] = rcnn_homebrew( im, box_ar
     end
     
     % do non-max suppression
+    relevant_rows = cell(1,num_objs);
     for oi = 1:num_objs
-        cur_rows = eq( oi, class_assignments );
-        inds_suppress = non_max_supression( boxes_adjusted_r0rfc0cf(cur_rows,:), estimated_ious(cur_rows), [], 'r0rfc0cf' );
-        
+        cur_rows = find( eq( oi, class_assignments ) );
+        inds_suppress = non_max_supression( boxes_adjusted_r0rfc0cf(cur_rows,:), estimated_iou(cur_rows), [], 'r0rfc0cf' );
+        relevant_rows{oi} = cur_rows( ~inds_suppress );
     end
     
     

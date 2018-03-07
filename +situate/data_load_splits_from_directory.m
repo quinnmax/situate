@@ -13,9 +13,6 @@ function data_folds = data_load_splits_from_directory( split_file_directory )
         fnames_splits_train = cellfun( @(x) fullfile(split_file_directory, x), {fnames_splits_train.name}, 'UniformOutput', false );
         fnames_splits_test  = cellfun( @(x) fullfile(split_file_directory, x), {fnames_splits_test.name},  'UniformOutput', false );
         
-        fprintf('using training splits from: \t%s\n', fnames_splits_train{:});
-        fprintf('using testing  splits from: \t%s\n', fnames_splits_test{:} );
-
         temp = [];
         temp.fnames_lb_train = cellfun( @(x) importdata(x, '\n'), fnames_splits_train, 'UniformOutput', false );
         temp.fnames_lb_test  = cellfun( @(x) importdata(x, '\n'), fnames_splits_test,  'UniformOutput', false );

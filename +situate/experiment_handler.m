@@ -8,9 +8,15 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
         situate_params_array = situate.parameters_struct_new_to_old( experiment_struct, situation_struct, situate_params_array );
         situate.parameters_struct_validate( situate_params_array );
         if isempty( situate_params_array.seed_test )
-            temp = rng('shuffle');
-            situate_params_array.seed_test = temp.Seed;
+            rng('shuffle');
+            curr_rng = rng();
+            for parameters_ind = 1:length(situate_params_array)
+                situate_params_array(parameters_ind).seed_test = curr_rng.Seed;
+            end
+            display(['testing seed was empty, set to: ' num2str(situate_params_array.seed_test)]);
         end
+        
+        
         
     %% generate training/testing sets
     
@@ -19,6 +25,7 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
     
         if train_test_dirs_match && have_training_split_dir
             % load from saved splits
+            display(['loading training splits from: ' experiment_struct.experiment_settings.training_testing_split_directory]);
             data_split_struct = situate.data_load_splits_from_directory( experiment_struct.experiment_settings.training_testing_split_directory );
         end
         
@@ -47,6 +54,7 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
         
         if ~train_test_dirs_match && have_training_split_dir
             % respect the provided splits
+            display(['loading training splits from: ' experiment_struct.experiment_settings.training_testing_split_directory]);
             data_split_struct = situate.data_load_splits_from_directory( experiment_struct.experiment_settings.training_testing_split_directory );
         end
        
@@ -89,9 +97,9 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
             
         
         
-%% run through folds
+%% run through data folds
 
-for fii = 1:length(fold_inds)
+    for fii = 1:length(fold_inds)
     
         fi = fold_inds(fii);
         
@@ -111,143 +119,148 @@ for fii = 1:length(fold_inds)
         end
         
         % loop through experimental settings
-        
-            for parameters_ind = 1:length(situate_params_array)
+        for parameters_ind = 1:length(situate_params_array)
 
-                cur_parameterization = situate_params_array(parameters_ind);
-                rng( cur_parameterization.seed_test );
+            cur_parameterization = situate_params_array(parameters_ind);
+            rng( cur_parameterization.seed_test );
+            display(['seed: ' num2str(cur_parameterization.seed_test )]);
 
-                % load or learn the situation model
-                if ~isfield( learned_models, 'situation_model') ...
-                || ~isequal( learned_models_training_functions.situation, cur_parameterization.situation_model.learn )
-                    learned_models_training_functions.situation = cur_parameterization.situation_model.learn;
-                    learned_models.situation_model = ...
-                        cur_parameterization.situation_model.learn( ...
-                            cur_parameterization, ...
-                            fnames_lb_train );
-                end
+            % load or learn the situation model
+            if ~isfield( learned_models, 'situation_model') ...
+            || ~isequal( learned_models_training_functions.situation, cur_parameterization.situation_model.learn )
+                learned_models_training_functions.situation = cur_parameterization.situation_model.learn;
+                learned_models.situation_model = ...
+                    cur_parameterization.situation_model.learn( ...
+                        cur_parameterization, ...
+                        fnames_lb_train );
+            end
 
-                % load or learn the classification models
-                if ~isfield( learned_models, 'classifier_model') ...
-                || ~isequal( learned_models_training_functions.classifier, cur_parameterization.classifier.train )
-                    learned_models_training_functions.classifier = cur_parameterization.classifier.train;
-                    learned_models.classifier_model = ...
-                        cur_parameterization.classifier.train( ...
-                            cur_parameterization, ...
-                            fnames_lb_train, ...
-                            cur_parameterization.classifier.directory );
-                end
+            % load or learn the classification models
+            if ~isfield( learned_models, 'classifier_model') ...
+            || ~isequal( learned_models_training_functions.classifier, cur_parameterization.classifier.train )
+                learned_models_training_functions.classifier = cur_parameterization.classifier.train;
+                learned_models.classifier_model = ...
+                    cur_parameterization.classifier.train( ...
+                        cur_parameterization, ...
+                        fnames_lb_train, ...
+                        cur_parameterization.classifier.directory );
+            end
 
-                % load or learn the adjustment model
-                if ~isfield(learned_models, 'adjustment_model') ...
-                || ~isequal( learned_models_training_functions.adjustment, cur_parameterization.adjustment_model.train )
-                    learned_models_training_functions.adjustment = cur_parameterization.adjustment_model.train;
-                    learned_models.adjustment_model = ...
-                        cur_parameterization.adjustment_model.train( ...
-                            cur_parameterization, ...
-                            fnames_lb_train, ...
-                            cur_parameterization.adjustment_model.directory);
-                end
-                
-                progress( 0, length(fnames_im_test),cur_parameterization.description); 
+            % load or learn the adjustment model
+            if ~isfield(learned_models, 'adjustment_model') ...
+            || ~isequal( learned_models_training_functions.adjustment, cur_parameterization.adjustment_model.train )
+                learned_models_training_functions.adjustment = cur_parameterization.adjustment_model.train;
+                learned_models.adjustment_model = ...
+                    cur_parameterization.adjustment_model.train( ...
+                        cur_parameterization, ...
+                        fnames_lb_train, ...
+                        cur_parameterization.adjustment_model.directory);
+            end
 
-                % loop through images
-                workspaces_final    = cell(1,length(fnames_im_test));
-                agent_records       = cell(1,length(fnames_im_test));
-                
-                keep_going = true;
-                cur_image_ind = 1;
-                while keep_going
-                    
-                    % run on the current image
-                    cur_fname_im = fnames_im_test{cur_image_ind};
+            progress( 0, length(fnames_im_test),cur_parameterization.description); 
 
-                    tic;
-                    [ ~, run_data_cur, visualizer_status_string ] = situate.main_loop( cur_fname_im, cur_parameterization, learned_models );
+            % loop through images
+            workspaces_final    = cell(1,length(fnames_im_test));
+            agent_records       = cell(1,length(fnames_im_test));
 
-                    
-                    if experiment_struct.experiment_settings.use_visualizer % handle visualizer status
+            keep_going = true;
+            cur_image_ind = 1;
+            while keep_going
 
-                        switch visualizer_status_string
-                            case 'restart'
-                                % keep_going = true;
-                            case 'next_image'
-                                % keep_going = true;
-                                cur_image_ind = cur_image_ind + 1;
-                            case 'stop'
-                                keep_going = false;
-                            otherwise
-                                keep_going = false;
-                                % because we probably killed it with a window close
-                        end
+                % run on the current image
+                cur_fname_im = fnames_im_test{cur_image_ind};
 
-                    else
+                tic;
+                [ ~, run_data_cur, visualizer_status_string ] = situate.main_loop( cur_fname_im, cur_parameterization, learned_models );
 
-                       % store results
-                        workspaces_final{cur_image_ind} = run_data_cur.workspace_final;
-                        agent_records{cur_image_ind}    = run_data_cur.agent_record;
 
-                        % display an update in the console
-                        num_iterations_run = sum(~eq(0,[run_data_cur.agent_record.interest]));
-                        labels_missed = setdiff(cur_parameterization.situation_objects,run_data_cur.workspace_final.labels);
-                        labels_temp = [run_data_cur.workspace_final.labels labels_missed];
-                        GT_IOUs = [run_data_cur.workspace_final.GT_IOU nan(1,length(labels_missed))];
-                        [~,sort_order] = sort( labels_temp );
-                        IOUs_of_last_run = num2str(GT_IOUs(sort_order));
-                        fprintf('%s, %3d / %d, %4d steps, %6.2fs,  IOUs: [%s] \n', cur_parameterization.description, cur_image_ind, length(fnames_im_test), num_iterations_run, toc, IOUs_of_last_run );
-                        
-                        cur_image_ind = cur_image_ind + 1;
-                        
+                if experiment_struct.experiment_settings.use_visualizer % handle visualizer status
+
+                    switch visualizer_status_string
+                        case 'restart'
+                            % keep_going = true;
+                        case 'next_image'
+                            % keep_going = true;
+                            cur_image_ind = cur_image_ind + 1;
+                        case 'stop'
+                            keep_going = false;
+                        otherwise
+                            keep_going = false;
+                            % because we probably killed it with a window close
                     end
 
-                    if cur_image_ind > experiment_struct.experiment_settings.max_testing_images ...
-                    || cur_image_ind > length(fnames_im_test)
-                        keep_going = false;
-                        if experiment_struct.experiment_settings.use_visualizer
-                            msgbox('out of testing images');
-                        end
-                    end
+                else
 
-                    if ~keep_going
-                        break;
-                    end
+                   % store results
+                    workspaces_final{cur_image_ind} = run_data_cur.workspace_final;
+                    agent_records{cur_image_ind}    = run_data_cur.agent_record;
+
+                    % display an update in the console
+                    num_iterations_run = sum(~eq(0,[run_data_cur.agent_record.interest]));
+                    labels_missed = setdiff(cur_parameterization.situation_objects,run_data_cur.workspace_final.labels);
+                    labels_temp = [run_data_cur.workspace_final.labels labels_missed];
+                    GT_IOUs = [run_data_cur.workspace_final.GT_IOU nan(1,length(labels_missed))];
+                    [~,sort_order] = sort( labels_temp );
+                    IOUs_of_last_run = num2str(GT_IOUs(sort_order));
+                    fprintf('%s, %3d / %d, %4d steps, %6.2fs,  IOUs: [%s] \n', cur_parameterization.description, cur_image_ind, length(fnames_im_test), num_iterations_run, toc, IOUs_of_last_run );
+
+                    cur_image_ind = cur_image_ind + 1;
 
                 end
 
-                % bail after the first experimental setup if we're using the visualizer
-                if experiment_struct.experiment_settings.use_visualizer
+                % decide if we keep going or not
+                if cur_image_ind > experiment_struct.experiment_settings.max_testing_images ...
+                || cur_image_ind > length(fnames_im_test)
+                    keep_going = false;
+                    if experiment_struct.experiment_settings.use_visualizer
+                        msgbox('out of testing images');
+                    end
+                end
+
+                if ~keep_going
                     break;
                 end
-                
-                % save off results every condition and fold
-                %   current fold and 
-                %   experimental condition
-                if ~isempty(strfind(cur_parameterization.description,'.'))
-                    cur_param_desc = cur_parameterization.description(1:strfind(cur_parameterization.description,'.')-1);
-                else
-                    cur_param_desc = cur_parameterization.description;
-                end
-                save_fname = fullfile(experiment_struct.results_directory, [cur_param_desc '_fold_' num2str(fi,'%02d') '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
-                
-                results_struct = [];
-                results_struct.p_condition      = cur_parameterization;
-                results_struct.workspaces_final = workspaces_final;
-                results_struct.agent_records    = agent_records;
-                results_struct.fnames_lb_train  = fnames_lb_train;
-                results_struct.fnames_im_test   = fnames_im_test;
-                
-                save(save_fname, '-v7', ...
-                '-struct','results_struct');
-                
-                display(['saved to ' save_fname]);
-                    
+
             end
-            
-            % bail after the first fold if we're using the GUI
+
+            % bail after the first experimental setup if we're using the visualizer
             if experiment_struct.experiment_settings.use_visualizer
                 break;
             end
 
+            % save off results, each condition and fold pair gets a file
+            if ~isempty(strfind(cur_parameterization.description,'.'))
+                cur_param_desc = cur_parameterization.description(1:strfind(cur_parameterization.description,'.')-1);
+            else
+                cur_param_desc = cur_parameterization.description;
+            end
+            save_fname = fullfile(experiment_struct.results_directory, [cur_param_desc '_fold_' num2str(fi,'%02d') '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
+
+            results_struct = [];
+            results_struct.p_condition      = cur_parameterization;
+            results_struct.workspaces_final = workspaces_final;
+            results_struct.agent_records    = agent_records;
+            results_struct.fnames_lb_train  = fnames_lb_train;
+            results_struct.fnames_im_test   = fnames_im_test;
+
+            save(save_fname, '-v7', ...
+            '-struct','results_struct');
+
+            display(['saved to ' save_fname]);
+
+        end
+
+        % bail after the first fold if we're using the visualizer
+        if experiment_struct.experiment_settings.use_visualizer
+            break;
+        end
+
+            
+            
+    end
+    
+    
+    
 end
 
        

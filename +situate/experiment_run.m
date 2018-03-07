@@ -21,7 +21,7 @@ function experiment_run( experiment_file_fname )
     situate_running_params_array = [];
     for pi = length( experiment_struct.situate_parameterizations_fnames ):-1:1
         cur_params = situate.parameters_initialize_from_file( experiment_struct.situate_parameterizations_fnames{pi} );
-        if isempty( situate_running_params_array ), situate_running_params_array = cur_params; end % eyeroll
+        if isempty( situate_running_params_array ), situate_running_params_array = cur_params; end
         situate_running_params_array(pi) = cur_params; 
     end
 

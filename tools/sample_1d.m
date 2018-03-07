@@ -1,7 +1,5 @@
 function [samples] = sample_1d( arg1, arg2, arg3 )
 
-
-
     % [samples] = sample_from_pdf( pdf_x, pdf_y, n );
     % [inds]    = sample_from_pdf( pdf_y, n );
     %
@@ -15,24 +13,19 @@ function [samples] = sample_1d( arg1, arg2, arg3 )
     % see also:
     %   sample_2d
     
-    
-    
-    if nargin == 3
-        x = arg1;
-        y = arg2;
-        n = arg3;
-    end
-    
-    if nargin == 2
-        y = arg1;
-        n = arg2;
-        x = 1:length(y);
-    end
-    
-    if nargin == 1
-        y = arg1;
-        n = 1;
-        x = 1:length(y);
+    switch nargin
+        case 1
+            y = arg1;
+            n = 1;
+            x = 1:length(y);
+        case 2
+            y = arg1;
+            n = arg2;
+            x = 1:length(y);
+        case 3
+            x = arg1;
+            y = arg2;
+            n = arg3;
     end
     
     if isempty(x)
@@ -42,9 +35,7 @@ function [samples] = sample_1d( arg1, arg2, arg3 )
     if isempty(n)
         n = 1;
     end
-       
-    
-    
+      
     cum_dist = cumsum(y) / sum(y);
         
     samples = zeros(1,n);
