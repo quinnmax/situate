@@ -7,6 +7,10 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
     % make parameterization structs compatible with the old struct that had everything in one pile
         situate_params_array = situate.parameters_struct_new_to_old( experiment_struct, situation_struct, situate_params_array );
         situate.parameters_struct_validate( situate_params_array );
+        if isempty( situate_params_array.seed_test )
+            temp = rng('shuffle');
+            situate_params_array.seed_test = temp.Seed;
+        end
         
     %% generate training/testing sets
     

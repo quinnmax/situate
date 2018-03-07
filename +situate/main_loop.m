@@ -4,12 +4,16 @@
 function [ workspace, records, visualizer_return_status ] = main_loop( im_fname, p, learned_models )
 % [ workspace, records, visualizer_return_status ] = main_loop( im_fname, p, learned_models );
 
+
+
     debug = false;
+
     
 
     %% initialization 
         
     % load an image, label
+    
         label = situate.labl_load( im_fname, p );
         im = imread( im_fname );
         if mean(im(:)) < 1, im = 255 * im; end
@@ -32,6 +36,7 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
         records = situate.records_initialize(p,agent_pool);
         
     % initialize the visualization
+    
         global visualizer_run_status;
         visualizer_run_status = 'unstarted'; % this does need to be here. it is looked at from within the visualizer
         if p.use_visualizer

@@ -36,12 +36,12 @@ function selected_model_fname = check_for_existing_model( possible_paths, vararg
                     % not the whole path and extension 
                     % this was coming up because we were checking that the intended
                     % training images matched against a model trained on a different machine
-                    % with a different directory structure. if images are just numbered, it will
-                    % definitely be a problem.
+                    % with a different directory structure. 
+                    % however: if images are just numbered, this will be a problem
                     if iscellstr( file_data )   
                         %a = cellfun( @(x) x(last(strfind(x,filesep()))+1:end), file_data, 'UniformOutput', false);
                         a = fileparts_mq( file_data, 'name' );
-                        b = varargin{vari+1};
+                        b = fileparts_mq( varargin{vari+1}, 'name' );
                         assert( all(ismember(a,b)) & all(ismember(b,a)) );
                     else
                         assert( isequal( file_data, varargin{vari+1}) );

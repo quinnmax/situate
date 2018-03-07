@@ -17,7 +17,7 @@ function params_struct_out = parameters_struct_new_to_old( experiment_struct, si
         params_struct_out.situation_objects_urgency_post    = situation_struct.object_urgency_post;
 
         if isempty( experiment_struct.experiment_settings.testing_seed )
-            params_struct_out.seed_test = now;
+            params_struct_out.seed_test = [];
         else
             params_struct_out.seed_test = experiment_struct.experiment_settings.testing_seed;
         end

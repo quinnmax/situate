@@ -1,4 +1,4 @@
-function agent_pool = pool_initialize_covering_rcnn_like( p, im, im_fname, learned_models )
+function agent_pool = pool_initialize_covering_rcnn_like( p, im, ~, learned_models )
 % primed_agent_pool = situate.agent.pool_initialize_covering_rcnn_like( p, im, im_fname, learned_models );
 
     box_area_ratios = [1/16 1/9 1/4];

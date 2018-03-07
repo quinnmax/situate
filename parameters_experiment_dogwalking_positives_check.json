@@ -3,8 +3,8 @@
 			
 	"situate_parameterizations_fnames" : [
 				//"parameters_situate_default.json"
-				//"parameters_situate_w_pool_priming.json"
-				"parameters_situate_mm.json"
+				"parameters_situate_w_pool_priming.json"
+				//"parameters_situate_mm.json"
 			],	
 
 	"experiment_settings" : {
@@ -43,7 +43,7 @@
 
 			"specific_folds" : [1],
 
-			"max_testing_images" : 20,
+			"max_testing_images" : "",
 			
 			// if specified, this will be used to seed the RNG during testing.
 			// otherwise, each parameterization will get a different time-based seed

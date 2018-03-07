@@ -1,10 +1,10 @@
 
+
+
 # Situate
 
 Situate is a system for active grounding of situations in images.     
 [edit: link to icsc paper]
-
-
 
 
 
@@ -59,8 +59,6 @@ To run Situate, call with an experiment parameters file
 
 
 
-
-
 # Defining a Situation
 
 Defining a new situation requires a file that defines the situation and set of positive training example images that have labels specifying the relevant objects in each image. 
@@ -111,8 +109,6 @@ These images and label files will be used to train:
 - bounding box regressors [edit:cite]
 
 The reliability of the individual classifiers can be estimated and used to weight the classifiers contribution to situation detections.
-
-
 
 
 
@@ -226,8 +222,6 @@ For any of the above methods, a maximum number of testing images to run on can b
 	"max_testing_images" : 10,
 
 will cause Situate to run on only the first 10 images in that directory.
-
-
 
 
 
