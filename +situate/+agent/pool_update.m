@@ -15,10 +15,11 @@ function agent_pool = pool_update( agent_pool, agent_index, p, workspace, curren
         else
             error('don''t know how to use this adjustment model activation function');
         end
+        
         if ~isempty(new_agents)
             agent_pool(end+1:end+length(new_agents)) = new_agents;
         end
-
+        
     % decide what to do with the evaluated agent (default is remove)
         if agent_pool(agent_index).support.internal >= p.thresholds.internal_support_retain
             % keep the agent in the pool

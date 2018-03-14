@@ -22,9 +22,7 @@
 		
 		"stopping_condition" : "situate.stopping_condition_finish_up_pool",
 		
-		"image_resize_pixels" : "",
-
-		"min_number_of_scouts" : 10,
+		"min_number_of_scouts" : 30,
 		
 		"agent_urgency_defaults" : {
 			"scout"    : 1,
@@ -58,8 +56,9 @@
 		},
 
 		// agent pool initialization function
-			// situate.agent.pool_initialize_rcnn(a,b,c,d, num_rcnn_agents_per_obj, num_additional_agents )
-		"agent_pool_initialization_function" : "@(a,b,c,d) situate.agent.pool_initialize_rcnn(a,b,c,d,10,30);",
+			// situate.agent.pool_initialize_rcnn( a,b,c,d, num_rcnn_agents_per_obj, num_additional_agents )
+		//"agent_pool_initialization_function" : "@(a,b,c,d) situate.agent.pool_initialize_rcnn(a,b,c,d,10,30);",
+		"agent_pool_initialization_function" : "@(a,b,c,d) situate.agent.pool_initialize_covering_rcnn_like(a,b,c,d,10,30);",
 
 		// agent pool adjustment rules
 		"agent_pool_adjustment_rule" : "@(x) situate.agent.pool_clear_low_urgency( x, .3 );",

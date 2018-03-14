@@ -12,10 +12,13 @@ function [ new_agent, adjusted_box_r0rfc0cf, delta_xywh ] = bb_regression_w_deca
     
     [new_agent, adjusted_box_r0rfc0cf, delta_xywh] =  agent_adjustment.bb_regression_apply( model, input_agent, [], image, cnn_features );
     
-    if isempty( strfind( input_agent.history, '_boxAdjust') )
-        new_agent(end).urgency = 1;
-    else
-        new_agent(end).urgency = input_agent.urgency * .9;
+    % urgency decay
+    if ~isempty(new_agent)
+        if isempty( strfind( input_agent.history, '_boxAdjust') )
+            new_agent(end).urgency = 1;
+        else
+            new_agent(end).urgency = input_agent.urgency * .9;
+        end
     end
     
 end

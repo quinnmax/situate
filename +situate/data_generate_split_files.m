@@ -63,7 +63,7 @@ function data_folds = data_generate_split_files( data_path, varargin )
                 test_im_per_fold = floor(testing_ratio * n);
             end
             
-        elseif ~isempty(testing_im_per_fold)
+        elseif ~isempty(test_im_per_fold)
             % good to go
         
         elseif ~isempty(testing_ratio)

@@ -3,13 +3,17 @@
     % cur_situation = situation_struct_load_json( fname );
 
         situation_data_temp = jsondecode(fileread(fname));
+        
         % situation name
         cur_situation.desc = situation_data_temp.situation.description;
+        
         % situation objects
         cur_situation.situation_objects = fieldnames(situation_data_temp.situation.situation_objects)';
         num_objects = length( cur_situation.situation_objects );
+        
         % possible labels
         situation_objects_possible_labels = cell(1,num_objects);
+        
         % object urgency pre/post
         object_urgency_pre  = zeros( 1, num_objects );
         object_urgency_post = zeros( 1, num_objects );

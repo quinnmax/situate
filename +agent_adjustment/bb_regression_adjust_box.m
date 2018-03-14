@@ -44,9 +44,9 @@ function [ adjusted_box_r0rfc0cf, delta_xywh ] = bb_regression_adjust_box( weigh
     adjusted_h = h * exp(delta_h);
     
     r0_adjusted = round( adjusted_y  - adjusted_h/2 + .5 );
-    rf_adjusted = round( r0_adjusted + adjusted_h - 1);
+    rf_adjusted = round( r0_adjusted + adjusted_h   -  1 );
     c0_adjusted = round( adjusted_x  - adjusted_w/2 + .5 );
-    cf_adjusted = round( c0_adjusted + adjusted_w - 1);
+    cf_adjusted = round( c0_adjusted + adjusted_w   -  1 );
     
     % correct for edge effects, update based on changes
     r0_adjusted = max( r0_adjusted, 1 );
@@ -59,6 +59,12 @@ function [ adjusted_box_r0rfc0cf, delta_xywh ] = bb_regression_adjust_box( weigh
         warning('image was empty. need it to make sure boxes are in bounds.');
     end
     
-    adjusted_box_r0rfc0cf = [r0_adjusted rf_adjusted c0_adjusted cf_adjusted];
-   
+    if r0_adjusted >= rf_adjusted || c0_adjusted >= cf_adjusted 
+        adjusted_box_r0rfc0cf = nan(size(box_in_r0rfc0cf));
+        % warning('degenerate box adjust');
+    else
+        adjusted_box_r0rfc0cf = [r0_adjusted rf_adjusted c0_adjusted cf_adjusted];
+    end
+  
+    
 end

@@ -8,11 +8,6 @@ function p = parameters_initialize_from_file( params_situate_fname )
     
     p = [];
     p.description = params_situate_fname;
-    if isempty(params_in.image_resize_pixels)
-        p.image_redim_px = [];
-    else
-        p.image_redim_px = str2double( params_in.image_resize_pixels );
-    end
     p.num_iterations = params_in.maximum_iterations;
     
     if isempty( params_in.agent_pool_adjustment_rule )

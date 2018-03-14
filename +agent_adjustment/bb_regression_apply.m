@@ -14,6 +14,12 @@ function [ new_agent, adjusted_box_r0rfc0cf, delta_xywh ] = bb_regression_apply(
    
     % get adjusted box
     [ adjusted_box_r0rfc0cf, delta_xywh ] = agent_adjustment.bb_regression_adjust_box( weight_vectors, input_agent.box.r0rfc0cf, image, cnn_features );
+    
+    if any(isnan(adjusted_box_r0rfc0cf(:)))
+        new_agent = [];
+        return;
+    end
+    
     adjusted_x = adjusted_box_r0rfc0cf(3);
     adjusted_y = adjusted_box_r0rfc0cf(1);
     adjusted_w = adjusted_box_r0rfc0cf(4) - adjusted_box_r0rfc0cf(3) + 1;

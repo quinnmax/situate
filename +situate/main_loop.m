@@ -4,10 +4,6 @@
 function [ workspace, records, visualizer_return_status ] = main_loop( im_fname, p, learned_models )
 % [ workspace, records, visualizer_return_status ] = main_loop( im_fname, p, learned_models );
 
-
-
-    debug = false;
-
     
 
     %% initialization 
@@ -110,27 +106,7 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
 
         % update records
             records = situate.records_update( records, iteration, workspace_snapshot, p, current_agent_snapshot );
-
-        % debug
-            if debug
-                % compare the stored gt IOU with a freshly computed gt IOU
-                for wi = 1:length(workspace.labels)
-                    % get lb ind
-                    lb_obj_ind = strcmp( workspace.labels{wi}, label.labels_adjusted);
-                    % get gt IOU
-                    box_workspace = workspace.boxes_r0rfc0cf(wi,:);
-                    box_label = label.boxes_r0rfc0cf(lb_obj_ind,:);
-                    gt_iou = intersection_over_union( box_workspace, box_label, 'r0rfc0cf', 'r0rfc0cf');
-                    iou_stored = workspace.GT_IOU(wi);
-
-                    eps = abs(gt_iou - iou_stored);
-                    if eps > .000001
-                        error('mismatch');
-                    end
-                end             
-            end
-            
-            
+       
         % update visualization
             if p.use_visualizer ...
             && ( p.viz_options.on_iteration_mod ~= 0 && mod(iteration, p.viz_options.on_iteration_mod)==0 ) ...

@@ -95,21 +95,23 @@ function classifier_struct = IOU_ridge_regression_train( situation_struct, fname
             inds_train = find( rows_train & obj_inds & ~small_source_inds );
             
             % do trust round on 80% of the data
-            disp(['training IOU estimation model, trust round: ' classes{oi}]);
+            disp(['training IOU estimation model, partial data round: ' classes{oi}]);
             inds_train_trust = inds_train(1:round(.8*length(inds_train)));
             inds_test_trust  = setdiff( inds_train, inds_train_trust );
             x = data.box_proposal_cnn_features( inds_train_trust, : );
             y = data.IOUs_with_source( inds_train_trust );
             temp_model = ridge( y, x, 1000, 0 );
             
-            disp(['training IOU estimation model, trust round: ' classes{oi}]);
+            disp(['evaluating IOU estimation model on holdout data: ' classes{oi}]);
             x = data.box_proposal_cnn_features( inds_test_trust, : );
             y = data.IOUs_with_source( inds_test_trust );
             temp_scores = [ones(size(x,1),1) x] * temp_model;
             % record trust
             AUROCs(oi)  = ROC( temp_scores, y>=.5 );
+            disp(['     AUROC: ' num2str(AUROCs(oi))]);
             
             % then retrain on full data
+            disp(['training IOU estimation model, all data round: ' classes{oi}]);
             x = data.box_proposal_cnn_features( inds_train, : );
             y = data.IOUs_with_source( inds_train );
             models{oi} = ridge( y, x, 1000, 0 );

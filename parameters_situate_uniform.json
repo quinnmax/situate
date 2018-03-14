@@ -22,8 +22,6 @@
 		
 		"stopping_condition" : "situate.stopping_condition_finish_up_pool",
 		
-		"image_resize_pixels" : "",
-
 		"min_number_of_scouts" : 10,
 		
 		"agent_urgency_defaults" : {

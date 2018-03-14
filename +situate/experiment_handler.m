@@ -21,18 +21,32 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
     %% generate training/testing sets
     
         train_test_dirs_match   = isequal(  experiment_struct.experiment_settings.directory_train, experiment_struct.experiment_settings.directory_test );
-        have_training_split_dir = ~isempty( experiment_struct.experiment_settings.training_testing_split_directory ) && exist( experiment_struct.experiment_settings.training_testing_split_directory , 'dir' );
+        if isempty( experiment_struct.experiment_settings.training_testing_split_directory )
+            have_training_split_dir = false;
+        else
+            if exist( experiment_struct.experiment_settings.training_testing_split_directory , 'dir' )
+                have_training_split_dir = true;
+            elseif exist( fullfile( 'data_splits', experiment_struct.experiment_settings.training_testing_split_directory), 'dir' )
+                experiment_struct.experiment_settings.training_testing_split_directory = fullfile( 'data_splits', experiment_struct.experiment_settings.training_testing_split_directory);
+                have_training_split_dir = true;
+            else
+                have_training_split_dir = false;
+            end
+        end
+               
+        
+        
     
         if train_test_dirs_match && have_training_split_dir
             % load from saved splits
-            display(['loading training splits from: ' experiment_struct.experiment_settings.training_testing_split_directory]);
             data_split_struct = situate.data_load_splits_from_directory( experiment_struct.experiment_settings.training_testing_split_directory );
+            display(['loaded training splits from: ' experiment_struct.experiment_settings.training_testing_split_directory]);
         end
         
         if train_test_dirs_match && ~have_training_split_dir
             % make new splits save them off
             data_path = experiment_struct.experiment_settings.directory_train;
-            output_directory = fullfile('data_splits/', [situation_struct.desc '_' datestr(now,'YYYY.MM.DD.hh.mm.ss')]);
+            output_directory = fullfile('data_splits/', [situation_struct.desc '_' datestr(now,'yyyy.mm.dd.HH.MM.SS')]);
             num_folds = experiment_struct.experiment_settings.num_folds;
             max_images_per_fold = experiment_struct.experiment_settings.max_testing_images;
             if ~isempty(max_images_per_fold)
@@ -54,8 +68,8 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
         
         if ~train_test_dirs_match && have_training_split_dir
             % respect the provided splits
-            display(['loading training splits from: ' experiment_struct.experiment_settings.training_testing_split_directory]);
             data_split_struct = situate.data_load_splits_from_directory( experiment_struct.experiment_settings.training_testing_split_directory );
+            display(['loaded training splits from: ' experiment_struct.experiment_settings.training_testing_split_directory]);
         end
        
         % if specific folds are specified, then limit to those folds
@@ -123,8 +137,7 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
 
             cur_parameterization = situate_params_array(parameters_ind);
             rng( cur_parameterization.seed_test );
-            display(['seed: ' num2str(cur_parameterization.seed_test )]);
-
+            
             % load or learn the situation model
             if ~isfield( learned_models, 'situation_model') ...
             || ~isequal( learned_models_training_functions.situation, cur_parameterization.situation_model.learn )

@@ -33,7 +33,7 @@ function model = bb_regression_train( situation_struct, fnames_in, saved_models_
         existing_feature_directory, 'object_labels', sort(situation_objects) );
    
     if ~isempty(selected_datafile_fname)
-        display(['loading cnn feature data from ' selected_datafile_fname]);
+        display(['loading cnn feature data from: ' selected_datafile_fname]);
         existing_features_fname = selected_datafile_fname;
     else
         disp('extracting cnn feature data');

@@ -1,7 +1,9 @@
 function situate_experiment_analysis_nouveau( input )
 
     % file
-    input = '/Users/Max/Dropbox/Projects/situate/results/dogwalking_dogwalking, agent pool policy playing_2017.10.17.21.48.34/stable pool, low provisional threshold, even total support, run all iterations_fold_01_2017.10.17.22.28.24.mat';
+    input = {...
+        '/Users/Max/Dropbox/Projects/situate/results/dogwalking_posneg_check/neg/';
+        '/Users/Max/Dropbox/Projects/situate/results/dogwalking_posneg_check/pos/' };
     % directory
     %input = '/Users/Max/Dropbox/Projects/situate/results/dogwalking_dogwalking, agent pool policy playing_2017.10.17.21.48.34/';
     % cell
@@ -14,20 +16,37 @@ function situate_experiment_analysis_nouveau( input )
             uiwait(h);
             results_directory = uigetdir(pwd);
             if isempty(results_directory) || isequal(results_directory,0), return; end
-        end
-
-        if isdir( input )
+        
+        elseif ~iscell(input) && exist( input, 'dir' )
+            % single directory
+            results_directory = fileparts(input);
             temp = dir(fullfile(input, '*.mat'));
             mat_file_names = cellfun( @(x) fullfile(results_directory,x), {temp.name}, 'UniformOutput', false );
-        end
-
-        if iscell( input )
-            mat_file_names = input;
-        end
-
-        if exist( input, 'file' )
+        
+        elseif iscellstr(input) && all( cellfun( @isdir, input ) )
+            % multiple directories
+            mat_file_names = {};
+            for di = 1:length(input)
+                temp = dir(fullfile(input{di}, '*.mat'));
+                for fi = 1:length( temp )
+                    cur_fname = fullfile( fileparts( input{di} ), temp(fi).name );
+                    mat_file_names{end+1} = cur_fname;
+                end
+            end
+        
+        elseif ~iscell(input) && exist( input, 'file' )
+            % single mat file name
             mat_file_names = {input};
+        
+        elseif iscellstr( input ) && all( cellfun( @(x) exist( x, 'file' ), input ) )
+            % multiple mat file names
+            mat_file_names = input;
+        
+        else
+            error('wut');
         end
+        
+        
     
     %% group on condition
     

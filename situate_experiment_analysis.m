@@ -113,7 +113,6 @@ function situate_experiment_analysis( results_directory, show_final_workspaces, 
             [path, name, ext] = fileparts( fnames_test{wi} );
             labl_fname = fullfile( path, [name '.json'] );
             workspaces_final(wi) = situate.workspace_score( workspaces_final(wi), labl_fname, p_conditions_per_file{original_file_ind(wi)} );
-            %p_conditions_per_file{original_file_ind(wi)}.image_redim_px
         end
         
         results_per_condition(ci).condition = p_condition.description;

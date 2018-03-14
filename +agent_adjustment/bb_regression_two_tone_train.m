@@ -16,7 +16,7 @@ function model = bb_regression_two_tone_train ( situation_struct, fnames_in, sav
     
     if ~isempty(model_fname)
         model = load(model_fname);
-        display(['box_adjust two tone model loaded from ' model_fname]);
+        display(['loaded box_adjust two tone model from: ' model_fname]);
         display(repmat(' ',1,100));
         return;
     end

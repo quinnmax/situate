@@ -1,15 +1,15 @@
 {
 	"situation_definition_fname" : "situation_definitions/handshaking.json",
-	
+			
 	"situate_parameterizations_fnames" : [
 				//"parameters_situate_default.json"
-				"parameters_situate_w_pool_priming.json"
-				//"parameters_situate_mm.json"
+				//"parameters_situate_w_pool_priming.json"
+				"parameters_situate_mm.json"
 			],	
 
 	"experiment_settings" : {
 
-			"description" : "handshaking, pool priming, provisional check-in",
+			"description" : "handshaking_positives_check",
 
 			"directory_train" : "/Users/Max/Documents/MATLAB/data/situate_images/Handshaking_train/",
 			"directory_test"  : "/Users/Max/Documents/MATLAB/data/situate_images/Handshaking_train/",
@@ -28,10 +28,10 @@
 		 		"start_paused"        : 1
 	 		},
 
- 			// training / testing image lists
+			// training / testing image lists
 			// 	if directory_train and directory_test are the same, 
 			// 	then the division of images specified in this directory will be used
-			"training_testing_split_directory" : "data_splits/dogwalking_validation/",
+			"training_testing_split_directory" : "handshaking_validation",
 
 			// number of folds
 			// 	if image lists were provided
@@ -43,7 +43,7 @@
 
 			"specific_folds" : [1],
 
-			"max_testing_images" : 100,
+			"max_testing_images" : 10,
 			
 			// if specified, this will be used to seed the RNG during testing.
 			// otherwise, each parameterization will get a different time-based seed
