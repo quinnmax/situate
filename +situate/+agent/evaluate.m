@@ -20,7 +20,7 @@ function [agent_pool, d, workspace, object_was_added] = evaluate( agent_pool, ag
     end
    
     
-   
+    
     % implementing the direct scout -> reviewer -> builder pipeline
     %
     % Situate started with different agent types. one for applying the classifier, one for

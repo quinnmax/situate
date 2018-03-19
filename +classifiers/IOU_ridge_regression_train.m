@@ -74,37 +74,52 @@ function classifier_struct = IOU_ridge_regression_train( situation_struct, fname
     %% train the model
         
         training_image_inds = find(ismember( fileparts_mq( data.fnames, 'name' ), fileparts_mq( fnames_in, 'name' )));
+        training_image_inds_validation = training_image_inds(1:round(.8*length(training_image_inds)));
         if isempty(training_image_inds)
             error('no images');
         end
-        rows_train  = ismember(data.fname_source_index, training_image_inds );
         
         crop_size_threshold_px = 4096;
         crop_wh     = [data.box_proposals_r0rfc0cf(:,2)-data.box_proposals_r0rfc0cf(:,1)+1 data.box_proposals_r0rfc0cf(:,4)-data.box_proposals_r0rfc0cf(:,3)+1];
         crop_size_px = crop_wh(:,1) .* crop_wh(:,2);
         small_source_inds   =  crop_size_px < crop_size_threshold_px ;
 
+        rows_train = ismember(data.fname_source_index, training_image_inds ) & ~small_source_inds;
+        rows_train_validation = ismember(data.fname_source_index, training_image_inds_validation) & ~small_source_inds;
+    
+        % situation objects of same type
+        object_equivalence_matrix = false(length(classes),length(classes));
+        for oi = 1:length(classes)
+        for oj = 1:length(classes)
+            object_equivalence_matrix(oi,oj) = isequal( sort(situation_struct.situation_objects_possible_labels{oi}), sort(situation_struct.situation_objects_possible_labels{oj}) );
+        end
+        end
+    
         assert(isequal( sort(data.object_labels), sort(classes) ));
         models = cell( length(classes), 1 );
-        scores = cell( length(classes), 1 );
         AUROCs = zeros(1,length(classes));
         
         for oi = 1:length(classes)
             
-            obj_inds = data.box_source_obj_type == find(strcmp(classes{oi}, data.object_labels));
-            inds_train = find( rows_train & obj_inds & ~small_source_inds );
+            data_obj_inds = ismember( data.object_labels, classes( object_equivalence_matrix(oi,:) ) );
+            
+            if find(object_equivalence_matrix(oi,:),1,'first') ~= oi
+                % then we already trained a model for something in the set of equivalent objects
+                models{oi} = models{find(object_equivalence_matrix(oi,:),1,'first')};
+                AUROCs(oi) = AUROCs( find(object_equivalence_matrix(oi,:),1,'first') );
+                continue;
+            end
             
             % do trust round on 80% of the data
             disp(['training IOU estimation model, partial data round: ' classes{oi}]);
-            inds_train_trust = inds_train(1:round(.8*length(inds_train)));
-            inds_test_trust  = setdiff( inds_train, inds_train_trust );
-            x = data.box_proposal_cnn_features( inds_train_trust, : );
-            y = data.IOUs_with_source( inds_train_trust );
+            x = data.box_proposal_cnn_features( rows_train_validation, : );
+            y = max( data.IOUs_with_each_gt_obj( rows_train_validation, data_obj_inds ), [], 2);
             temp_model = ridge( y, x, 1000, 0 );
             
             disp(['evaluating IOU estimation model on holdout data: ' classes{oi}]);
-            x = data.box_proposal_cnn_features( inds_test_trust, : );
-            y = data.IOUs_with_source( inds_test_trust );
+            rows_test_validation = setdiff( find(rows_train), find(rows_train_validation) );
+            x = data.box_proposal_cnn_features( rows_test_validation, : );
+            y = max( data.IOUs_with_each_gt_obj( rows_test_validation, data_obj_inds ), [], 2);
             temp_scores = [ones(size(x,1),1) x] * temp_model;
             % record trust
             AUROCs(oi)  = ROC( temp_scores, y>=.5 );
@@ -112,8 +127,8 @@ function classifier_struct = IOU_ridge_regression_train( situation_struct, fname
             
             % then retrain on full data
             disp(['training IOU estimation model, all data round: ' classes{oi}]);
-            x = data.box_proposal_cnn_features( inds_train, : );
-            y = data.IOUs_with_source( inds_train );
+            x = data.box_proposal_cnn_features( rows_train, : );
+            y = max( data.IOUs_with_each_gt_obj( rows_train, data_obj_inds ), [], 2);
             models{oi} = ridge( y, x, 1000, 0 );
             
         end

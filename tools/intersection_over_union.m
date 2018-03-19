@@ -3,6 +3,8 @@ function iou = intersection_over_union(A,B,format_A,format_B)
 
     % iou = intersection_over_union(A,B,format_A,format_B);
     %
+    % assumes whole valued inds, with starting values at pixel start and ending vals at pixel end.
+    %
     % if 2 args, each row of A is intersected with each row of B
     % if 1 arg, then each row is intersected with each row
     %
@@ -92,8 +94,8 @@ function area = intersection_area( boxA, boxB )
     c0b = boxB(3);
     cfb = boxB(4);
 
-    intersect_r = min(rfa,rfb) - max(r0a,r0b);
-    intersect_c = min(cfa,cfb) - max(c0a,c0b);
+    intersect_r = min(rfa,rfb) - max(r0a,r0b) + 1;
+    intersect_c = min(cfa,cfb) - max(c0a,c0b) + 1;
     if intersect_r > 0 && intersect_c > 0
         area = intersect_r * intersect_c;
     else

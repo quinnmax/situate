@@ -72,5 +72,35 @@ function [workspace,agent_pool,object_was_added] = evaluate_builder( agent_pool,
         end
             
     end
+    
+    % check for and remove collisions that have been added to the workspace
+    max_iou_differing_objects = .5; 
+    if object_was_added
+        ious = intersection_over_union( workspace.boxes_r0rfc0cf, workspace.boxes_r0rfc0cf, 'r0rfc0cf', 'r0rfc0cf' );
+        is_collision = ious > max_iou_differing_objects;
+        if any( is_collision )
+            
+            workspace_entries_remove_inds = false(1,length(workspace.labels));
+            for oi = 1:length(workspace.labels)
+            for oj = 1:length(workspace.labels)
+                if oi ~= oj ...
+                && is_collision(oi,oj) ...
+                && workspace.total_support(oi) > workspace.total_support(oj)
+                    workspace_entries_remove_inds(oj) = true;
+                end
+            end
+            end
+            
+            workspace.boxes_r0rfc0cf(workspace_entries_remove_inds,:) = [];
+            workspace.internal_support(workspace_entries_remove_inds) = [];
+            workspace.external_support(workspace_entries_remove_inds) = [];
+            workspace.total_support(workspace_entries_remove_inds)    = [];
+            workspace.labels(workspace_entries_remove_inds)           = [];
+            workspace.labels_raw(workspace_entries_remove_inds)       = [];
+            workspace.GT_IOU(workspace_entries_remove_inds)           = [];
+              
+        end
+        
+    end
      
 end

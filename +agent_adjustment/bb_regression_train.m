@@ -58,7 +58,27 @@ function model = bb_regression_train( situation_struct, fnames_in, saved_models_
     fnames_in_stripped   = fileparts_mq(fnames_in, 'name' );
     
     fnames_train_inds = find(ismember( fnames_file_stripped, fnames_in_stripped ));
-    training_box_inds = ismember( data.fname_source_index, fnames_train_inds );
+    rows_train = ismember( data.fname_source_index, fnames_train_inds );
+    
+    % when there are multiple objects of the same type in the current box
+    % we want to train the regressor to move to the object that it has the highest current IOU with.
+    % this means identifying when the source box is lower IOU than another box for an object of the
+    % same type.
+    
+    % situation objects of same type
+    object_equivalence_matrix = false(length(situation_objects),length(situation_objects));
+    for oi = 1:length(situation_objects)
+    for oj = 1:length(situation_objects)
+        object_equivalence_matrix(oi,oj) = isequal( sort(situation_struct.situation_objects_possible_labels{oi}), sort(situation_struct.situation_objects_possible_labels{oj}) );
+    end
+    end
+    
+    object_confusion_rows = false( size(data.IOUs_with_source) );
+    for oi = 1:length(situation_objects)
+        object_confusion_rows = ...
+            object_confusion_rows | ...
+            data.IOUs_with_source < max( data.IOUs_with_each_gt_obj(:,object_equivalence_matrix(oi,:)), [], 2 );
+    end
     
     boxes_over_IOU_threshold_inds = ge( data.IOUs_with_source, training_IOU_threshold );
     
@@ -66,7 +86,11 @@ function model = bb_regression_train( situation_struct, fnames_in, saved_models_
     
     display('box_adjust model training');
     for oi = 1:length(model.object_types)
-        cur_box_rows = eq( oi, data.box_source_obj_type ) & training_box_inds & boxes_over_IOU_threshold_inds;
+        cur_box_rows = ...
+            eq( oi, data.box_source_obj_type ) ...
+            & rows_train ...
+            & boxes_over_IOU_threshold_inds...
+            & ~object_confusion_rows;
         for fi = 1:length(model.feature_descriptions) % delta x, delta y, delta w, delta h
             model.weight_vectors{oi,fi} = ridge( data.box_deltas_xywh(cur_box_rows,fi), data.box_proposal_cnn_features(cur_box_rows,:), lambda, 0);
             fprintf('.');
@@ -85,7 +109,7 @@ function model = bb_regression_train( situation_struct, fnames_in, saved_models_
     for oi = 1:length(situation_objects)
 
         obj_inds = eq( data.box_source_obj_type,oi);
-        cur_inds = training_box_inds & obj_inds;
+        cur_inds = rows_train & obj_inds;
         
         % get starting stats
         proposed_box_IOUs = data.IOUs_with_source( cur_inds );
@@ -168,7 +192,7 @@ function model = bb_regression_train( situation_struct, fnames_in, saved_models_
     
     % show results for training data
     
-    show_results_on_training_data = false;
+    show_results_on_training_data = true;
     if show_results_on_training_data
     
         figure;

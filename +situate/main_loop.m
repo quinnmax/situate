@@ -71,7 +71,7 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
             workspace_snapshot = workspace;
             [agent_pool,dist_structs,workspace] = situate.agent.evaluate( agent_pool, agent_index, im, label, dist_structs, p, workspace, learned_models );
             current_agent_snapshot              = agent_pool(agent_index);
-
+        
         % update dist_structs and support for existing workspace objects
             workspace_changed = ~isequal(workspace,workspace_snapshot);
             if workspace_changed
