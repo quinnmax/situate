@@ -1,4 +1,5 @@
 function support = AUROC_based( internal, external, varargin )
+% support = AUROC_based( internal, external, learned_models, object_index );
 
 
     % some examples
@@ -37,6 +38,5 @@ function support = AUROC_based( internal, external, varargin )
     
     support = w_internal(oi) * internal + w_external(oi) * external;
     
-   
 end
             

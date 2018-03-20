@@ -19,13 +19,9 @@ function workspace = workspace_update_support( workspace, p, dist_structs, learn
 
         % update total support
         if length(p.total_support_function) == 1
-            if nargin(p.total_support_function) == 2
-                workspace.total_support(wi) = p.total_support_function( workspace.internal_support(wi), workspace.external_support(wi) );
-            elseif nargin(p.total_support_function) == 3
-                workspace.total_support(wi) = p.total_support_function( workspace.internal_support(wi), workspace.external_support(wi), learned_models.classifier_model.AUROCs(oi) );
-            end
+            workspace.total_support(wi) = p.total_support_function( workspace.internal_support(wi), workspace.external_support(wi), learned_models, oi );
         elseif length(p.total_support_function) == length(p.situation_objects)  % we have different functions for each object type
-            workspace.total_support(wi) = p.total_support_function{oi}( workspace.internal_support(wi), workspace.external_support(wi) );
+            workspace.total_support(wi) = p.total_support_function{oi}( workspace.internal_support(wi), workspace.external_support(wi), learned_models, oi );
         else
             error('number of total support functions is incompatible with the number of situation objects');
         end
