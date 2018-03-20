@@ -1,5 +1,5 @@
 function [boxes_r0rfc0cf_return, class_assignments_return, confidences_return, cnn_features_return] = rcnn_homebrew( im, box_area_ratios, box_aspect_ratios, box_overlap_ratio, varargin )
-% [boxes_r0rfc0cf, class_assignments, confidences, cnn_features] = rcnn_homebrew( im, box_area_ratios, box_aspect_ratios, overlap_ratio, classifier_model, box_adjust_model, [use_non_max_suppression], [show_viz] ); );
+% [boxes_r0rfc0cf, class_assignments, confidences, cnn_features] = rcnn_homebrew( im, box_area_ratios, box_aspect_ratios, overlap_ratio, classifier_model, box_adjust_model, [use_non_max_suppression], [show_viz], [show_progress] ); );
 %
 % defaults for:
 %   box_area_ratios   : [1/16 1/9 1/4]
@@ -7,10 +7,11 @@ function [boxes_r0rfc0cf_return, class_assignments_return, confidences_return, c
 %   box_overlap_ratio : .5
 %   use_non_max_suppression : true
 %   show_viz                : false
+%   show_progress           : true
 %
 % to try to pick an existing model:
-% [boxes_r0rfc0cf, class_assignments, confidences, cnn_features] = rcnn_homebrew( im, box_area_ratios, box_aspect_ratios, overlap_ratio, training_fnames, situation_description, [use_non_max_suppression], [show_viz] );
-% [boxes_r0rfc0cf, class_assignments, confidences, cnn_features] = rcnn_homebrew( im, box_area_ratios, box_aspect_ratios, overlap_ratio, training_fnames, situation_struct,      [use_non_max_suppression], [show_viz] );
+% [boxes_r0rfc0cf, class_assignments, confidences, cnn_features] = rcnn_homebrew( im, box_area_ratios, box_aspect_ratios, overlap_ratio, training_fnames, situation_description, [use_non_max_suppression], [show_viz], [show_progress] );
+% [boxes_r0rfc0cf, class_assignments, confidences, cnn_features] = rcnn_homebrew( im, box_area_ratios, box_aspect_ratios, overlap_ratio, training_fnames, situation_struct,      [use_non_max_suppression], [show_viz], [show_progress] );
 %
 %     classifier_model = 
 %         struct with fields:
@@ -79,16 +80,22 @@ function [boxes_r0rfc0cf_return, class_assignments_return, confidences_return, c
         error('inputs don''t match expected formats');
     end
     
-    if numel(varargin) >= 3
+    if numel(varargin) >= 3 && ~isempty(varargin{3})
         use_non_max_suppression = varargin{3};
     else
         use_non_max_suppression = true;
     end
     
-    if numel(varargin) >= 4
+    if numel(varargin) >= 4  && ~isempty(varargin{4})
         show_viz = varargin{4};
     else
         show_viz = false;
+    end
+    
+    if numel(varargin) >= 5  && ~isempty(varargin{5})
+        show_progress = varargin{5};
+    else
+        show_progress = false;
     end
     
     situation_objects = classifier_model.classes;
@@ -113,7 +120,9 @@ function [boxes_r0rfc0cf_return, class_assignments_return, confidences_return, c
         cf = boxes_r0rfc0cf(bi,4);
 
         cnn_features(bi,:) = cnn.cnn_process( im(r0:rf,c0:cf,:) );
-        progress(num_boxes-bi+1,size(boxes_r0rfc0cf,1),'rcnn anchor points: ' );
+        if show_progress
+            progress(num_boxes-bi+1,size(boxes_r0rfc0cf,1),'rcnn: extracting cnn features from anchor boxes: ' );
+        end
     end
     num_cnn_features = size(cnn_features,2);
     
@@ -171,7 +180,9 @@ function [boxes_r0rfc0cf_return, class_assignments_return, confidences_return, c
         if ~any(isnan([r0 rf c0 cf]))
             cnn_features_post(bi,:) = cnn.cnn_process( im(r0:rf,c0:cf,:) );
         end
-        progress(bi,num_boxes,['cnn features post box-adjust: ' ]);
+        if show_progress
+            progress(bi,num_boxes,'rcnn: extracting cnn features post-adjust boxes: ' );
+        end
     end
     
     % get updated scores

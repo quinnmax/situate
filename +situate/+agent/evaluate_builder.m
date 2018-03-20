@@ -95,7 +95,7 @@ function [workspace,agent_pool,object_was_added] = evaluate_builder( agent_pool,
     % double check that the above logic didn't let anything through
     ious = intersection_over_union( workspace.boxes_r0rfc0cf, workspace.boxes_r0rfc0cf, 'r0rfc0cf', 'r0rfc0cf' );
     ious( logical( eye( size( ious ) ) ) ) = 0;
-    if any( ious(:) > .5 )
+    if any( ious(:) > spatial_collision_threshold )
         error('high iou');
     end
     

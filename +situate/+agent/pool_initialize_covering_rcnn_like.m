@@ -29,9 +29,21 @@ function agent_pool = pool_initialize_covering_rcnn_like( p, im, ~, learned_mode
             temp_adjust_model = learned_models.adjustment_model;
     end
     
-    [ primed_boxes_r0rfc0cf, class_assignments, confidences ] = rcnn_homebrew( ...
-            im, box_area_ratios, box_aspect_ratios, box_overlap_ratio, learned_models.classifier_model, temp_adjust_model );
     
+    
+    
+    
+    use_non_max_suppression = true;
+    show_viz = false;
+    if p.use_parallel, show_progress = false; else show_progress = true; end
+    
+    [primed_boxes_r0rfc0cf, class_assignments, confidences] = rcnn_homebrew( ...
+            im, box_area_ratios, box_aspect_ratios, overlap_ratio, classifier_model, box_adjust_model, ...
+            use_non_max_suppression, show_viz, show_progress );
+    
+        
+        
+        
     if any(isnan(primed_boxes_r0rfc0cf(:)))
         error('nan boxes');
     end

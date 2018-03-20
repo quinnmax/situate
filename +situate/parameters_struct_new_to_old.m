@@ -25,6 +25,7 @@ function params_struct_out = parameters_struct_new_to_old( experiment_struct, si
             params_struct_out.seed_test = experiment_struct.experiment_settings.testing_seed;
         end
 
+        params_struct_out.use_parallel   = experiment_struct.experiment_settings.use_parallel;
         params_struct_out.use_visualizer = experiment_struct.experiment_settings.use_visualizer;
         params_struct_out.viz_options    = experiment_struct.experiment_settings.viz_options;
         

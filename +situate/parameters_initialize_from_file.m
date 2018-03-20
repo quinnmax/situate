@@ -86,6 +86,7 @@ function p = parameters_initialize_from_file( params_situate_fname )
     p.seed_test      = [];
     p.use_visualizer = [];
     p.viz_options    = [];
+    p.use_parallel   = [];
     
     
 
