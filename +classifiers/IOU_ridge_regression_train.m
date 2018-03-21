@@ -15,11 +15,15 @@ function classifier_struct = IOU_ridge_regression_train( situation_struct, fname
     
     %% check for existing model
     
-        selected_model_fname = ...
-            situate.check_for_existing_model( saved_models_directory, ...
-            'fnames_lb_train', sort(fnames_in_stripped), ...
-            'model_description', model_description, ...
-            'classes', classes );
+        if exist('saved_models_directory','dir')
+            selected_model_fname = ...
+                situate.check_for_existing_model( saved_models_directory, ...
+                'fnames_lb_train', sort(fnames_in_stripped), ...
+                'model_description', model_description, ...
+                'classes', classes );
+        else
+            selected_model_fname = [];
+        end
 
         if ~isempty(selected_model_fname)
 
@@ -145,6 +149,7 @@ function classifier_struct = IOU_ridge_regression_train( situation_struct, fname
     %% save the model
         
         iter = 0;
+        if ~exist(saved_models_directory,'dir'), mkdir( saved_models_directory ); end
         saved_model_fname = fullfile( saved_models_directory, [ [classes{:}] ', ' model_description ', ' num2str(iter) '.mat'] );
         while exist(saved_model_fname,'file')
             iter = iter + 1;

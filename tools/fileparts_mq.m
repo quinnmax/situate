@@ -4,6 +4,8 @@ function out = fileparts_mq( file, part )
 %     switch part
 %         case {'path','pathstr'}
 %             out = pathstr;
+%         case {'path/name'}
+%             out = fullfile(pathstr,name);
 %         case 'name'
 %             out = name;
 %         case 'ext'

@@ -53,18 +53,18 @@ function situate_experiment_analysis( results_directory, show_final_workspaces, 
     
 %% reshape the data
 
-    results_per_condition                           = [];
-    results_per_condition.condition                 = '';
-    results_per_condition.iou_thresholds            = [];
-    results_per_condition.detections_at_iou         = [];
-    results_per_condition.first_iteration_over_threshold = [];
-    results_per_condition.first_iteration_over_threshold_desc = '';
-    results_per_condition.final_ious                = [];
-    results_per_condition.final_ious_desc           = '';
-    results_per_condition.support_record.internal   = [];
-    results_per_condition.support_record.external   = [];
-    results_per_condition.support_record.total      = [];
-    results_per_condition.support_record.gt_iou     = [];
+    results_per_condition = struct( ...
+        'condition',                            '', ...
+        'iou_thresholds',                       [], ...
+        'detections_at_iou',                    [], ...
+        'first_iteration_over_threshold',       [], ...
+        'first_iteration_over_threshold_desc',  '', ...
+        'final_ious',                           [], ...
+        'final_ious_desc',                      '' );
+    results_per_condition.support_record.internal = [];
+    results_per_condition.support_record.external = [];
+    results_per_condition.support_record.total    = [];
+    results_per_condition.support_record.gt_iou   = [];
     results_per_condition = repmat( results_per_condition, 1, num_conditions);
     
     % load up related files, combine
@@ -86,9 +86,9 @@ function situate_experiment_analysis( results_directory, show_final_workspaces, 
         original_file_ind = [];
         for ti = 1:length(temp_data)
             unrun_workspaces = cellfun(@isempty, temp_data{ti}.workspaces_final );
-            temp_data{ti}.fnames_im_test(unrun_workspaces) = [];
+            temp_data{ti}.fnames_im_test(unrun_workspaces)   = [];
             temp_data{ti}.workspaces_final(unrun_workspaces) = [];
-            temp_data{ti}.agent_records(unrun_workspaces) = [];
+            temp_data{ti}.agent_records(unrun_workspaces)    = [];
             original_file_ind(end+1:end+length(temp_data{ti}.workspaces_final)) = cur_files_inds( ti );
         end
         
@@ -101,7 +101,7 @@ function situate_experiment_analysis( results_directory, show_final_workspaces, 
         agent_records = [agent_records{:}]';
         
         fnames_test = cellfun( @(x) x.fnames_im_test, temp_data, 'UniformOutput', false);
-        fnames_test = cellfun( @(x) x', fnames_test,'UniformOutput',false);
+        fnames_test = cellfun( @(x) x', fnames_test, 'UniformOutput',false);
         try
             fnames_test = [fnames_test{:}];
         catch
