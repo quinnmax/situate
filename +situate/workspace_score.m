@@ -1,30 +1,30 @@
-function workspace = workspace_score( workspace, label, p )
-% workspace = workspace_score( workspace, label_struct, p );
-% workspace = workspace_score( workspace, label_fname,  p );
+function workspace = workspace_score( workspace, label, situation_struct )
+% workspace = workspace_score( workspace, label_struct, situation_struct );
+% workspace = workspace_score( workspace, label_fname,  situation_struct );
 %
-% if the p structure is given, and there are labels that can be swapped, will look for the best
+% if the situation_structis given, and there are labels that can be swapped, will look for the best
 % assignment of labels to objects such that it matches the gt and returns the updated workspace.
 %
 % (labels that can be swapped: raw labels are identical, but working labels are not, ie, player1 and
 % player2, where the raw labels that feed into each are exactly the same)
 
     if ischar(label)
-        lb = situate.labl_load( label, p );
+        lb = situate.labl_load( label, situation_struct );
     else
         lb = label;
     end
 
     workspace.GT_IOU = workspace_score_helper( workspace, lb );
 
-    if exist('p','var') && isstruct(p) && isfield(p,'situation_objects_possible_labels')
-        [unique_label_sets,counts,IA] = unique_cell( p.situation_objects_possible_labels );
+    if exist('p','var') && isstruct(situation_struct) && isfield(situation_struct,'situation_objects_possible_labels')
+        [unique_label_sets,counts,IA] = unique_cell( situation_struct.situation_objects_possible_labels );
         if any( counts > 1 )
         % we'll go ahead and try to reconcile labels with objects in the workspace
             best_workspace = workspace;
             for li = 1:length(unique_label_sets)
                 best_workspace_quality = sum( workspace.GT_IOU );
                 if counts(li) > 1
-                    exchangeable_labels = p.situation_objects( eq(IA,li) );
+                    exchangeable_labels = situation_struct.situation_objects( eq(IA,li) );
                     exchangeable_labels_in_workspace = find(ismember( workspace.labels, exchangeable_labels ));
                     assginment_orders = all_sequences( exchangeable_labels );
                     for ai = 1:size(assginment_orders,1)

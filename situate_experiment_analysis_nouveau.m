@@ -56,13 +56,10 @@ function situate_experiment_analysis_nouveau( input )
             temp = load( mat_file_names{fi}, 'p_condition' );
             cur_condition = temp.p_condition;
             cur_condition.seed_test = [];
-            if fi > 1
-                error('need to check on comparing p_conditions. at least need to ');
-            end
-            
-            cur_condition_assignment = find( cellfun( @(x) isequal( cur_condition, x ), condition_structs_unique ) );
+         
+            [cur_condition_assignment, equality_caveats] = find( cellfun( @(x) isequal_struct( cur_condition, x ), condition_structs_unique ) );
             if isempty(cur_condition_assignment)
-                condition_structs_unique{end+1} = cur_condition;
+                condition_structs_unique{end+1}  = cur_condition;
                 condition_struct_assignments(fi) = length(condition_structs_unique);
             else
                 condition_struct_assignments(fi) = cur_condition_assignment;
@@ -70,54 +67,94 @@ function situate_experiment_analysis_nouveau( input )
         end
         num_conditions = length(condition_structs_unique);
         
+        % make sure everyone is looking for the same situation objects
+        assert( all( cellfun( @(x) isequal( condition_structs_unique{1}.situation_objects, x.situation_objects ), condition_structs_unique(2:end) ) ) );
+        
+        situation_objects = condition_structs_unique{1}.situation_objects;
+        num_situation_objects = length(situation_objects);
+        
+        
         
         
     %% cheap analysis stuff
         
         % final workspaces by condition
             workspaces_final = cell( 1, num_conditions );
+            im_fnames = cell(1,num_conditions);
             for ci = 1:num_conditions
                 cur_mat_fnames = mat_file_names(eq(ci,condition_struct_assignments));
-                temp = cellfun( @(x) load( x, 'workspaces_final' ), cur_mat_fnames );
+                temp = cellfun( @(x) load( x, 'workspaces_final','fnames_im_test'), cur_mat_fnames );
                 workspaces_final{ci} = [temp.workspaces_final];
+                im_fnames{ci} = vertcat(temp.fnames_im_test);
             end
-
+            
+        % make sure everyone is looking at the same images
+            assert( all( cellfun( @(x) isequal( im_fnames{1}, x), im_fnames(2:end) ) ) );
+            num_images = length( im_fnames{1} );
+            
+        % rescore workspaces (account for objects of the same type that are arbitrarily assigned a number)
+            is_situation_instance = false(1,num_images);
+            for ci = 1:num_conditions
+                for imi = 1:num_images
+                    lb_fname = [fileparts_mq( im_fnames{ci}{imi}, 'path/name'), '.json'];
+                    if exist(lb_fname,'file')
+                        workspaces_final{ci}{imi} = situate.workspace_score( workspaces_final{ci}{imi}, im_fnames{ci}{imi}, condition_structs_unique{ci} );
+                        is_situation_instance(imi) = true;
+                    else
+                        is_situation_instance(imi) = false;
+                    end
+                end
+            end
+            
+        % final IOUs for objects
+        % final internal support for objects
+            final_ious = cell(1,num_conditions);
+            for ci  = 1:num_conditions
+                final_ious{ci} = zeros( num_images, num_situation_objects );
+                for imi = 1:num_images
+                for oi  = 1:num_situation_objects
+                    if ~isempty( workspaces_final{ci}{imi} ) % unrun leaves empty workspaces
+                        wi = strcmp( situation_objects{oi}, workspaces_final{ci}{imi}.labels);
+                        if any(wi)
+                            final_ious{ci}(imi,oi) = workspaces_final{ci}{imi}.GT_IOU(wi);
+                        end
+                    end
+                end
+                end
+            end
+            
+            error('haven''t gone past here');
+            error('should have a pos/neg list for images by now. just go on the existence of a label file?');
+            
         % detections at various IOU thresholds
             num_thresholds = 10;
             iou_thresholds = sort(unique([linspace(0,1,num_thresholds+1) .5])); % make sure .5 is in there
             iou_thresholds = iou_thresholds(2:end);
             num_thresholds = length(iou_thresholds);
-            detections_at_iou = zeros( num_thresholds, num_situation_objects+1 );
-            for ti  = 1:num_thresholds
-                for oi  = 1:num_situation_objects
-                    detections_at_iou(ti,oi) = sum( ge( final_ious(:,oi), iou_thresholds(ti) ) );
+            detections_at_iou = cell(1,num_conditions);
+            for ci = 1:num_conditions
+                detections_at_iou{ci} = zeros( num_thresholds, num_situation_objects+1 );
+                for ti = 1:num_thresholds
+                for oi = 1:num_situation_objects
+                    detections_at_iou{ci}(ti,oi) = sum( ge( final_ious{ci}(:,oi), iou_thresholds(ti) ) );
                 end
-                detections_at_iou(ti,end) = sum( all( final_ious >= iou_thresholds(ti), 2 ) );
+                detections_at_iou{ci}(ti,end) = sum( all( final_ious{ci} >= iou_thresholds(ti), 2 ) );
+                end
             end
             
-        % final IOUs for objects
-        % final internal support for objects
-            final_ious = zeros( num_images, num_situation_objects );
-            for imi = 1:num_images
-            for oi  = 1:num_situation_objects
-                wi  = strcmp( situation_objects{oi},workspaces_final(imi).labels);
-                if any(wi)
-                    final_ious(imi,oi) = workspaces_final(imi).GT_IOU(wi);
-                end
-            end
-            end
+       
 
         
     %% expensive analysis stuff (first iteration over threshold
     
-        do_the_expensive_thing = false;
-        if do_the_expensive_thing
+        do_the_expensive_analysis = true;
+        if do_the_expensive_analysis
 
             iter_over_thresh = cell( 1, num_conditions );
             iou_thresholds = [];
             for ci = 1:num_conditions
                 cur_condition_mat_fnames = mat_file_names(eq(condition_struct_assignments,ci));
-                [iter_over_thresh{ci}, ~, iou_thresholds] = first_iteration_over_threshold( mat_file_names );
+                [iter_over_thresh{ci}, ~, iou_thresholds] = first_iteration_over_threshold( cur_condition_mat_fnames );
             end
 
         end
