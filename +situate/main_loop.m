@@ -111,7 +111,11 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
             if p.use_visualizer ...
             && ( p.viz_options.on_iteration_mod ~= 0 && mod(iteration, p.viz_options.on_iteration_mod)==0 ) ...
             || ( p.viz_options.on_workspace_change && workspace_changed )
-
+    
+                % try to see if we can reconcile with a different interpretation of the label
+                [workspace,label_used] = situate.workspace_score( workspace, label, p ); % might change the label struct, but will not change the workspace, just the gt score for the visualizer
+                if ~isempty(label_used), label = label_used; end
+                
                 [~,fname_no_path] = fileparts(im_fname); 
                 visualization_description = {fname_no_path; ['iteration: ' num2str(iteration) '/' num2str(p.num_iterations)]; ['situation grounding: ' num2str(workspace.situation_support)] };
                 [viz_handle, visualizer_run_status] = situate.visualize( viz_handle, im, p, dist_structs, workspace, current_agent_snapshot, agent_pool, records.agent_record, visualization_description );

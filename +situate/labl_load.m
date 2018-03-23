@@ -1,9 +1,9 @@
 
 
 
-function data = labl_load( label_file_name, varargin )
+function [lb_struct, lb_structs_possible] = labl_load( label_file_name, varargin )
 
-    % data = labl_load( label_file_name, [situation_struct]  );
+    % [lb_struct, lb_structs_possible] = labl_load( label_file_name, [situation_struct]  );
     %     data.labels_raw = labels_raw;
     % 
     %     data.boxes_xywh             = boxes_xywh;
@@ -27,6 +27,9 @@ function data = labl_load( label_file_name, varargin )
     %       situation_struct should have fields
     %           situation_objects
     %           situation_objects_possible labels
+    %
+    %   if there's ambiguity in the object label assignments, one possible labeling is returned (at
+    %   random from among options) and all of the options are returned in lb_structs_possible
 
     
     
@@ -43,11 +46,11 @@ function data = labl_load( label_file_name, varargin )
                 data_path = label_file_name;
                 dir_data = dir([data_path '*.json']);
                 path_and_fnames = cellfun( @(x) fullfile( data_path, x ), {dir_data.name}, 'UniformOutput', false );
-                data = situate.labl_load(path_and_fnames,situation_struct);
+                lb_struct = situate.labl_load(path_and_fnames,situation_struct);
                 
-                if isempty( data )
-                    data = situate.labl_load_old( label_file_name, varargin );
-                    if ~isempty(data)
+                if isempty( lb_struct )
+                    lb_struct = situate.labl_load_old( label_file_name, varargin );
+                    if ~isempty(lb_struct)
                         warning('only found old label format, using that');
                         return;
                     end
@@ -58,7 +61,7 @@ function data = labl_load( label_file_name, varargin )
 
         % if it's a cell, get data from each entry
             if iscell(label_file_name)
-                data = cellfun( @(x) situate.labl_load(x,situation_struct), label_file_name );
+                lb_struct = cellfun( @(x) situate.labl_load(x,situation_struct), label_file_name );
                 return;
             end
 
@@ -74,11 +77,11 @@ function data = labl_load( label_file_name, varargin )
                 elseif exist( [label_file_name(1:end-length(ext)) '.labl'], 'file' )
                     label_file_name = [label_file_name(1:end-5) '.labl'];
                     warning('only found old label format, using that');
-                    data = situate.labl_load_old(label_file_name,situation_struct);
+                    lb_struct = situate.labl_load_old(label_file_name,situation_struct);
                     return
                 else
                     warning('label file not found');
-                    data = [];
+                    lb_struct = [];
                     return;
                     
                 end
@@ -133,66 +136,89 @@ function data = labl_load( label_file_name, varargin )
             box_aspect_ratio = w./h;
 
         % generate the return structure
-            data.labels_raw = labels_raw;
+            lb_struct.labels_raw = labels_raw;
 
-            data.boxes_xywh             = boxes_xywh;
-            data.boxes_xcycwh           = boxes_xcycwh;
-            data.boxes_r0rfc0cf         = boxes_r0rfc0c0f;
-            data.boxes_normalized_xywh      = boxes_normalized_xywh;
-            data.boxes_normalized_xcycwh    = boxes_normalized_xcycwh;
-            data.boxes_normalized_r0rfc0cf  = boxes_normalized_r0rfc0cf;
+            lb_struct.boxes_xywh             = boxes_xywh;
+            lb_struct.boxes_xcycwh           = boxes_xcycwh;
+            lb_struct.boxes_r0rfc0cf         = boxes_r0rfc0c0f;
+            lb_struct.boxes_normalized_xywh      = boxes_normalized_xywh;
+            lb_struct.boxes_normalized_xcycwh    = boxes_normalized_xcycwh;
+            lb_struct.boxes_normalized_r0rfc0cf  = boxes_normalized_r0rfc0cf;
 
-            data.box_area_ratio = box_area_ratio;
-            data.box_aspect_ratio = box_aspect_ratio;
+            lb_struct.box_area_ratio = box_area_ratio;
+            lb_struct.box_aspect_ratio = box_aspect_ratio;
 
-            data.im_w = im_w;
-            data.im_h = im_h;
+            lb_struct.im_w = im_w;
+            lb_struct.im_h = im_h;
 
-            data.fname_lb = label_file_name;
+            lb_struct.fname_lb = label_file_name;
 
             
             
     %% if the situation structure is included, do the grounding from raw labels to adjusted labels
         
         % map the raw labels to adjusted labels if the situation struct was included
-        if ~isfield(data,'labels_adjusted') ...
+        if ~isfield(lb_struct,'labels_adjusted') ...
         && ~isempty(situation_struct)
+    
+            % doing this by generating all possible labelings. we'll return one at random, and then
+            % the full array as an additional, optional output
 
-            % this gets a little goofy. if you have objects that can be mapped to several adjusted labels,
-            % then we want to just mechanically assign them in rotation for this image. 
-            % 
-            % at first, the label is uniformly random, then rotates
-            %
-            % currently, this doesn't work for the following situation:
-            %   multiple (distinct) label images (ranges) with shared pre-images (domains)
-            %   for example: 
-            %       2 people and 2 racquets (rotating labeling could get confused)
-            
-            assignment_counter = [];
+            num_situation_objects = length(situation_struct.situation_objects);
+            acceptable_exchange_matrix = false( num_situation_objects, num_situation_objects );
+            for oi = 1:num_situation_objects
+            for oj = 1:oi-1
+                if isequal( sort(situation_struct.situation_objects_possible_labels{oi}), ...
+                            sort(situation_struct.situation_objects_possible_labels{oj}) )
 
-            labels_adjusted = cell(1,length(labels_raw));
-            for li = 1:length(labels_raw)
-                possible_label_inds = find(cellfun( @(x) ismember(data.labels_raw{li}, x ), situation_struct.situation_objects_possible_labels ));
-                switch length(possible_label_inds)
-                    case 0
-                        labels_adjusted{li} = 'unknown_object';
-                    case 1 
-                        labels_adjusted{li} = situation_struct.situation_objects{possible_label_inds};
-                    otherwise
-                        if isempty(assignment_counter)
-                            assignment_counter = randi(length(possible_label_inds),1);
-                        end
-                        labels_adjusted{li} = situation_struct.situation_objects{possible_label_inds(assignment_counter)};
-                        assignment_counter = mod(assignment_counter, length(possible_label_inds) )+1;
+                    acceptable_exchange_matrix(oi,oj) = true;     
                 end
-            end  
+            end
+            end
 
-            data.labels_adjusted = labels_adjusted;
+            % generate all possible labelings
+            assignment_matrix = nan(1,0);
+            for li = 1:length(lb_struct.labels_raw)
+                assignment_inds = find(cellfun( @(x) ismember( lb_struct.labels_raw{li}, x ), situation_struct.situation_objects_possible_labels ));
+                if isempty( assignment_inds )
+                    assignment_matrix(:,li) = 0;
+                elseif length(assignment_inds) == 1
+                    assignment_matrix(:,li) = assignment_inds;
+                else % more than one possible assignment
+                    if ~isempty(assignment_matrix)
+                        assignment_matrix = repmat( assignment_matrix, length(assignment_inds), 1 );
+                        new_col = sort( repmat(assignment_inds',size(assignment_matrix,1)/length(assignment_inds),1) );
+                        assignment_matrix = [assignment_matrix new_col];
+                    else
+                        assignment_matrix = assignment_inds';
+                    end
+                end
+            end
 
+            % remove labelings that contain multiple assignments / don't have all objects
+            rows_remove = false(size(assignment_matrix,1),1);
+            for ri = 1:size(assignment_matrix,1)
+                if ~isempty(setsub( 1:num_situation_objects, assignment_matrix(ri,:) ))
+                    rows_remove(ri) = true;
+                end
+            end
+            assignment_matrix(rows_remove,:) = [];
+            num_assignments = size(assignment_matrix,1);
+
+            % generate label structs for each (basically just replicating the existing one and using
+            % different adjusted labels
+            lb_structs_possible = repmat( lb_struct, num_assignments, 1 );
+            temp_objs = [situation_struct.situation_objects 'unknown_object'];
+            for i = 1:size(assignment_matrix,1)
+                temp_inds = assignment_matrix(i,:);
+                temp_inds(eq(temp_inds,0)) = num_situation_objects + 1;
+                lb_structs_possible(i).labels_adjusted = temp_objs( temp_inds );
+            end
+        
+            lb_struct = lb_structs_possible(randi(length(lb_structs_possible)));
+        
         end
-        
-        
-        
+            
 end
 
 

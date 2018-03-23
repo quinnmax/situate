@@ -212,7 +212,14 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
                     num_iterations_run = sum(~eq(0,[run_data_cur.agent_record.interest]));
                     labels_missed = setdiff(cur_parameterization.situation_objects,run_data_cur.workspace_final.labels);
                     labels_temp = [run_data_cur.workspace_final.labels labels_missed];
-                    GT_IOUs = [run_data_cur.workspace_final.GT_IOU nan(1,length(labels_missed))];
+                    % try to allign workspace boxes with gt
+                    cur_fname_lb = [fileparts_mq(cur_fname_im,'path/name') '.json'];
+                    if exist(cur_fname_lb,'file')
+                        reconciled_workspace = situate.workspace_score(run_data_cur.workspace_final, cur_fname_lb, cur_parameterization );
+                    else
+                        reconciled_workspace = run_data_cur.workspace_final;
+                    end
+                    GT_IOUs = [reconciled_workspace.GT_IOU nan(1,length(labels_missed))];
                     [~,sort_order] = sort( labels_temp );
                     IOUs_of_last_run = num2str(GT_IOUs(sort_order));
                     fprintf('%s, %3d / %d, %4d steps, %6.2fs,  IOUs: [%s] \n', cur_parameterization.description, cur_image_ind, length(fnames_im_test), num_iterations_run, toc, IOUs_of_last_run );
