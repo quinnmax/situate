@@ -110,6 +110,8 @@ function h = workspace_draw( input, p, workspace, font_size )
             
             if exist('p','var') && ~isempty(p) && isfield(p,'situation_objects')
                 y_position = y_positions(strcmp(workspace.labels{wi},p.situation_objects));
+            else
+                y_position = y_positions(wi);
             end
             
             t3 = text( x_position, y_position, detailed_text);

@@ -17,7 +17,7 @@ function [workspace, label_used] = workspace_score( workspace, lb_input, situati
         lb_fname = lb_input.fname_lb;
         [~,lbs] = situate.labl_load( lb_fname, situation_struct );
     elseif isempty(lb_input)
-        warning('called with an empty label file');
+        % warning('called with an empty label file');
         return;
     end
     

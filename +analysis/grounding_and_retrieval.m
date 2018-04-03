@@ -20,8 +20,17 @@ function [] = grounding_and_retrieval( input, varargin )
 
 
 if ~exist('input','var') || isempty(input)
-    input = {'results/dogwalking_positives_test_2018.03.27.23.28.01/parameters_situate_w_pool_priming_fold_01_2018.03.28.00.45.43.mat';...
-             'results/dogwalking_negatives_check_2018.03.28.08.12.24/parameters_situate_w_pool_priming_fold_01_2018.03.28.09.43.47.mat'};
+    % input = {'/Users/Max/Dropbox/Projects/situate/results/dogwalking_positives_test_2018.03.27.23.28.01/parameters_situate_w_pool_priming_fold_01_2018.03.28.00.45.43.mat'};
+    
+    % input = {'/Users/Max/Dropbox/Projects/situate/results/dogwalking_negatives_check_2018.03.28.08.12.24'};
+    
+    %input = {'/Users/Max/Dropbox/Projects/situate/results/dogwalking_positives_test_2018.03.27.23.28.01/parameters_situate_w_pool_priming_fold_01_2018.03.28.00.45.43.mat'; ...
+    %         '/Users/Max/Dropbox/Projects/situate/results/dogwalking_negatives_check_2018.03.28.08.12.24'};
+    
+    input = {'/Users/Max/Dropbox/Projects/situate/results/dogwalking_positives_test_2018.03.27.23.28.01/parameters_situate_w_pool_priming_fold_01_2018.03.28.00.45.43.mat'; ...
+             '/Users/Max/Dropbox/Projects/situate/results/dogwalking_negatives_general_2018.03.30.17.52.03'};
+    
+         
     varargin = {'rcnn box data/'};
     warning('using debug directories, not real analysis');
     
@@ -74,10 +83,14 @@ end
 
     condition_structs_unique = {};
     condition_struct_assignments = zeros(1,length(mat_file_names));
+    raw_descriptions = cell(1,length(mat_file_names));
     for fi = 1:length(mat_file_names)
         temp = load( mat_file_names{fi}, 'p_condition' );
         cur_condition = temp.p_condition;
-        cur_condition.seed_test = [];
+        raw_descriptions{fi} = cur_condition.description;
+        % ignore these fields for purposes of grouping conditions
+        cur_condition.seed_test   = [];
+        cur_condition.description = [];
 
         [cur_condition_assignment, equality_caveats] = find( cellfun( @(x) isequal_struct( cur_condition, x ), condition_structs_unique ) );
         if isempty(cur_condition_assignment)
@@ -88,6 +101,11 @@ end
         end
     end
     num_conditions = length(condition_structs_unique);
+    
+    % give descriptions back
+    for ci = 1:num_conditions
+        condition_structs_unique{ci}.description = raw_descriptions{ find(eq(ci,condition_struct_assignments),1,'first') };
+    end
  
     % make sure everyone is looking for the same situation
     situation_struct = [];
@@ -224,31 +242,51 @@ end
 
     if ~isempty( additional_results_directory )
       
-        num_conditions = num_conditions + 1;
+        if exist( fullfile( additional_results_directory, 'processed_box_data.mat'), 'file' )
+            
+            additional_results = load( fullfile( additional_results_directory, 'processed_box_data.mat') );
+            display([ 'loaded addtional results from : ' fullfile( additional_results_directory, 'processed_box_data.mat') ]);
+            
+        else
         
-        for imi = 1:num_images
-            
-            im_fname = im_fnames{imi};
-            workspaces_final{num_conditions}(imi) = csvs2workspace( additional_results_directory, im_fname, situation_struct  );
-            
-            workspaces_final{num_conditions}(imi) = ...
-                situate.workspace_score( ...
-                    workspaces_final{num_conditions}(imi), ...
-                    lb_fnames{imi}, ...
-                    situation_struct );
-                
-            workspaces_final{num_conditions}(imi).iteration = 0;
+            additional_results = [];
+            additional_results.im_fnames = im_fnames;
+            additional_results.lb_fnames = lb_fnames;
+            additional_results.situation_struct = situation_struct;
+
+            for imi = 1:num_images
+
+                im_fname = im_fnames{imi};
+                additional_results.workspaces_final(imi) = csvs2workspace( additional_results_directory, im_fname, situation_struct  );
+
+                additional_results.workspaces_final(imi) = ...
+                    situate.workspace_score( ...
+                        additional_results.workspaces_final(imi), ...
+                        additional_results.lb_fnames{imi}, ...
+                        additional_results.situation_struct );
+
+                additional_results.workspaces_final(imi).iteration = 0;
+
+                progress(imi,num_images,['processing boxes loaded from ' additional_results_directory]);
+
+            end
+
+            save( fullfile( additional_results_directory, 'processed_box_data.mat'), '-struct', 'additional_results' );
             
         end
         
-        final_ious{num_conditions}                   = vertcat(workspaces_final{end}.GT_IOU);
-        final_support_internal{num_conditions}       = vertcat(workspaces_final{end}.total_support);
+        num_conditions = num_conditions + 1;
+        
+        final_ious{num_conditions}                   = vertcat(additional_results.workspaces_final.GT_IOU);
+        final_support_internal{num_conditions}       = vertcat(additional_results.workspaces_final.total_support);
         final_support_external{num_conditions}       = zeros( num_images, num_situation_objects );
-        final_support_total{num_conditions}          = vertcat(workspaces_final{end}.total_support);
-        final_support_full_situation{num_conditions} = vertcat( workspaces_final{end}.situation_support );
+        final_support_total{num_conditions}          = vertcat(additional_results.workspaces_final.total_support);
+        final_support_full_situation{num_conditions} = vertcat( additional_results.workspaces_final.situation_support );
+        workspaces_final{num_conditions}             = additional_results.workspaces_final;
         
         condition_structs_unique{num_conditions}.description = additional_results_directory;
         condition_structs_unique{num_conditions}.num_iterations = nan;
+        condition_structs_unique{num_conditions}.situation_objects = situation_objects;
             
     end
     
@@ -400,6 +438,13 @@ end
         end
     end
     
+    AUROC = nan(1,num_conditions);
+    FPR   = cell(1,num_conditions);
+    TPR   = cell(1,num_conditions);
+    for ci = 1:num_conditions
+        [AUROC(ci), TPR{ci}, FPR{ci}] = ROC( final_support_full_situation{ci}, is_situation_instance, 1 );
+    end
+    
     % save results
     
     results_struct_retrieval = [];
@@ -413,6 +458,10 @@ end
     results_struct_retrieval.mean_rank = cellfun( @mean, rank );
     results_struct_retrieval.median_rank = cellfun( @median, rank );
     
+    results_struct_retrieval.FPR = FPR;
+    results_struct_retrieval.TPR = TPR;
+    results_struct_retrieval.AUROC = AUROC;
+    
     save( fullfile(results_directory, ['results_retrieval.mat']), '-struct', 'results_struct_retrieval' );
     
    
@@ -424,8 +473,11 @@ end
         
         descriptions = cellfun( @(x) x.description, condition_structs_unique, 'UniformOutput', false );
         descriptions = cellfun( @(x) strrep( x, '_', ' ' ), descriptions, 'UniformOutput', false );
-        descriptions = cellfun( @(x) strtrim( strrep( x, 'parameters', '' ) ), descriptions, 'UniformOutput', false );
-    
+        descriptions = cellfun( @(x) strrep( x, '/', '' ),  descriptions, 'UniformOutput', false );
+        descriptions = cellfun( @(x) strrep( x, '.json', '' ),  descriptions, 'UniformOutput', false );
+        descriptions = cellfun( @(x) strrep( x, 'parameters', '' ),  descriptions, 'UniformOutput', false );
+        descriptions = cellfun( @strtrim, descriptions, 'UniformOutput', false );
+        
         % successful groundings 
         %   x axis, threshold
         %   y axis, count
@@ -434,64 +486,86 @@ end
         
         num_pos_images = sum( is_situation_instance );
         
-        figure();
-        for oi = 1:num_situation_objects
-            subplot2(1,num_situation_objects+1,1,oi);
+        if num_pos_images > 0
+        
+            fig_title = 'object grounding quality';
+            h = figure('color','white','Name',fig_title,'position',[720 2 300*(num_situation_objects+1) 400]);
+            
+            for oi = 1:num_situation_objects
+                subplot2(1,num_situation_objects+1,1,oi);
+                for ci = 1:num_conditions
+                    plot( iou_thresholds, sum( object_detections_at_iou_true_pos{ci}(:,:,oi), 1 ), linespec{ci} );
+                    hold on;
+                end
+                title( situation_objects{oi});
+                xlabel('IOU thresholds');
+                ylabel('detection count');
+                xlim([0 1]);
+                ylim([0 1.05*num_pos_images]);
+            end
+
+            subplot2(1,num_situation_objects+1,1,num_situation_objects+1);
             for ci = 1:num_conditions
-                plot( iou_thresholds, sum( object_detections_at_iou_true_pos{ci}(:,:,oi), 1 ), linespec{ci} );
+                plot( iou_thresholds, sum(full_situation_detections_at_iou_true_pos{ci},1), linespec{ci} );
                 hold on;
             end
-            title( situation_objects{oi});
+            title( 'full situation' );
             xlabel('IOU thresholds');
             ylabel('detection count');
             xlim([0 1]);
             ylim([0 1.05*num_pos_images]);
-        end
+
+            for bi = 1:num_situation_objects + 1
+                subplot2(1,num_situation_objects+1,1,bi);
+                plot([.5 .5],[0 num_pos_images],'--','Color',[.75 .75 .75]);
+                plot([0 1],[num_pos_images num_pos_images], '--','Color',[.75 .75 .75]);
+            end
+            legend(descriptions, 'Location', 'northeast' );
+            
+            saveas(h,fullfile(results_directory,fig_title),'png')
         
-        subplot2(1,num_situation_objects+1,1,num_situation_objects+1);
-        for ci = 1:num_conditions
-            plot( iou_thresholds, sum(full_situation_detections_at_iou_true_pos{ci},1), linespec{ci} );
-            hold on;
         end
-        title( 'full situation' );
-        xlabel('IOU thresholds');
-        ylabel('detection count');
-        xlim([0 1]);
-        ylim([0 1.05*num_pos_images]);
+            
         
-        for bi = 1:num_situation_objects + 1
-            subplot2(1,num_situation_objects+1,1,bi);
-            plot([.5 .5],[0 num_pos_images],'--','Color',[.75 .75 .75]);
-            plot([0 1],[num_pos_images num_pos_images], '--','Color',[.75 .75 .75]);
-        end
-        legend(descriptions, 'Location', 'northeast' );
         
         % detections over iteration
         %   x axis, iteration
         %   y axis, cummulative full detections
         %   lines, conditions
         
+        if num_pos_images > 0
         
-        
-        figure;
-        x = 1:max(cellfun( @(x) x.num_iterations, condition_structs_unique ));
-        for ci = 1:num_conditions
-            y = arrayfun( @(x) sum( detection_iteration{ci}(:,5) < x ), x );
-            plot( x,y, linespec{ci} );
-            hold on;
+            fig_title = 'detections over iteration';
+            h = figure('color','white','Name',fig_title,'position',[720 2 500 400]);
+            x = 1:max(cellfun( @(x) x.num_iterations, condition_structs_unique ));
+            for ci = 1:num_conditions
+                y = arrayfun( @(x) sum( detection_iteration{ci}(:,5) < x ), x );
+                plot( x,y, linespec{ci} );
+                hold on;
+            end
+            plot( x,repmat(num_pos_images,1,length(x)), '--','Color',[.75 .75 .75] );
+            legend( descriptions, 'Location', 'northeast');
+            ylim([1 1.1*num_pos_images])
+            xlabel('iteration');
+            ylabel({'situation detections','(cumulative)'})
+            saveas(h,fullfile(results_directory,fig_title),'png')
+            
         end
-        plot( x,repmat(num_pos_images,1,length(x)), '--','Color',[.75 .75 .75] );
-        legend( descriptions, 'Location', 'northeast');
-        ylim([1 1.05*num_pos_images])
-        
+
  
+        
     % visualize retrieval results
-        figure;
+        fig_title = 'retrieval results';
+        h = figure('color','white','Name',fig_title,'position',[720 2 400*num_conditions 400]);
+        
         max_y = 0;
+        all_ranks = [results_struct_retrieval.rank{:}];
+        upper_rank = prctile( all_ranks(:), 95 );
+        bins = 10;
         for ci = 1:num_conditions
             subplot(1,num_conditions,ci);
-            hist( results_struct_retrieval.rank{ci}, linspace(5,95,10) );
-            n = hist( results_struct_retrieval.rank{ci}, linspace(5,95,10) );
+            hist( results_struct_retrieval.rank{ci}, linspace(0,upper_rank,bins) );
+            n = hist( results_struct_retrieval.rank{ci}, linspace(0,upper_rank,bins) );
             if max(n) > max_y, max_y = max(n); end
             title( descriptions{ci} );
             xlabel('positive image rank');
@@ -499,10 +573,124 @@ end
         end
         for ci = 1:num_conditions
             subplot(1,num_conditions,ci)
-            xlim([0 100]);
-            ylim([0 max_y*1.1]);
-            text( 60, max_y*1.05, ['median rank: ' num2str(results_struct_retrieval.median_rank(ci))] );
+            xlim([0-upper_rank/bins upper_rank+upper_rank/bins]);
+            ylim([0 max(1,max_y*1.1)]);
+            text( .6*upper_rank, max(1,max_y*1.1)*.95, ['median rank: ' num2str(results_struct_retrieval.median_rank(ci))] );
         end
+        
+        saveas(h,fullfile(results_directory,fig_title),'png')
+        
+        
+        
+    % biggest hits and misses
+        fig_title = 'support histograms';
+        h = figure('color','white','Name',fig_title,'position',[720 2 900 600]);
+
+        for ci = 1:num_conditions
+            subplot2(num_conditions, 2, ci, 1);
+            hist( final_support_full_situation{ci}(is_situation_instance) );
+            ylabel( descriptions{ci} );
+            xlim([-.1,1.1])
+            title('positives');
+
+            subplot2(num_conditions, 2, ci, 2);
+            hist( final_support_full_situation{ci}(~is_situation_instance) );
+            xlim([-.1,1.1])
+            title('negatives');
+        end
+
+        saveas(h,fullfile(results_directory,fig_title),'png')
+
+    
+    % roc analysis
+        if any(is_situation_instance) && any(~is_situation_instance)
+           
+            fig_title = ['ROC curves'];
+            h = figure('color','white','Name',fig_title,'position',[720 2 500 400]);
+
+            temp = descriptions;
+            
+            for ci = 1:num_conditions
+                plot(results_struct_retrieval.FPR{ci}, results_struct_retrieval.TPR{ci},linespec{ci} );
+                hold on;
+                temp{ci} = [temp{ci} ', AUROC: ' num2str(results_struct_retrieval.AUROC(ci))];
+            end
+            legend( temp, 'Location', 'southeast' );
+            xlabel('FPR')
+            ylabel('TPR');
+            
+            saveas(h,fullfile(results_directory,fig_title),'png')
+        end
+        
+    
+    % pos images
+        if any(is_situation_instance)
+            num_examples = 4;
+            for ci = 1:num_conditions
+
+                [~,sort_order_high] = sort( final_support_full_situation{ci}, 'descend' );
+                [~,sort_order_low]  = sort( final_support_full_situation{ci}, 'ascend'  );
+                % remove neg instances
+                sort_order_high_pos = setsub( sort_order_high, find(~is_situation_instance ) );
+                sort_order_low_pos  = setsub( sort_order_low,  find(~is_situation_instance ) );
+
+                fig_title = ['high low support, positive instances, ' descriptions{ci}];
+                h = figure('color','white','Name',fig_title,'position',[720 2 1400 600]);
+
+                for imi = 1:num_examples
+                    subplot2(2,num_examples,1,imi);
+                    cur_ind = sort_order_high_pos(imi);
+                    situate.workspace_draw( im_fnames{cur_ind}, condition_structs_unique{ci}, workspaces_final{ci}(cur_ind) );
+                    xlabel(sprintf('situation support: %f', final_support_full_situation{ci}(cur_ind)));
+                    if imi == 1, ylabel(sprintf('%s\n%s\n%s',descriptions{ci},'positive instances','high support')); end
+
+                    subplot2(2,num_examples,2,imi);
+                    cur_ind = sort_order_low_pos(imi);
+                    situate.workspace_draw( im_fnames{cur_ind}, condition_structs_unique{ci}, workspaces_final{ci}(cur_ind) );
+                    xlabel(sprintf('situation support: %f', final_support_full_situation{ci}(cur_ind)));
+                    if imi == 1, ylabel(sprintf('%s\n%s\n%s',descriptions{ci},'positive instances','low support')); end
+                end
+
+                saveas(h,fullfile(results_directory,fig_title),'png')
+
+            end
+        end
+    
+    % neg images
+        if any( ~is_situation_instance )
+            num_examples = 4;
+            for ci = 1:num_conditions
+
+                [~,sort_order_high] = sort( final_support_full_situation{ci}, 'descend' );
+                [~,sort_order_low]  = sort( final_support_full_situation{ci}, 'ascend'  );
+                % remove pos instances
+                sort_order_high_neg = setsub( sort_order_high, find(is_situation_instance ) );
+                sort_order_low_neg  = setsub( sort_order_low,  find(is_situation_instance ) );
+
+                fig_title = ['high low support, negative instances, ' descriptions{ci}];
+                h = figure('color','white','Name',fig_title,'position',[720 2 1400 600]);
+
+                for imi = 1:num_examples
+                    subplot2(2,num_examples,1,imi);
+                    cur_ind = sort_order_high_neg(imi);
+                    situate.workspace_draw( im_fnames{cur_ind}, condition_structs_unique{ci}, workspaces_final{ci}(cur_ind) );
+                    xlabel(sprintf('situation support: %f', final_support_full_situation{ci}(cur_ind)));
+                    if imi == 1, ylabel(sprintf('%s\n%s\n%s',descriptions{ci},'negative instances','high support')); end
+
+                    subplot2(2,num_examples,2,imi);
+                    cur_ind = sort_order_low_neg(imi);
+                    situate.workspace_draw( im_fnames{cur_ind}, condition_structs_unique{ci}, workspaces_final{ci}(cur_ind) );
+                    xlabel(sprintf('situation support: %f', final_support_full_situation{ci}(cur_ind)));
+                    if imi == 1, ylabel(sprintf('%s\n%s\n%s',descriptions{ci},'negative instances','low support')); end
+                end
+
+                saveas(h,fullfile(results_directory,fig_title),'png')
+
+            end
+        end
+    
+    
+
         
        
     
