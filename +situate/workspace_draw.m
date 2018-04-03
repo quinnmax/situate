@@ -49,7 +49,7 @@ function h = workspace_draw( input, p, workspace, font_size )
         
     %% draw workspace boxes onto main image
     
-        if ~exist('p','var') || isempty(p)
+        if ~exist('p','var') || isempty(p) || ~isfield(p,'thresholds')
             total_support_threshold_final = .5;
         else
             total_support_threshold_final = p.thresholds.total_support_final;
@@ -98,7 +98,7 @@ function h = workspace_draw( input, p, workspace, font_size )
             
             x_position = workspace.im_size(2)+10;
             
-            if ~exist('p','var') || isempty(p)
+            if ~exist('p','var') || isempty(p) || ~isfield(p,'situation_objects')
                 num_objs = length(workspace.labels);
             else
                 num_objs = length(p.situation_objects);
@@ -108,7 +108,7 @@ function h = workspace_draw( input, p, workspace, font_size )
             y_positions = y_positions(2:2:end-1);
             
             
-            if exist('p','var') && ~isempty(p)
+            if exist('p','var') && ~isempty(p) && isfield(p,'situation_objects')
                 y_position = y_positions(strcmp(workspace.labels{wi},p.situation_objects));
             end
             

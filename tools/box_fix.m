@@ -1,5 +1,7 @@
 function [ success, box_r0rfc0cf, box_xywh, box_xcycwh, aspect_ratio, area_ratio ] = box_fix( box, format_str, image_size )
-% [ box_r0rfc0cf, box_xywh, box_xcycwh, aspect_ratio, area_ratio ] = box_fix( box, format_str, image_size );
+% [ success, box_r0rfc0cf, box_xywh, box_xcycwh, aspect_ratio, area_ratio ] = box_fix( box, format_str, image_size );
+% 
+% this rounds off the box parameters, keeps them in image bounds, etc
 
     % process input boxes
         switch format_str
@@ -11,8 +13,8 @@ function [ success, box_r0rfc0cf, box_xywh, box_xcycwh, aspect_ratio, area_ratio
             case 'xywh'
                 c0 = box(:,1);
                 r0 = box(:,2);
-                cf = c0 + box(:,3) - 1;
-                rf = r0 + box(:,4) - 1;
+                cf = box(:,1) + box(:,3) - 1;
+                rf = box(:,2) + box(:,4) - 1;
             case 'xcycwh'
                 c0 = box(:,1) - box(:,3)/2 + .5;
                 cf = c0 + box(3) - 1;

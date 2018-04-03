@@ -60,10 +60,10 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
             % use everything in directories
             disp('using all images from training / testing directories');
             data_split_struct = [];
-            data_split_struct.fnames_lb_train = arrayfun( @(x) x.name, dir([experiment_struct.experiment_settings.directory_train, '*.json']), 'UniformOutput', false );
-            data_split_struct.fnames_lb_test  = arrayfun( @(x) x.name, dir([experiment_struct.experiment_settings.directory_test,  '*.json']), 'UniformOutput', false );
-            data_split_struct.fnames_im_train = arrayfun( @(x) x.name, dir([experiment_struct.experiment_settings.directory_train, '*.jpg']),  'UniformOutput', false );
-            data_split_struct.fnames_im_test  = arrayfun( @(x) x.name, dir([experiment_struct.experiment_settings.directory_test,  '*.jpg']),  'UniformOutput', false );
+            data_split_struct.fnames_lb_train = arrayfun( @(x) x.name, dir(fullfile(experiment_struct.experiment_settings.directory_train, '*.json')), 'UniformOutput', false );
+            data_split_struct.fnames_lb_test  = arrayfun( @(x) x.name, dir(fullfile(experiment_struct.experiment_settings.directory_test,  '*.json')), 'UniformOutput', false );
+            data_split_struct.fnames_im_train = arrayfun( @(x) x.name, dir(fullfile(experiment_struct.experiment_settings.directory_train, '*.jpg')),  'UniformOutput', false );
+            data_split_struct.fnames_im_test  = arrayfun( @(x) x.name, dir(fullfile(experiment_struct.experiment_settings.directory_test,  '*.jpg')),  'UniformOutput', false );
         end
         
         if ~train_test_dirs_match && have_training_split_dir

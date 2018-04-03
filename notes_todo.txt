@@ -1,5 +1,5 @@
 
-when situate tries to load models from "saved_models," if that directory doesn't exist, it crashes.
+x when situate tries to load models from "saved_models," if that directory doesn't exist, it crashes.
 make sure that it just creates that directory if it doesn't already exist.
 
 x the gt IOU is not correct in the workspace. 
@@ -40,14 +40,20 @@ x melanie's warnings when starting up matlab
 
 continue to update analysis code
 
-have an explicit setting for the max number of boxes taken from the rcnn like mechanism
+x have an explicit setting for the max number of boxes taken from the rcnn like mechanism
 
 i think the way we have it may create a second attempted entry advantage
 	box a is checked in for person 1
 	box b is attempted for person 1, rejected
 	box a is attempted for person 2, accepted, replaces existing entry for person 1 (higher external support)
 	now we've already tried box b for person 1 and moved on, so won't get another shot
+seems to be an edge case though...
 
+do another pass through on the documentation
+
+push
+
+write 
 
 
 

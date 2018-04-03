@@ -1,5 +1,14 @@
-function [classifier_output, gt_iou, cnn_feature_vect]    = IOU_ridge_regression_apply( classifier_struct, target_class, im, box_r0rfc0cf, lb )
-% [classifier_output, ground_truth_iou, cnn_feature_vect] = IOU_ridge_regression_apply( classifier_struct, target_class, im, box_r0rfc0cf, [lb] )
+function [classifier_output, cnn_feature_vect] = IOU_ridge_regression_apply( classifier_struct, target_class, im, box_r0rfc0cf, varargin )
+% [classifier_output, cnn_feature_vect] = IOU_ridge_regression_apply(classifier_struct, target_class, im, box_r0rfc0cf );
+%
+% given 
+%   a trained model (classifier_struct ), 
+%   a target class known to the model (string), 
+%   an image,
+%   a bounding box specifying a region in the image (r0 rf c0 cf format), 
+% produces
+%   estimate the intersection over union between the proposed box and a ground truth box
+%   the cnn feature vector that was generated during the estimation
 
     persistent im_old;
     persistent box_r0rfc0cf_old;
@@ -41,12 +50,5 @@ function [classifier_output, gt_iou, cnn_feature_vect]    = IOU_ridge_regression
     if classifier_output > 5 || classifier_output < -1.5
        warning(sprintf('classifiers.IOU_ridge_regression_apply is giving some extreme values: %f',classifier_output)); 
     end
-    
-    if exist('lb','var') && ~isempty(lb) && any(ismember(lb.labels_adjusted,target_class))
-        gt_box_r0rfc0cf = lb.boxes_r0rfc0cf( strcmp(target_class,lb.labels_adjusted), : );
-        gt_iou = intersection_over_union( box_r0rfc0cf, gt_box_r0rfc0cf, 'r0rfc0cf' );
-    else
-        gt_iou = nan;
-    end
-
+  
 end

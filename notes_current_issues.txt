@@ -1,13 +1,61 @@
-when situate tries to load models from "saved_models," if that directory exists, it crashes.
-make sure that it just creates that directory if it doesn't already exist.
+x when situate tries to load models from "saved_models," if that directory exists, it crashes.
 
-the gt IOU is not correct in the workspace. 
+x the gt IOU is not correct in the workspace. 
 check for when it's adjusted to make sure the correct boxes are being compared (and that the workspace entry is being properly updated when something goes in and is replaced)
 
-add the new RCNN pre-computed box files, make sure that pipeline works properly
+x add the new RCNN pre-computed box files, make sure that pipeline works properly
+
+x include workspace / gt reconciliation as a function external to 
+
+x in the results file, copy the experiment script, situation struct, and situate parameters used in the run
 
 
 
+before making code public
+
+	clean out tools folder
+
+	x clean up the image label loader
+
+	analysis script
+		one for grounding analysis
+		one for retrieval analysis
+		one for outputting final workspaces (subjective) 
+		(change naming convention of saved workspaces, situation score, gt pos-neg)
+		one that calls all of them
+		
+		one for agent-level analysis (good for setting up detailed analyses)
+		
+		put into it's own little package
+
+	another pass at the readme (esp wrt analysis scripts)
 
 
+
+experiments for paper
+
+	situations
+		dogwalking
+		handhsaking
+		pingpong
+	data
+		positives test set
+		large negatives set
+		hard-negatives set
+	parameters
+		uniform
+		naive faster rcnn (just top box -> situation score)
+		situate as proposed 
+			detection-based classifier (not iou est)
+			fixed internal-external support values
+			local search, no box-adjust
+		situate final
+			iou estimation classifier
+			internal-external support based on AUROC
+			box-adjust
+			pool priming with rcnn
+		situate with faster-rcnn boxes
+			(same, but faster-rcnn boxes for priming)
+	
+		
 

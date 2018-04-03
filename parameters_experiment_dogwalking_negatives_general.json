@@ -9,16 +9,16 @@
 
 	"experiment_settings" : {
 
-			"description" : "dogwalking validaton images with visualizer",
+			"description" : "dogwalking negatives general",
 
 			"directory_train" : "/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/",
-			"directory_test"  : "/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/",
+			"directory_test"  : "/Users/Max/Documents/MATLAB/data/situate_images/Negatives_general/",
 
 			"use_parallel"					: 0, 
 			
 			"run_analysis_after_completion"	: 0,
 
-			"use_visualizer" : 1,
+			"use_visualizer" : 0,
 
 			// additional visualization options
 		 	"viz_options" : {
@@ -30,7 +30,7 @@
 
 			// training / testing image lists
 			// empty should use all files in specified folders
-			"training_testing_split_directory" : "data_splits/dogwalking_validation/",
+			"training_testing_split_directory" : "",
 
 			// number of folds
 			// 	if image lists were provided
@@ -47,5 +47,7 @@
 			// if specified, this will be used to seed the RNG during testing.
 			// otherwise, each parameterization will get a different time-based seed
 			"testing_seed"  : ""
+
 	}
+
 }

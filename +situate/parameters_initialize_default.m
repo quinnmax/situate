@@ -15,6 +15,7 @@ function p = parameters_initialize_default()
         p.viz_options.on_end                = false;
         p.viz_options.start_paused          = false;
         
+    p.situation_description             = '';
     p.situation_objects                 = {};
     p.situation_objects_possible_labels = {{},{}};
     

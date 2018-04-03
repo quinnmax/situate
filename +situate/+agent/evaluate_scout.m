@@ -1,24 +1,17 @@
 
-function [agent_pool,d] = evaluate_scout( agent_pool, agent_index, p, d, im, label, learned_models ) 
+function [agent_pool,d] = evaluate_scout( agent_pool, agent_index, p, d, im, label_struct, learned_models ) 
 % function [agents_out, updated_distribution_structure ] = agents.evaluate_scout( agent_pool,
 % agent_index, param_struct, dist_struct, image, label_file, learned_models );
-%
 %
 % a few different behaviors depending on what the scout has coming in.
 %
 % if has an interest and a location already assigned, just apply classifier
 % if has an interest and no location, sample a location and apply classifier
-% if has no interest and no location, sample both and apply classifier
+% if has no interest and no location, sample both and apply classifier all classes, pick best
 % if has no interest but does have a location, then this is a priming box, so we'll eval for
 %   each object type (at a computational discount, as the classifiers will all have the same
 %   expensive feature transform)
-%
-% todo: should the oracel classifier include loading up all of the label data as the training proceedure. 
-%   Then application of the classifier would just be a look up, rather than something that it does
-%   in here?
 
-
-    
     cur_agent = agent_pool(agent_index); % for convenience. will be put back into the pool array after
     
     has_interest = ~isempty( cur_agent.interest );
@@ -30,37 +23,30 @@ function [agent_pool,d] = evaluate_scout( agent_pool, agent_index, p, d, im, lab
 
     if has_interest &&  has_box
         % no sampling to do, just eval density
-        
         sample_interest = false;
         sample_box      = false;
         update_density  = true;
         
     elseif has_interest && ~has_box
         % sample box for that interest type
-        
         sample_interest = false;
         sample_box      = true;
         update_density  = true;
         
     elseif ~has_interest && has_box
         % eval that box for each interest, then finalize the interest
-        
         sample_interest = false;
         sample_box      = false;
         update_density  = false;
-        
         cur_agent.interest = p.situation_objects;
         
     elseif ~has_interest && ~has_box
         % sample an interest, then sample a box for that interest
-        
         sample_interest = true;
         sample_box      = true;
         update_density  = true;
         
     end
-    
-    
     
     
     
@@ -122,8 +108,7 @@ function [agent_pool,d] = evaluate_scout( agent_pool, agent_index, p, d, im, lab
                     learned_models.classifier_model, ...
                     cur_agent.interest{oi}, ...
                     im, ...
-                    cur_agent.box.r0rfc0cf, ...
-                    label);
+                    cur_agent.box.r0rfc0cf, label_struct );
             end
             [~,winning_oi] = max( classification_scores );
             classification_score = classification_scores(winning_oi);
@@ -139,8 +124,7 @@ function [agent_pool,d] = evaluate_scout( agent_pool, agent_index, p, d, im, lab
                 learned_models.classifier_model, ...
                 cur_agent.interest, ...
                 im, ...
-                cur_agent.box.r0rfc0cf, ...
-                label);
+                cur_agent.box.r0rfc0cf, label_struct );
             
         else
             
@@ -157,11 +141,11 @@ function [agent_pool,d] = evaluate_scout( agent_pool, agent_index, p, d, im, lab
     % figure out GROUND_TRUTH support
     % getting it for displaying progress during a run, or if we're using IOU-oracle as our eval method
     
-        if ~isempty(label) && ismember( cur_agent.interest, label.labels_adjusted )
-            relevant_label_ind = find(strcmp(cur_agent.interest,label.labels_adjusted),1,'first');
-            ground_truth_box_r0rfc0cf = label.boxes_r0rfc0cf(relevant_label_ind,:);
+        if ~isempty(label_struct) && ismember( cur_agent.interest, label_struct.labels_adjusted )
+            relevant_label_ind = find(strcmp(cur_agent.interest,label_struct.labels_adjusted),1,'first');
+            ground_truth_box_r0rfc0cf = label_struct.boxes_r0rfc0cf(relevant_label_ind,:);
             cur_agent.support.GROUND_TRUTH = intersection_over_union( cur_agent.box.r0rfc0cf, ground_truth_box_r0rfc0cf, 'r0rfc0cf', 'r0rfc0cf' );
-            cur_agent.GT_label_raw = label.labels_raw{relevant_label_ind};
+            cur_agent.GT_label_raw = label_struct.labels_raw{relevant_label_ind};
         else
             cur_agent.support.GROUND_TRUTH = nan;
             cur_agent.GT_label_raw = '';
@@ -180,5 +164,7 @@ function [agent_pool,d] = evaluate_scout( agent_pool, agent_index, p, d, im, lab
             agent_pool(end).type = 'reviewer';
             agent_pool(end).urgency = p.agent_urgency_defaults.reviewer;
         end
-       
+   
+        
+        
 end

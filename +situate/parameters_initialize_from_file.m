@@ -74,6 +74,7 @@ function p = parameters_initialize_from_file( params_situate_fname )
     
     %% parameters from situation definition
     
+    p.situation_description = '';
     p.situation_objects = {};
     p.situation_objects_possible_labels = {{}};
     p.situation_objects_urgency_pre  = [];

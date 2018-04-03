@@ -2,17 +2,17 @@
 	"situation_definition_fname" : "situation_definitions/dogwalking.json",
 			
 	"situate_parameterizations_fnames" : [
-				//"parameters_situate_default.json"
-				"parameters_situate_w_pool_priming.json"
-				//"parameters_situate_mm.json"
+				"parameters_situate_homebrew_rcnn_priming.json"
+				//"parameters_situate_faster_rcnn_priming.json"
+				//"parameters_situate_uniform.json"
 			],	
 
 	"experiment_settings" : {
 
-			"description" : "dogwalking_negatives_check",
+			"description" : "dogwalking negatives check",
 
 			"directory_train" : "/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/",
-			"directory_test"  : "/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_negative/",
+			"directory_test"  : "/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_hard_neg/",
 
 			"use_parallel"					: 0, 
 			
@@ -29,8 +29,7 @@
 	 		},
 
 			// training / testing image lists
-			// 	if directory_train and directory_test are the same, 
-			// 	then the division of images specified in this directory will be used
+			// empty should use all files in specified folders
 			"training_testing_split_directory" : "",
 
 			// number of folds

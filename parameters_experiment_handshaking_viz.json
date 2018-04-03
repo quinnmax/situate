@@ -2,9 +2,8 @@
 	"situation_definition_fname" : "situation_definitions/handshaking.json",
 			
 	"situate_parameterizations_fnames" : [
-				//"parameters_situate_default.json"
-				"parameters_situate_w_pool_priming.json"
-				//"parameters_situate_mm.json"
+				"parameters_situate_homebrew_rcnn_priming.json"
+				//"parameters_situate_faster_rcnn_priming.json"
 				//"parameters_situate_uniform.json"
 			],	
 

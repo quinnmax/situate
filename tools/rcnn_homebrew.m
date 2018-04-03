@@ -43,17 +43,17 @@ function [boxes_r0rfc0cf_return, class_assignments_return, confidences_return, c
 
     %% process inputs
     
-    if isempty( box_area_ratios )
-        box_area_ratios = [1/16 1/9 1/4];
-    end
-    
-    if isempty( box_aspect_ratios )
-        box_aspect_ratios = [1/2 1/1 2/1];
-    end
-    
-    if isempty( box_overlap_ratio )
-        box_overlap_ratio = .5;
-    end
+        if isempty( box_area_ratios )
+            box_area_ratios = [1/16 1/9 1/4];
+        end
+
+        if isempty( box_aspect_ratios )
+            box_aspect_ratios = [1/2 1/1 2/1];
+        end
+
+        if isempty( box_overlap_ratio )
+            box_overlap_ratio = .5;
+        end
    
     % figure out first two parts of varargin
     % need to end up with classification functions and box-adjust functions
@@ -102,8 +102,6 @@ function [boxes_r0rfc0cf_return, class_assignments_return, confidences_return, c
     num_objs = length(situation_objects);
     
     
-   
-    
     
 %% get boxes, get cnn features, get scores, do suppression
 
@@ -148,35 +146,35 @@ function [boxes_r0rfc0cf_return, class_assignments_return, confidences_return, c
         
     % get adjusted boxes
     box_adjust_mats = cell(1,num_objs);
-    boxes_adjusted_r0rfc0cf = nan( num_boxes, 4, num_objs );
-    boxes_adjusted_r0rfc0cf_cell = cell(1,num_objs);
+    boxes_post_r0rfc0cf = nan( num_boxes, 4, num_objs );
+    boxes_post_r0rfc0cf_cell = cell(1,num_objs);
     
     for oi = 1:num_objs
         box_adjust_mats{oi} = cell2mat(box_adjust_model.weight_vectors(oi,:));
         for bi = 1:num_boxes
             if class_assignments_initial(bi,oi)
-                boxes_adjusted_r0rfc0cf(bi,:,oi) = agent_adjustment.bb_regression_adjust_box( box_adjust_mats{oi}, boxes_r0rfc0cf(bi,:), im, cnn_features(bi,:) );
+                boxes_post_r0rfc0cf(bi,:,oi) = agent_adjustment.bb_regression_adjust_box( box_adjust_mats{oi}, boxes_r0rfc0cf(bi,:), im, cnn_features(bi,:) );
             end 
-            temp = boxes_adjusted_r0rfc0cf(:,:,oi);
+            temp = boxes_post_r0rfc0cf(:,:,oi);
             temp = temp( ~isnan(temp(:,1)), : );
-            boxes_adjusted_r0rfc0cf_cell{oi} = temp;
+            boxes_post_r0rfc0cf_cell{oi} = temp;
         end
     end
-    boxes_adjusted_r0rfc0cf = vertcat( boxes_adjusted_r0rfc0cf_cell{:} );
+    boxes_post_r0rfc0cf = vertcat( boxes_post_r0rfc0cf_cell{:} );
     class_assignments = [];
     for oi = 1:num_objs
-        num_instances_of_obj = size(boxes_adjusted_r0rfc0cf_cell{oi});
+        num_instances_of_obj = size(boxes_post_r0rfc0cf_cell{oi});
         class_assignments(end+1:end+num_instances_of_obj) = oi;
     end
         
     % get cnn features for post-adjusted boxes
-    num_boxes = size(boxes_adjusted_r0rfc0cf,1);
+    num_boxes = size(boxes_post_r0rfc0cf,1);
     cnn_features_post = nan( num_boxes, num_cnn_features );
     for bi = 1:num_boxes
-        r0 = boxes_adjusted_r0rfc0cf(bi,1);
-        rf = boxes_adjusted_r0rfc0cf(bi,2);
-        c0 = boxes_adjusted_r0rfc0cf(bi,3);
-        cf = boxes_adjusted_r0rfc0cf(bi,4);
+        r0 = boxes_post_r0rfc0cf(bi,1);
+        rf = boxes_post_r0rfc0cf(bi,2);
+        c0 = boxes_post_r0rfc0cf(bi,3);
+        cf = boxes_post_r0rfc0cf(bi,4);
         if ~any(isnan([r0 rf c0 cf]))
             cnn_features_post(bi,:) = cnn.cnn_process( im(r0:rf,c0:cf,:) );
         end
@@ -188,39 +186,48 @@ function [boxes_r0rfc0cf_return, class_assignments_return, confidences_return, c
     % get updated scores
     classification_score_matrix_post = padarray(cnn_features_post,[0,1],1,'pre') * horzcat(classifier_model.models{:});
     
+    % combine original boxes and adjusted boxes
+    boxes_combined_r0rfc0cf = [boxes_r0rfc0cf; boxes_post_r0rfc0cf];
+    classification_score_matrix_combined = [classification_score_matrix; classification_score_matrix_post];
+    cnn_features_combined = [cnn_features; cnn_features_post];
+    
     % apply non-max suppression
     if use_non_max_suppression
         for oi = 1:num_objs
             iou_suppression_threshold = .5;
-            inds_suppress = non_max_supression( boxes_adjusted_r0rfc0cf, classification_score_matrix_post(:,oi), iou_suppression_threshold, 'r0rfc0cf' );
-            classification_score_matrix_post( inds_suppress, oi ) = 0;
+            
+            %inds_suppress = non_max_supression( boxes_adjusted_r0rfc0cf, classification_score_matrix_post(:,oi), iou_suppression_threshold, 'r0rfc0cf' );
+            %classification_score_matrix_post( inds_suppress, oi ) = 0;
+            
+            inds_suppress = non_max_supression( boxes_combined_r0rfc0cf, classification_score_matrix_combined(:,oi), iou_suppression_threshold, 'r0rfc0cf' );
+            classification_score_matrix_combined( inds_suppress, oi ) = 0;
+            
         end
     end
     
-    classification_score_matrix_post(classification_score_matrix_post < .05) = 0;
-    
-    rows_remove = ~any(classification_score_matrix_post,2);
-    boxes_adjusted_r0rfc0cf(rows_remove,:) = [];
-    classification_score_matrix_post(rows_remove,:) = [];
-    cnn_features_post(rows_remove,:) = [];
+    classification_score_matrix_combined(classification_score_matrix_post < .05) = 0;
+    rows_remove = ~any(classification_score_matrix_combined,2);
+    boxes_combined_r0rfc0cf(rows_remove,:) = [];
+    classification_score_matrix_combined(rows_remove,:) = [];
+    cnn_features_combined(rows_remove,:) = [];
     
     
     
     %% return vals
     % go ahead and replicate things that are over threshold for multiple categories
-    boxes_r0rfc0cf_return = [];
+
+    boxes_r0rfc0cf_return    = [];
     class_assignments_return = [];
-    confidences_return = [];
-    cnn_features_return = [];
+    confidences_return       = [];
+    cnn_features_return      = [];
     for oi = 1:num_objs
-        cur_rows  = classification_score_matrix_post(:,oi) > 0;
+        cur_rows  = classification_score_matrix_combined(:,oi) > 0;
         num_boxes = sum(cur_rows);
-        boxes_r0rfc0cf_return(end+1:end+num_boxes,:)  = boxes_adjusted_r0rfc0cf(cur_rows,:);
-        class_assignments_return(end+1:end+num_boxes) = oi;
-        confidences_return(end+1:end+num_boxes)       = classification_score_matrix_post(cur_rows,oi);
-        cnn_features_return(end+1:end+num_boxes,:)    = cnn_features_post(cur_rows,:);
+        class_assignments_return( end+1:end+num_boxes )   = oi;
+        boxes_r0rfc0cf_return(    end+1:end+num_boxes, :) = boxes_combined_r0rfc0cf(cur_rows,:);
+        confidences_return(       end+1:end+num_boxes )   = classification_score_matrix_combined(cur_rows,oi);
+        cnn_features_return(      end+1:end+num_boxes, :) = cnn_features_combined(cur_rows,:);
     end
-    
     
     
     %% visualize
@@ -256,10 +263,58 @@ function [boxes_r0rfc0cf_return, class_assignments_return, confidences_return, c
         hold on; 
         draw_box( boxes_r0rfc0cf_return( sort_order_post(1:n), : ), 'r0rfc0cf' );
         hold off
-        ylabel('top scoring adjusted boxes');
+        ylabel('top scoring boxes (original + adjusted)');
         
     end
     end
+    
+end
+
+
+
+
+
+
+
+
+
+function inds_supress = non_max_supression( boxes, box_scores, IOU_suppression_threshold, box_format )
+% inds_suppress = non_max_supression( boxes, box_scores, IOU_suppression_threshold, box_format );
+
+    if ~exist('IOU_supression_threshold','var') || isempty(IOU_suppression_threshold)
+        IOU_suppression_threshold = .25;
+    end
+
+    % want to use 0 as the floor
+    box_scores = box_scores - min(box_scores(:));
+    box_scores_initial = box_scores;
+    
+    go_again = true;
+    while go_again
+        go_again = false;
+        for bi = 1:size(boxes,1)
+            iou_vect = intersection_over_union( boxes(bi,:), boxes, box_format, box_format );
+            overlap_box_inds = iou_vect > IOU_suppression_threshold;
+            % if all indesecting boxes have lower scores (or equal)
+            if all( box_scores( overlap_box_inds ) <= box_scores(bi) )
+                % mark everything but this box for supression
+                suppress_inds = setsub( find(overlap_box_inds), bi );
+                if any( box_scores( suppress_inds ) ~= 0 )
+                    % if we actually do supress something, go again
+                    box_scores( suppress_inds ) = 0;
+                    go_again = true;
+                end
+
+            end
+        end
+    end
+    
+    inds_supress = ~eq( box_scores_initial, box_scores );
+    
+end
+
+
+
    
     
     

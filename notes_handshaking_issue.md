@@ -15,4 +15,7 @@ nothing happens
 	-external support is different. combination of pairs and triples in the situation
 	-total support is only evaluated once there is conditioning. something like a different total support function pre and post conditioning
 
+# currently implemented solution
+the total support functions are now determined using information from all of the classifiers. There is a target value for the total amount of external support that will be used across all object types, as well as a minimum external support for each object. the balance per-object is still a function of AUC, but takes these whole-situation values into account. How this scales to situations with more than 3 objects is not totally clear
+
 

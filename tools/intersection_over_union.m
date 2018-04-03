@@ -80,8 +80,6 @@ end
 
 function area = intersection_area( boxA, boxB )
 
-    % intersect_area = intersect_mq( boxA, boxB );
-    %
     % box format [r0 rf c0 cf];
 
     r0a = boxA(1);

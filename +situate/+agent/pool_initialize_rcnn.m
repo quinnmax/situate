@@ -23,7 +23,6 @@ function primed_agent_pool = pool_initialize_rcnn( p, im, im_fname, ~, varargin 
     
     
     
-    
     im_size = [ size(im,1), size(im,2) ];
     situation_objects = p.situation_objects;
     
@@ -31,7 +30,8 @@ function primed_agent_pool = pool_initialize_rcnn( p, im, im_fname, ~, varargin 
     csv_data = cell(1,length(situation_objects));
     for oi = 1:length(situation_objects)
         cur_obj = situation_objects{oi};
-        csv_fname = rcnn_file_fname( p.situation_description, cur_obj, fileparts_mq(im_fname,'name.ext'));
+        csv_fname = fullfile( 'rcnn box data', p.situation_description, cur_obj, [fileparts_mq( im_fname, 'name' ) '.csv'] );
+        assert( isfile(csv_fname) );
         csv_data_columns = {'x','y','w','h','confidence','gt iou initial'}; % note to self
         conf_column = find( strcmp( csv_data_columns, 'confidence' ) );
         temp = importdata( csv_fname );
@@ -127,37 +127,6 @@ end
 
 
 
-
-function fname_out = rcnn_file_fname( situation_string, object, fname )
-
-    % fname_out = rcnn_file_fname( situation_string, fname, object );
-    % checks for 'rcnn box data/[situation_string]/[all sub dirs]/[object]/[fname].csv'
-
-    base_directory   = 'rcnn box data';
-
-    sub_dir_names = dir( fullfile( base_directory, situation_string ) );
-    sub_dir_names = {sub_dir_names([sub_dir_names.isdir]).name};
-    sub_dir_names( cellfun( @(x) eq('.',x(1)), sub_dir_names ) ) = [];
-
-    possible_path_and_fnames = cell(1,length(sub_dir_names));
-    for sdi = 1:length(sub_dir_names)
-        possible_path_and_fnames{sdi} = fullfile( base_directory, situation_string, sub_dir_names{sdi}, object, [fileparts_mq(fname,'name') '.csv'] );
-    end
-    
-    files_exist = cellfun( @(x) exist( x , 'file' ), possible_path_and_fnames );
-    
-    if any( files_exist )
-        fname_out = possible_path_and_fnames{ find( files_exist, 1, 'first' ) };
-    else
-        fname_out = [];
-        error('no rcnn box data csv files found');
-    end
-    
-end
-    
-    
-    
-    
 
 
 

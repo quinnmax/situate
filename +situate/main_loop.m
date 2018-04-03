@@ -182,6 +182,7 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
         
         % update visualization
         if p.use_visualizer && p.viz_options.on_end
+            
             if ~exist('viz_handle','var'), viz_handle = []; end
             [~,fname_no_path] = fileparts(im_fname);
 
@@ -193,11 +194,14 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
                 visualizer_run_status = 'stop'; 
             end
             visualizer_return_status = visualizer_run_status;
+            
         else
-            % we made it through the iteration loop, 
+            
+            % we made it through the iteration loop,
             % if the user doesn't specify some other behavior in the final display,
             % we'll assume that we should continue on to the next image
             visualizer_return_status = 'next_image';
+            
         end
 
 
