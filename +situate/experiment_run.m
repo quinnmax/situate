@@ -42,19 +42,23 @@ function experiment_run( experiment_file_fname )
     
 %% add copies of experiment def, situation def, and parameters def to the results folder
     
-    % experiment def
-    [~,name,ext] = fileparts( experiment_file_fname );
-    copyfile( experiment_file_fname, fullfile( experiment_struct.results_directory, [name ext]) );
-    
-    % situation def
-    [~,name,ext] = fileparts( experiment_struct.situation_definition_fname );
-    copyfile( experiment_struct.situation_definition_fname, fullfile( experiment_struct.results_directory, [name ext]) );
-    
-    % params defs
-    for i = 1:length( experiment_struct.situate_parameterizations_fnames )
-        [~,name,ext] = fileparts( experiment_struct.situate_parameterizations_fnames{i} );
-        copyfile( experiment_struct.situate_parameterizations_fnames{i}, ...
-                  fullfile( experiment_struct.results_directory, [name ext] ) );
+    if ~experiment_struct.experiment_settings.use_visualizer
+
+        % experiment def
+        [~,name,ext] = fileparts( experiment_file_fname );
+        copyfile( experiment_file_fname, fullfile( experiment_struct.results_directory, [name ext]) );
+
+        % situation def
+        [~,name,ext] = fileparts( experiment_struct.situation_definition_fname );
+        copyfile( experiment_struct.situation_definition_fname, fullfile( experiment_struct.results_directory, [name ext]) );
+
+        % params defs
+        for i = 1:length( experiment_struct.situate_parameterizations_fnames )
+            [~,name,ext] = fileparts( experiment_struct.situate_parameterizations_fnames{i} );
+            copyfile( experiment_struct.situate_parameterizations_fnames{i}, ...
+                      fullfile( experiment_struct.results_directory, [name ext] ) );
+        end
+
     end
 
     

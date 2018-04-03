@@ -10,7 +10,7 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
         
     % load an image, label
     
-        label = situate.labl_load( im_fname, p );
+        label = situate.labl_load( im_fname, p ); % may return empty array if label file wasn't found
         im = imread( im_fname );
         if mean(im(:)) < 1, im = 255 * im; end
         im_size = [size(im,1), size(im,2)];
@@ -112,9 +112,11 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
             && ( p.viz_options.on_iteration_mod ~= 0 && mod(iteration, p.viz_options.on_iteration_mod)==0 ) ...
             || ( p.viz_options.on_workspace_change && workspace_changed )
     
-                % try to see if we can reconcile with a different interpretation of the label
-                [workspace,label_used] = situate.workspace_score( workspace, label, p ); % might change the label struct, but will not change the workspace, just the gt score for the visualizer
-                if ~isempty(label_used), label = label_used; end
+                % try to reconcile with a different interpretation of the label
+                if ~isempty(label)
+                    [workspace,label_used] = situate.workspace_score( workspace, label, p ); % might change the label struct, but will not change the workspace, just the gt score for the visualizer
+                    if ~isempty(label_used), label = label_used; end
+                end
                 
                 [~,fname_no_path] = fileparts(im_fname); 
                 visualization_description = {fname_no_path; ['iteration: ' num2str(iteration) '/' num2str(p.num_iterations)]; ['situation grounding: ' num2str(workspace.situation_support)] };
