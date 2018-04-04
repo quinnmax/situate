@@ -38,16 +38,29 @@ x loading pre-extracted features mat
 
 x melanie's warnings when starting up matlab
 
-continue to update analysis code
+x continue to update analysis code
 
 x have an explicit setting for the max number of boxes taken from the rcnn like mechanism
 
-i think the way we have it may create a second attempted entry advantage
+i think the way we have it may create a second-attempted-entry advantage
 	box a is checked in for person 1
 	box b is attempted for person 1, rejected
 	box a is attempted for person 2, accepted, replaces existing entry for person 1 (higher external support)
 	now we've already tried box b for person 1 and moved on, so won't get another shot
-seems to be an edge case though...
+
+	seems to be an edge case though...
+
+x issue with negative images in the visualizer
+
+need to save off results more often (per image?)
+
+see if saved structure for per-agent records can be made smaller. what all is being saved?
+
+x check that analysis code works with only negative images
+
+x include figures that show top results in positives, negatives, false pos, and false neg
+
+x install matconvnet if not already installed
 
 do another pass through on the documentation
 
