@@ -4,13 +4,17 @@ function data = cnn_process( image, image_size, layer_in )
 % layer 18 is the last layer before classification
 % layer 15 is the last layer where there's still a spatial layout
 
+    if ~exist('matconvnet/imagenet-vgg-f.mat','file')
+        cnn.matconvnet_setup();
+    end
+
     persistent net layer;
     if ~exist('net', 'var') ...
     || isa(net, 'double') ...
     || (exist('layer','var') && exist('layer_in','var') && ~isequal(layer_in,layer)) ...
     || (exist('layer','var') && ~exist('layer_in','var') && layer~=18 )
-        run vl_setupnn % matconvnet/matlab is in path. local path was messing it up for other scripts
-        net = vl_simplenn_tidy(load('+cnn/imagenet-vgg-f.mat'));
+        run('vl_setupnn');
+        net = vl_simplenn_tidy(load('matconvnet/imagenet-vgg-f.mat'));
         if exist('layer_in','var') && ~isempty(layer_in)
             layer = layer_in;
         else
