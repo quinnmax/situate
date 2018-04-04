@@ -22,23 +22,26 @@ function out = fileparts_mq( file, part )
         return;
     end
 
-
-    [pathstr,name,ext] = fileparts( file );
-    switch part
-        case {'path','pathstr'}
-            out = pathstr;
-        case {'path/name'}
-            out = fullfile(pathstr,name);
-        case 'name'
-            out = name;
-        case 'ext'
-            out = ext;
-        case 'name.ext'
-            out = [name ext];
-        otherwise
-            error('specified part not recognized');
+    if ~isempty(file)
+        [pathstr,name,ext] = fileparts( file );
+        switch part
+            case {'path','pathstr'}
+                out = pathstr;
+            case {'path/name'}
+                out = fullfile(pathstr,name);
+            case 'name'
+                out = name;
+            case 'ext'
+                out = ext;
+            case 'name.ext'
+                out = [name ext];
+            otherwise
+                error('specified part not recognized');
+        end
+    else
+        out = [];
     end
-    
+
     
 end
    
