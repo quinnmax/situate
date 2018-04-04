@@ -8,11 +8,13 @@ function data = cnn_process( image, image_size, layer_in )
         cnn.matconvnet_setup();
     end
 
-    persistent net layer;
+    persistent net;
+    persistent layer;
+    
     if ~exist('net', 'var') ...
     || isa(net, 'double') ...
-    || (exist('layer','var') && exist('layer_in','var') && ~isequal(layer_in,layer)) ...
-    || (exist('layer','var') && ~exist('layer_in','var') && layer~=18 )
+    || ( exist('layer','var') &&  exist( 'layer_in', 'var') && ~isequal(layer_in,layer) ) ...
+    || ( exist('layer','var') && ~exist( 'layer_in', 'var') &&  layer ~= 18 )
         run('vl_setupnn');
         net = vl_simplenn_tidy(load('matconvnet/imagenet-vgg-f.mat'));
         if exist('layer_in','var') && ~isempty(layer_in)

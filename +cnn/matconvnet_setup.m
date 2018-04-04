@@ -1,8 +1,8 @@
 % setup matconvnet
 
 matconvnetdir = 'matconvnet';
-version = 'matconvnet-1.0-beta25';
-model_url = 'http://www.vlfeat.org/matconvnet/models/imagenet-vgg-f.mat';
+version       = 'matconvnet-1.0-beta25';
+model_url     = 'http://www.vlfeat.org/matconvnet/models/imagenet-vgg-f.mat';
 
 if ~exist(matconvnetdir,'dir') || ~exist(fullfile(matconvnetdir,version),'dir')
     
