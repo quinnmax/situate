@@ -123,6 +123,7 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
         if isempty( experiment_struct.experiment_settings.max_testing_images )
             experiment_struct.experiment_settings.max_testing_images = length(fnames_im_test);
         end
+        num_images = experiment_struct.experiment_settings.max_testing_images;
         
         [~, fnames_fail, exceptions, failed_inds] = situate.labl_validate( fnames_lb_train, situation_struct );
         if ~isempty(fnames_fail)
@@ -219,7 +220,13 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
                     GT_IOUs = [reconciled_workspace.GT_IOU nan(1,length(labels_missed))];
                     [~,sort_order] = sort( labels_temp );
                     IOUs_of_last_run = num2str(GT_IOUs(sort_order));
-                    fprintf('%s, %3d / %d, %4d steps, %6.2fs,  IOUs: [%s] \n', cur_parameterization.description, cur_image_ind, length(fnames_im_test), num_iterations_run, toc, IOUs_of_last_run );
+                    fprintf('%s, %3d / %d, %4d steps, %6.2fs,  IOUs: [%s] \n', ...
+                        cur_parameterization.description, ...
+                        cur_image_ind, ...
+                        num_images, ...
+                        num_iterations_run, ...
+                        toc, ...
+                        IOUs_of_last_run );
 
                     cur_image_ind = cur_image_ind + 1;
 
@@ -252,7 +259,6 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
                 cur_param_desc = cur_parameterization.description;
             end
             save_fname = fullfile(experiment_struct.results_directory, [cur_param_desc '_fold_' num2str(fi,'%02d') '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
-
             results_struct = [];
             results_struct.p_condition      = cur_parameterization;
             results_struct.workspaces_final = workspaces_final;

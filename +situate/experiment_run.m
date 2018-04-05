@@ -77,7 +77,7 @@ function experiment_run( experiment_file_fname )
         if experiment_struct.experiment_settings.run_analysis_after_completion ...
         && ~experiment_struct.experiment_settings.use_visualizer
             % situate_experiment_analysis( experiment_struct.results_directory );
-            analysis.main( experiment_struct.results_directory );
+            analysis.grounding_and_retrieval( experiment_struct.results_directory );
         end
 
 
