@@ -233,41 +233,115 @@ There are several scripts available for looking at the results of the experiment
 
 ### Visualizing final workspaces
 
-	situate_experiment_analysis_output_final_workspaces.m 
+	analysis.output_final_workspaces.m 
 
-This script generates images displaying the final predicted bounding boxes for situation objects overlaid on the original images. It can be helpful for a subjective analysis of the quality of results. The input should be the path to a .mat file from the experiment's results directory. The script will generate a new folder in the experiment's results directory with images for each of the final workspaces included in the .mat file. 
+This script generates images displaying the final predicted bounding boxes for situation objects overlaid on the original images. It can be helpful for a subjective analysis of the quality of results. The input can be: path and file name of a .mat results file from the results directory, a directory containing multiple .mat results files, or a cell array of path and file names of .mat results files. The script will generate a new folder in the experiment's results directory with images for each of the final workspaces included in the .mat results file. 
 
-	situate_experiment_analysis_output_final_workspaces('results/my_experiment/params1_results.mat');
+	analysis.output_final_workspaces( 'results/my_experiment/params1_results.mat' );
+	analysis.output_final_workspaces( 'results/my_experiment/' );
+	analysis.output_final_workspaces( {'results/my_experiment/params1_results.mat', ...
+									   'results/my_experiment/params2_results.mat'} );
 
-### Positive instance grounding comparison
+### Experiment results
 
-	situate_experiment_analysis.m
+Experiments are evaluated in two ways. First, with respect to grounding results, where the localization of objects in positives instances of the situation are evaluated. Second, with respect to retrieval results, where the quality of the resulting situation score is evaluated on the basis of how well it separates positive instances from negative instances of the situation. Both are called using the same function.
 
-This script evaluates the results for a collection of test images. It can be used to compare multiple Situate parameterizations run on the same collection of test images. It produces several figures that relate the number of iterations run by a Situate parameterization to the number of situation detections made.  Results are also broken down by individual object types. 
+	analysis.grounding_and_retrieval.m
 
-To run this script, you need to provide the path to a directory the .mat file results for the parameterizations that you would like to compare. For example
+The input specifies files can include results from Situate experiments. The input can be the path and filename of a .mat results file, the path of a directory that contains several .mat results files, or a cell array with a combination of any number from either category. For example, each of the following should work:  
 
-	situate_experiment_analysis('results/my_experiment/');
+	analysis.grounding_and_retrieval( ...
+		'results_dir1/results_parameterization_1.mat',
+		);
 
-The analysis will run on and compare each of the .mat files in the directory. Figures will be saved to the provided results directory.
+	analysis.grounding_and_retrieval( ...
+		'results_dir1/'
+		);
 
-### Image retrieval results
+	analysis.grounding_and_retrieval( ...
+		{
+			'results_dir1/results_parameterization_1.mat',
+			'results_dir2/',
+		});
 
-	situate_experiment_analysis_PR.m
+Multiple Situate parameterizations and collections of test images may be included. However, once all files are combined, each Situation parameterization should have been run for the same set of test images. For example, the following will work
 
-This script compares the results of several parameterizations with respect to images that contain the the situation and images that do not (whereas the previous script was only concerned with generating a grounding for positive images). Situate is run on each image, producing a final workspace, which is then used to generate a single-valued *situation score*. The two evaluation metrics produces are:
-- Median rank: The situation scores for a single positive image and all negative images are sorted. The rank for the positive image is the number of negative images that have a higher situation score + 1. The median rank is the median of the rank over all positive images evaluated.
-- Average recall at *n*: The situation scores for a single positive image and all negative images are sorted. If the rank of the positive image is less than or equal to *n*, then it is given a recall score of 1. Otherwise, its recall score is 0. The mean recall score is taken over all positive images.
+	analysis.grounding_and_retrieval( ...
+		{
+			'results_parameterization_1_image_set_1.mat',
+			'results_parameterization_1_image_set_2.mat',
+			'results_parameterization_2_image_set_1.mat',
+			'results_parameterization_2_image_set_2.mat 
+		});
 
-To run this script, you must provide the path to a directory containing results from a run on images that do contain the situation (path_pos), and the path to a directory containing results from a run on images that do not contain the situation (path_neg). For example
+As will:
 
-	path_pos = 'results/my_experiment_pos/';
-	path_neg = 'results/my_experiment_neg/';
-	[ mean_recall_at, median_rank ] = situate_experiment_analysis_PR( path_pos, path_neg );
+	analysis.grounding_and_retrieval( ...
+		{
+			'results_parameterization_1_image_set_1_and_2.mat',
+			'results_parameterization_2_image_set_1.mat',
+			'results_parameterization_2_image_set_2.mat
+		});
 
-CSV files containing the results are also written to 
+The following will not work:
 
-	results/PR_results [current date and time]/
+	analysis.grounding_and_retrieval( ...
+		{
+			'results_parameterization_1_image_set_1.mat',...
+			'results_parameterization_2_image_set_1_and_2.mat ...
+		});
+
+#### Grounding
+
+If the input contains results for a run that included any positive instances of the situation (which is recognized by finding an associated label file that contains all of the situation objects), then grounding results will be generated and several figures will be displayed. 
+
+The output includes:
+- Object grounding quality, where the the number of objects detected of each type is displayed versus different intersection over union thresholds.
+- Situation detections over iteration, where the number of full situation detections (all objects over .5 IOU) is plotted versus the number of iterations Situate ran.
+- Histogram of situation support scores
+- Final groundings with highest and lowest support, where the four images with the highest support scores are shown with their final grounding, and the four images with the lowest situation support scores are shown with their final grounding. That is, the most confident true positives and the most confident false negatives.
+
+#### Retrieval
+
+If the input contains results that include both positive and negative instances of the situation, retrieval results will also be generated.
+
+The output includes:
+- ROC analysis, including AUROC values
+- Distribution of the rank of positive instances (considered against negative instances)
+- Final groundings with highest and lowest support among negative instances of the situation, where the four images with the highest support scores are shown with their final grounding, and the four images with the lowest situation support scores are shown with their final grounding. That is, the most confident false positives and the most confident true negatives.
+
+A .csv file containing the retrieval results for each method is written to the results directory.
+
+
+#### Including external results
+
+Bounding boxes generated externally can also be included in the analysis. The specified boxes and associated confidence values will be used to generate workspaces for each image and to generate a situation support scores for each workspace. The resulting workspaces and support scores are included in the above analysis as a separate method.
+
+To include externally generated boxes, include a path as a second argument. For example
+
+	analysis.grounding_and_retrieval(
+		'results_parameterization_1_image_set_1.mat', ...
+		'additional_results_dir/' );
+
+The sub-directory structure of `additional_results_dir` should be
+	
+	additional_results_dir/[situation_desc]/[obj_desc]/[imfname].csv
+
+where:
+	- `[situation_desc]` matches the situation description in the *situation definition* file used during the experiment.
+	- `[obj_desc]` matches the objects included in the *situation definition* file.
+	- [imfname].csv contains bounding boxes for image [imfname].jpg used in the experiment.
+	- There is a .csv file for each image used in the experiment.
+
+The contents of each .csv file should specify bounding boxes for one object type in the image. The format for the .csv is 
+
+`x position, y position, box width, box height, confidence`
+
+To generate the workspaces, the highest confidence box for each object type will be used, so long as it does not have an intersection over union greater than .5 with any of the other boxes included in the workspace. This avoids problems when there are two instances of a specific object type in a situation definition and the boxes were generated independently from one another. 
+
+The situation support score is calculated as a padded geometric mean of the confidence values associated with constituent boxes. 
+
+
 
 	
 	

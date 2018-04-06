@@ -3,9 +3,7 @@ function [] = grounding_and_retrieval( input, varargin )
 
 % grounding_and_retrieval( directory_containing_results_mats );
 % grounding_and_retrieval( results_mat_file_name );
-% grounding_and_retrieval( cell_of_results_mat_fnames );
-% grounding_and_retrieval( cell_of_results_directories );
-% grounding_and_retrieval( cell_of_results_directories_and_mat_fnames );
+% grounding_and_retrieval( cell_array_of_directories_and_or_mat_file_names );
 % grounding_and_retrieval( ..., [additional_results_directory] )
 %
 % using the additional_results_directory
@@ -30,7 +28,7 @@ function [] = grounding_and_retrieval( input, varargin )
                  '/Users/Max/Dropbox/Projects/situate/results/dogwalking_negatives_general_2018.03.30.17.52.03'};
 
         varargin = {'rcnn box data/'};
-        warning('using debug directories, not real analysis');        
+        warning('using debug directories, not real data');        
     end
 
     if isfile(input) 
@@ -65,22 +63,10 @@ function [] = grounding_and_retrieval( input, varargin )
         end
     end
 
-    % remove results files that may already be present from previous run
-    files_remove = cellfun( @(x) strcmp( fileparts_mq(x,'name.ext'), 'results_grounding.mat' ), mat_file_names ) ...
-                 | cellfun( @(x) strcmp( fileparts_mq(x,'name.ext'), 'results_retrieval.mat' ), mat_file_names );
-    mat_file_names(files_remove) = [];
-
-    
+    % deal with varargin
     additional_results_directory = [];
-    save_final_workspace_images = false;
     if ~isempty( varargin )
-        if ~isempty( varargin{1})
-            additional_results_directory = varargin{1}; 
-        end
-        
-        if length(varargin) > 1 && islogical(varargin{2})
-            save_final_workspace_images = varagin{2}; 
-        end
+        additional_results_directory = varargin{1}; 
     end
    
 
@@ -112,6 +98,13 @@ function [] = grounding_and_retrieval( input, varargin )
         for ci = 1:num_conditions
             condition_structs_unique{ci}.description = raw_descriptions{ find(eq(ci,condition_struct_assignments),1,'first') };
         end
+        
+        descriptions = cellfun( @(x) x.description, condition_structs_unique, 'UniformOutput', false );
+        descriptions = cellfun( @(x) strrep( x, '_', ' ' ), descriptions, 'UniformOutput', false );
+        descriptions = cellfun( @(x) strrep( x, '/', '' ),  descriptions, 'UniformOutput', false );
+        descriptions = cellfun( @(x) strrep( x, '.json', '' ),  descriptions, 'UniformOutput', false );
+        descriptions = cellfun( @(x) strrep( x, 'parameters', '' ),  descriptions, 'UniformOutput', false );
+        descriptions = cellfun( @strtrim, descriptions, 'UniformOutput', false );
 
         % make sure everyone is looking for the same situation
         situation_struct = [];
@@ -168,8 +161,16 @@ function [] = grounding_and_retrieval( input, varargin )
 
         % get pos/neg assignment (based on presense of label file) for each image
         % (not doing it per condition because we've asserted the same image file list for all conditions)
-            is_situation_instance = cellfun( @(x) exist([fileparts_mq(x,'path/name'),'.json'],'file') |  exist([fileparts_mq(x,'path/name'),'.labl'],'file'), im_fnames );
-
+            %is_situation_instance = cellfun( @(x) exist([fileparts_mq(x,'path/name'),'.json'],'file') |  exist([fileparts_mq(x,'path/name'),'.labl'],'file'), im_fnames );
+            label_structs = situate.labl_load( lb_fnames, situation_struct );
+            is_situation_instance = false( size(label_structs) );
+            for li = 1:length(label_structs)
+                if ~isempty( label_structs{li} ) ...
+                && isempty( setsub( situation_objects, label_structs{li}.labels_adjusted ) )
+                    is_situation_instance(li) = true;
+                end
+            end
+            
         % final workspaces by condition
             workspaces_final = cell( 1, num_conditions );
             for ci = 1:num_conditions
@@ -197,10 +198,7 @@ function [] = grounding_and_retrieval( input, varargin )
         % rescore workspaces (account for objects of the same type that are arbitrarily assigned a number)
             for ci = 1:num_conditions
                 for imi = 1:num_images
-                    lb_fname = [fileparts_mq( im_fnames{imi}, 'path/name'), '.json'];
-                    if exist(lb_fname,'file')
-                        workspaces_final{ci}(imi) = situate.workspace_score( workspaces_final{ci}(imi), im_fnames{imi}, condition_structs_unique{ci} );
-                    end
+                    workspaces_final{ci}(imi) = situate.workspace_score( workspaces_final{ci}(imi), label_structs{imi}, condition_structs_unique{ci} );
                 end
             end
 
@@ -310,20 +308,12 @@ function [] = grounding_and_retrieval( input, varargin )
             condition_structs_unique{num_conditions}.description = additional_results_directory;
             condition_structs_unique{num_conditions}.num_iterations = nan;
             condition_structs_unique{num_conditions}.situation_objects = situation_objects;
+            
+            descriptions{num_conditions} = strrep( additional_results_directory, '/', '' );
 
         end
 
-        if save_final_workspace_images
-            % for imi = 1:num_images
-            for imi = 1:10
-                figure();
-                subplot(1,2,1);
-                situate.workspace_draw( im_fnames{imi}, situation_struct, workspaces_final{num_conditions}(imi) );
-                subplot(1,2,2);
-                situate.labl_draw( lb_fnames{imi} );
-            end
-        end
-
+      
 
 
     %% grounding analysis 
@@ -475,8 +465,6 @@ function [] = grounding_and_retrieval( input, varargin )
         for ci = 1:num_conditions
             recall_at_n{ci} = arrayfun( @(x) sum( rank{ci} <= x ), 1:num_images ) ./ sum(is_situation_instance);
         end
-            
-        
         
         % save results
 
@@ -498,6 +486,9 @@ function [] = grounding_and_retrieval( input, varargin )
         results_struct_retrieval.AUROC = AUROC;
 
         save( fullfile(results_directory, ['results_retrieval.mat']), '-struct', 'results_struct_retrieval' );
+        for ci = 1:num_conditions
+            csvwrite( fullfile(results_directory, ['recall_at_n_' descriptions{ci} '.csv']), recall_at_n{ci} )
+        end
 
 
 
@@ -505,13 +496,6 @@ function [] = grounding_and_retrieval( input, varargin )
 
         % visualize grounding
         linespec = {'k-','k--','k..','k-.'};
-
-        descriptions = cellfun( @(x) x.description, condition_structs_unique, 'UniformOutput', false );
-        descriptions = cellfun( @(x) strrep( x, '_', ' ' ), descriptions, 'UniformOutput', false );
-        descriptions = cellfun( @(x) strrep( x, '/', '' ),  descriptions, 'UniformOutput', false );
-        descriptions = cellfun( @(x) strrep( x, '.json', '' ),  descriptions, 'UniformOutput', false );
-        descriptions = cellfun( @(x) strrep( x, 'parameters', '' ),  descriptions, 'UniformOutput', false );
-        descriptions = cellfun( @strtrim, descriptions, 'UniformOutput', false );
 
         % successful groundings 
         %   x axis, threshold
