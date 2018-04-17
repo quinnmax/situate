@@ -3,13 +3,13 @@
 
 # Situate
 
-Situate is a system for active grounding of visual situations in images. Given an image and a situation definition, Situate localizes objects that make up a situation and produces a confidence score expressing how much the system believes that a given situation is present in an image. Situate is an active system, using detected objects to direct search, 
+Situate is a system for active grounding of visual situations in images. Given an image and a situation definition, Situate localizes objects that make up a situation and produces a confidence score expressing how much the system believes that a given situation is present in an image. 
 
- the visual features of constituent objects and the configuration of objects to both localize objects and determine its confidence.
+Situate is an active system, using detected objects to direct search. Confidence that a given situation is present is based on the confidence of constituent classifiers that specific objects are present, the reliability of those classifiers, and the spatial configuration of objects in the scene.
 
-, the reliability of the classifiers used to detect the objects, and the spatial configuration of the constituent objects to determine its confidence.
+Details can be found in our paper:
 
-Quinn, M. H., Conser, E., Witte, J. M., and Mitchell, M. (2018). [Semantic image retrieval via active grounding of visual situations](https://arxiv.org/abs/1711.00088). In *Proceedings of the 12th International Conference on Semantic Computing*. IEEE. 
+Quinn, M. H., Conser, E., Witte, J. M., and Mitchell, M. (2018). [Semantic image retrieval via active grounding of visual situations](https://arxiv.org/abs/1711.00088). In *Proceedings of the 12th International Conference on Semantic Computing*. IEEE.
 
 # Setup
 
