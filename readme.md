@@ -3,23 +3,37 @@
 
 # Situate
 
-Situate is a system for active grounding of situations in images.     
-[edit: link to icsc paper]
+Situate is a system for active grounding of visual situations in images. Given an image and a situation definition, Situate localizes objects that make up a situation and produces a confidence score expressing how much the system believes that a given situation is present in an image. Situate is an active system, using detected objects to direct search, 
 
+ the visual features of constituent objects and the configuration of objects to both localize objects and determine its confidence.
 
+, the reliability of the classifiers used to detect the objects, and the spatial configuration of the constituent objects to determine its confidence.
+
+Quinn, M. H., Conser, E., Witte, J. M., and Mitchell, M. (2018). [Semantic image retrieval via active grounding of visual situations](https://arxiv.org/abs/1711.00088). In *Proceedings of the 12th International Conference on Semantic Computing*. IEEE. 
+
+# Setup
+
+Written and tested with:
+- Matlab 2016b
+- Matlab Parallel Computing Toolbox (optional)
+- MatConvNet version 1.0 beta25
+
+If MatConvNet and the pre-trained models are not found at runtime, Situate will try to download and install the needed components, but it's fragile. 
+
+You may need to do a little work to install MatConvNet to `situate/matconvnet`. The MatConvNet installation instructions found at http://www.vlfeat.org/matconvnet/quick/ should do the trick. The pre-trained model can be found at `http://www.vlfeat.org/matconvnet/models/imagenet-vgg-f.mat` and should be saved to `situate/matconvnet`.
 
 # Running Situate
 
 ### Experiment parameters
 	
 The *experiment parameters* file specifies:
-- the situation definition
-- the Situate running parameters
-- the training and testing images
+- the *situation definition* file
+- the *Situate running parameters* file
+- training and testing images
 - visualization settings
 	
 example: "parameters_experiment_dogwalking_viz.json"
-	
+
 #### Situation definition
 	
 The *situation definition* file specifies 
@@ -34,9 +48,11 @@ The *Situate running parameters* file defines the functions that are used by sit
 
 example: "parameters_situate_default.json"
 
-A list of several *Situate running parameters* files can be included in the *experiment parameters file*. If this is the case, each parameterization will be run.
+A list of several *Situate running parameters* files can be included in the *experiment parameters file*. If they are, each parameterization will be run.
 
-#### Training and testing image directories
+#### Training and testing images
+
+Images used for training are easiest to specify with a directory for each.
 
 	"directory_train" : "/Users/Max/Documents/images/DogWalking_PortlandSimple_train/",
 	"directory_test"  : "/Users/Max/Documents/images/DogWalking_PortlandSimple_test/",
@@ -53,7 +69,7 @@ A list of several *Situate running parameters* files can be included in the *exp
 			
 ### Run
 	
-To run Situate, call with an experiment parameters file
+To run Situate, call `situate.experiment_run` with an experiment parameters file
 
 	situate.experiment_run( 'parameters_experiment_dogwalking_viz.json' );
 
@@ -152,7 +168,7 @@ If all images are in a single directory and the training and testing images are 
 	"max_testing_images"               : "",
 	"testing_seed"                     : ""
 
-The folder *data_splits/example_split/* should contain at least two text files with the naming format 
+The directory *data_splits/example_split/* should contain at least two text files with the naming format 
 
 	[*]fnames_split_[n]_train.txt
 	[*]fnames_split_[n]_test.txt
@@ -174,7 +190,7 @@ and
 
 #### Specifying separate directories and including file lists
 
-If you would like to use a subset of the available training and testing data present in separate directories, you can specify both separate folders and a folder contain file lists.  Parameters should be set as below:
+If you would like to use a subset of the available training and testing data present in separate directories, you can specify both separate directories and a directory contain file lists.  Parameters should be set as below:
 
 	"directory_train"                  : "folder_a/",
 	"directory_test"                   : "folder_b/",
@@ -212,7 +228,7 @@ You can specify the number of folds, which in turn defines the number of trainin
 	"max_testing_images"               : "",
 	"testing_seed"                     : ""
 
-When the same folder is specified for training and testing and no split files are provided, split files will be generated and saved in 
+When the same directory is specified for training and testing and no split files are provided, split files will be generated and saved in 
 *data_splits/[situation description]_[time stamp]/*
 
 #### Including maximum number of testing images
@@ -227,7 +243,7 @@ will cause Situate to run on only the first 10 images in that directory.
 
 # Analysis
 
-The results of a Situate experiment are stored in the *results/* folder. There will be a folder for the experiment and individual .mat files for each of the parameterizations that were run during the experiment. 
+The results of a Situate experiment are stored in the *results/* directory. There will be a directory for the experiment and individual .mat files for each of the parameterizations that were run during the experiment. 
 
 There are several scripts available for looking at the results of the experiment.  
 
@@ -235,7 +251,7 @@ There are several scripts available for looking at the results of the experiment
 
 	analysis.output_final_workspaces.m 
 
-This script generates images displaying the final predicted bounding boxes for situation objects overlaid on the original images. It can be helpful for a subjective analysis of the quality of results. The input can be: path and file name of a .mat results file from the results directory, a directory containing multiple .mat results files, or a cell array of path and file names of .mat results files. The script will generate a new folder in the experiment's results directory with images for each of the final workspaces included in the .mat results file. 
+This script generates images displaying the final predicted bounding boxes for situation objects overlaid on the original images. It can be helpful for a subjective analysis of the quality of results. The input can be: path and file name of a .mat results file from the results directory, a directory containing multiple .mat results files, or a cell array of path and file names of .mat results files. The script will generate a new directory in the experiment's results directory with images for each of the final workspaces included in the .mat results file. 
 
 	analysis.output_final_workspaces( 'results/my_experiment/params1_results.mat' );
 	analysis.output_final_workspaces( 'results/my_experiment/' );
@@ -308,6 +324,7 @@ If the input contains results that include both positive and negative instances 
 The output includes:
 - ROC analysis, including AUROC values
 - Distribution of the rank of positive instances (considered against negative instances)
+- Precision/recall curves
 - Final groundings with highest and lowest support among negative instances of the situation, where the four images with the highest support scores are shown with their final grounding, and the four images with the lowest situation support scores are shown with their final grounding. That is, the most confident false positives and the most confident true negatives.
 
 A .csv file containing the retrieval results for each method is written to the results directory.
@@ -328,16 +345,16 @@ The sub-directory structure of `additional_results_dir` should be
 	additional_results_dir/[situation_desc]/[obj_desc]/[imfname].csv
 
 where:
-	- `[situation_desc]` matches the situation description in the *situation definition* file used during the experiment.
-	- `[obj_desc]` matches the objects included in the *situation definition* file.
-	- [imfname].csv contains bounding boxes for image [imfname].jpg used in the experiment.
-	- There is a .csv file for each image used in the experiment.
+- `[situation_desc]` matches the situation description in the *situation definition* file used during the experiment.
+- `[obj_desc]` matches the objects included in the *situation definition* file.
+- `[imfname].csv` contains bounding boxes for image `[imfname].jpg` used in the experiment.
+- There is a .csv file for each image used in the experiment.
 
-The contents of each .csv file should specify bounding boxes for one object type in the image. The format for the .csv is 
+The contents of each .csv file should specify bounding boxes for one object type in the image. Each row should define one possible bounding box for the object tyep. The format for each row of the .csv is 
 
 `x position, y position, box width, box height, confidence`
 
-To generate the workspaces, the highest confidence box for each object type will be used, so long as it does not have an intersection over union greater than .5 with any of the other boxes included in the workspace. This avoids problems when there are two instances of a specific object type in a situation definition and the boxes were generated independently from one another. 
+To generate the workspaces, the highest confidence box for each object type will be used, so long as it does not have an intersection over union greater than .5 with any of the other boxes included in the workspace. This avoids problems when there are two instances of a specific object type in a situation definition and the boxes were generated independently from one another. This is, however, a greedy mechanism that may not produce the optimal set of bounding boxes.
 
 The situation support score is calculated as a padded geometric mean of the confidence values associated with constituent boxes. 
 

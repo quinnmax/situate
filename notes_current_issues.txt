@@ -22,15 +22,25 @@ before making code public
 
 	x two folders, not in results at all, two data sets, same method, caused error
 
-	make sure repeated runs are being grouped properly
-
 	x update parallel mode
 
-	save off results more often (every 100 images or so?)
+	x see if saved structure for per-agent records can be made smaller. what all is being saved?
 
-	see if saved structure for per-agent records can be made smaller. what all is being saved?
+	x include precision recall code, clean up, removing recall @ n stuff
+
+	x save off results more often (every 100 images or so?)
+		added function situate.data_generate_split_files_for_long_run
+		this makes split files that use the same training set, but split up the testing data in 100 image chunks for saving. no changes needed to experiment_handler
+
+	make sure repeated runs are being grouped properly in analysis code
+		decide what analysis steps should include run variance (if any)
+		at least, a distribution of final support scores, with some error bounds
 
 	another pass on the readme (new analysis scripts)
+
+
+
+
 
 
 
@@ -139,7 +149,7 @@ old issues
 
 	x include figures that show top results in positives, negatives, false pos, and false neg
 
-	x install matconvnet if not already installed
+	x install matconvnet if not already installed during setup
 
 
 

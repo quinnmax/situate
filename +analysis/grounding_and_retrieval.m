@@ -239,42 +239,43 @@ function [] = grounding_and_retrieval( input, varargin )
 
 
 
-    %% deal with additional results from external folder 
+    %% load additional results from external folder 
 
         if ~isempty( additional_results_directory )
 
-            need_to_make_workspaces_from_saved_boxes = true;
+            need_to_make_workspaces_from_external_boxes = true;
             
             if exist( fullfile( additional_results_directory, 'processed_box_data.mat'), 'file' )
 
                 data_fname = situate.check_for_existing_model(additional_results_directory,'im_fnames',im_fnames);
                 
                 if ~isempty(data_fname)
+                    
                     additional_results = load( data_fname );
                     display([ 'loaded addtional results from : ' data_fname ]);
-                    need_to_make_workspaces_from_saved_boxes = false;
+                    need_to_make_workspaces_from_external_boxes = false;
                     
                     % sort the data in the additional results so they are consistent with the
                     % ordering we have now
-                    [~,order_a] = sort(im_fnames);
-                    [~,order_b] = sort(additional_results.im_fnames);
-
-                    additional_results.im_fnames = additional_results.im_fnames(order_a(order_b));
-                    additional_results.lb_fnames = additional_results.lb_fnames(order_a(order_b));
-                    additional_results.workspaces_final = additional_results.workspaces_final(order_a(order_b));
+                    [~,order_a]     = sort(im_fnames);
+                    [~,order_a_inv] = sort(order_a);
+                    [~,order_b]     = sort(additional_results.im_fnames);
+                    
+                    additional_results.im_fnames = additional_results.im_fnames(order_b( order_a_inv ));
+                    additional_results.lb_fnames = additional_results.lb_fnames(order_b( order_a_inv ));
+                    additional_results.workspaces_final = additional_results.workspaces_final(order_b(order_a_inv));
                     
                 end
                 
             end
                     
-            if need_to_make_workspaces_from_saved_boxes
+            if need_to_make_workspaces_from_external_boxes
 
                 additional_results = [];
                 additional_results.im_fnames = im_fnames;
                 additional_results.lb_fnames = lb_fnames;
                 additional_results.situation_struct = situation_struct;
                 
-
                 for imi = 1:num_images
 
                     im_fname = im_fnames{imi};
@@ -309,7 +310,9 @@ function [] = grounding_and_retrieval( input, varargin )
             condition_structs_unique{num_conditions}.num_iterations = nan;
             condition_structs_unique{num_conditions}.situation_objects = situation_objects;
             
-            descriptions{num_conditions} = strrep( additional_results_directory, '/', '' );
+            temp = additional_results_directory;
+            if strcmp( temp(end), filesep ), temp = temp(1:end-1); end
+            descriptions{num_conditions} = last(strsplit(temp,filesep));
 
         end
 
@@ -451,20 +454,34 @@ function [] = grounding_and_retrieval( input, varargin )
             end
         end
 
+        
+        
+        % ROC analysis
         AUROC = nan(1,num_conditions);
         FPR   = cell(1,num_conditions);
         TPR   = cell(1,num_conditions);
         for ci = 1:num_conditions
-            [AUROC(ci), TPR{ci}, FPR{ci}] = ROC( final_support_full_situation{ci}, is_situation_instance, 1 );
+            [AUROC(ci), TPR{ci}, FPR{ci}] = ROC( final_support_full_situation{ci}, is_situation_instance );
         end
-
         
         
-        % recall @ n
+        
+        % PR analysis
+        precision = cell(1,num_conditions);
+        recall    = cell(1,num_conditions);
+        for ci = 1:num_conditions
+           [precision{ci}, recall{ci}] = PR_analysis( final_support_full_situation{ci}, is_situation_instance );
+        end
+        
+        
+        
+        % recall @ n (an un-normalized ROC-type analysis)
         recall_at_n = cell(1,num_conditions);
         for ci = 1:num_conditions
             recall_at_n{ci} = arrayfun( @(x) sum( rank{ci} <= x ), 1:num_images ) ./ sum(is_situation_instance);
         end
+        
+        
         
         % save results
 
@@ -481,9 +498,12 @@ function [] = grounding_and_retrieval( input, varargin )
 
         results_struct_retrieval.recall_at_n = recall_at_n;
         
-        results_struct_retrieval.FPR = FPR;
-        results_struct_retrieval.TPR = TPR;
+        results_struct_retrieval.FPR   = FPR;
+        results_struct_retrieval.TPR   = TPR;
         results_struct_retrieval.AUROC = AUROC;
+        
+        results_struct_retrieval.precision = precision;
+        results_struct_retrieval.recall    = recall;
 
         save( fullfile(results_directory, ['results_retrieval.mat']), '-struct', 'results_struct_retrieval' );
         for ci = 1:num_conditions
@@ -639,6 +659,32 @@ function [] = grounding_and_retrieval( input, varargin )
             legend( temp, 'Location', 'southeast' );
             xlabel('FPR')
             ylabel('TPR');
+            
+            xlim([0 1]);
+            ylim([0 1]);
+
+            saveas(h,fullfile(results_directory,fig_title),'png')
+        end
+        
+        
+        % PR curves
+        if any(is_situation_instance) && any(~is_situation_instance)
+
+            fig_title = ['PR curves'];
+            h = figure('color','white','Name',fig_title,'position',[720 2 500 400]);
+
+            temp = descriptions;
+
+            for ci = 1:num_conditions
+                plot(results_struct_retrieval.recall{ci}, results_struct_retrieval.precision{ci},linespec{ci} );
+                hold on;
+            end
+            legend( temp, 'Location', 'southwest' );
+            xlabel('recall')
+            ylabel('precision');
+            
+            xlim([0 1]);
+            ylim([0 1]);
 
             saveas(h,fullfile(results_directory,fig_title),'png')
         end
