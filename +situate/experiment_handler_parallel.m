@@ -5,6 +5,7 @@ function experiment_handler_parallel( experiment_struct, situation_struct, situa
 
 
     %% tidy up parameterizations 
+    
         situate_params_array = situate.parameters_struct_new_to_old( experiment_struct, situation_struct, situate_params_array );
         assert( situate.parameters_struct_validate( situate_params_array ) );
         if isempty( situate_params_array.seed_test )
@@ -19,6 +20,29 @@ function experiment_handler_parallel( experiment_struct, situation_struct, situa
         
         
     %% generate training/testing sets 
+    
+    % see if the training/testing directories are using the base directories
+    if ~exist(experiment_struct.experiment_settings.directory_train,'dir') ...
+    || ~exist(experiment_struct.experiment_settings.directory_test,'dir')  ...
+
+        base_image_directories = jsondecode_file('base_image_directories.json');
+        base_image_directories = base_image_directories.base_dirs;
+        if ~isempty(base_image_directories)
+            
+            if ~exist(experiment_struct.experiment_settings.directory_train,'dir')
+                training_dirs = cellfun( @(x) exist( fullfile( x, experiment_struct.experiment_settings.directory_train ), 'dir' ), base_image_directories );
+                experiment_struct.experiment_settings.directory_train = fullfile( base_image_directories{find(training_dirs,1,'first')}, experiment_struct.experiment_settings.directory_train );
+            end
+            
+            if ~exist(experiment_struct.experiment_settings.directory_test,'dir')
+                testing_dirs = cellfun( @(x) exist( fullfile( x, experiment_struct.experiment_settings.directory_test ), 'dir' ), base_image_directories );
+                experiment_struct.experiment_settings.directory_test = fullfile( base_image_directories{find(testing_dirs,1,'first')}, experiment_struct.experiment_settings.directory_test );
+            end
+           
+        else
+            error('training/testing directories could not be reconciled with base image directory');
+        end
+    end
     
     train_test_dirs_match   = isequal(  experiment_struct.experiment_settings.directory_train, experiment_struct.experiment_settings.directory_test );
     if isempty( experiment_struct.experiment_settings.training_testing_split_directory )

@@ -10,8 +10,9 @@
 
 			"description" : "handshaking_positives_check",
 
-			"directory_train" : "/Users/Max/Documents/MATLAB/data/situate_images/Handshaking_train/",
-			"directory_test"  : "/Users/Max/Documents/MATLAB/data/situate_images/Handshaking_train/",
+			// full path, or relative to base_image_directories
+			"directory_train" : "Handshaking_train/",
+			"directory_test"  : "Handshaking_train/",
 
 			"use_parallel"					: 0, 
 			

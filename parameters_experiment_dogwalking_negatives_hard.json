@@ -11,8 +11,9 @@
 
 			"description" : "dogwalking negatives hard",
 
-			"directory_train" : "/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/",
-			"directory_test"  : "/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_hard_neg/",
+			// full path, or relative to base_image_directories
+			"directory_train" : "DogWalking_PortlandSimple_train/",
+			"directory_test"  : "DogWalking_hard_neg/",
 
 			"use_parallel"					: 0, 
 			

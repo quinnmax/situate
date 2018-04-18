@@ -11,8 +11,9 @@
 
 			"description" : "parallel check",
 
-			"directory_train" : "/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/",
-			"directory_test"  : "/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/",
+			// full path, or relative to base_image_directories.txt
+			"directory_train" : "DogWalking_PortlandSimple_train/",
+			"directory_test"  : "DogWalking_PortlandSimple_train/",
 
 			"use_parallel"					: 1, 
 			

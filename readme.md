@@ -13,10 +13,10 @@ Quinn, M. H., Conser, E., Witte, J. M., and Mitchell, M. (2018). [Semantic image
 
 # Setup
 
-Written and tested with:
+Situate was written in and has been tested with:
 - Matlab 2016b
 - Matlab Parallel Computing Toolbox (optional)
-- MatConvNet version 1.0 beta25
+- [MatConvNet](http://www.vlfeat.org/matconvnet/) version 1.0 beta25
 
 If MatConvNet and the pre-trained models are not found at runtime, Situate will try to download and install the needed components, but it's fragile. 
 
@@ -32,7 +32,7 @@ The *experiment parameters* file specifies:
 - training and testing images
 - visualization settings
 	
-example: "parameters_experiment_dogwalking_viz.json"
+example: `parameters_experiment_dogwalking_viz.json`
 
 #### Situation definition
 	
@@ -40,13 +40,13 @@ The *situation definition* file specifies
 - the situation objects that make up the situation
 - a mapping from possible labels (found in training data) to the situation objects
 
-example: "situation_definitions/dogwalking.json"
+example: `situation_definitions/dogwalking.json`
 
 #### Situate running parameters
 	
 The *Situate running parameters* file defines the functions that are used by situate. These includes the functions used to train and apply the classifier, to define and apply the conditional relationships among objects, and numerous others.
 
-example: "parameters_situate_default.json"
+example: `parameters_situate_default.json`
 
 A list of several *Situate running parameters* files can be included in the *experiment parameters file*. If they are, each parameterization will be run.
 
@@ -54,8 +54,25 @@ A list of several *Situate running parameters* files can be included in the *exp
 
 Images used for training are easiest to specify with a directory for each.
 
-	"directory_train" : "/Users/Max/Documents/images/DogWalking_PortlandSimple_train/",
-	"directory_test"  : "/Users/Max/Documents/images/DogWalking_PortlandSimple_test/",
+	"directory_train" : "/Users/User1/Documents/images/DogWalking_PortlandSimple_train/",
+	"directory_test"  : "/Users/User1/Documents/images/DogWalking_PortlandSimple_test/",
+
+Image directories can also be relative directories to a base directory listed in the file `base_image_directories.txt`. For example, the below is equivalent to above
+
+	"directory_train" : "DogWalking_PortlandSimple_train/",
+	"directory_test"  : "DogWalking_PortlandSimple_test/",
+
+for a `base_image_directories.json` file such as
+
+	{
+		"base_dirs" : [
+			"/Users/User1/Documents/images/",
+			"/home/user2/Documents/Data/images/",
+			"/Users/User3/Desktop/situate images/"
+		]
+	}
+
+As long as the relative directory exists in one of the provided base directories, it should work. This should make it easier to share *experiment parameters* files on multiple machines that have different paths for image data.
 
 #### Additional settings
 
