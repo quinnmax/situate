@@ -1,6 +1,6 @@
   function cur_situation = situation_struct_load_json( fname )
   
-    % cur_situation = situation_struct_load_json( fname );
+        % cur_situation = situation_struct_load_json( fname );
 
         situation_data_temp = jsondecode(fileread(fname));
         
@@ -26,7 +26,5 @@
         cur_situation.situation_objects_possible_labels = situation_objects_possible_labels;
         cur_situation.object_urgency_pre   = object_urgency_pre;
         cur_situation.object_urgency_post  = object_urgency_post;
-        cur_situation.possible_paths_train = situation_data_temp.situation.possible_training_data_paths;
-        cur_situation.possible_paths_test  = cur_situation.possible_paths_train;
         
   end

@@ -30,11 +30,7 @@
             ]
         }
 
-    },
-
-    "possible_training_data_paths" : [
-        "/Users/Max/Documents/MATLAB/data/situate_images/HandshakeLabeled/train/"
-    ]
+    }
 
 }}
     

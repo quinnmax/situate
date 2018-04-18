@@ -1,4 +1,7 @@
 function [] = labl_draw( lb_fname, varargin )
+% labl_draw( lb_fname );
+% labl_draw( lb_fname, situation_struct );
+
 
     if ~isempty(varargin)
         situation_struct = varargin{1};
@@ -6,9 +9,6 @@ function [] = labl_draw( lb_fname, varargin )
         situation_struct = [];
     end
 
-    %lb_fname = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/dog-walking51.json';
-    %situation_struct = situate.situation_struct_load_all('dogwalking');
-    
     lb_struct = situate.labl_load( lb_fname, situation_struct  );
 
     im_fname = [fileparts_mq(lb_fname,'path/name') '.jpg'];

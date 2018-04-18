@@ -3,9 +3,9 @@
     
 %% pick out training images
 
-    situation_file = 'situation_definitions/dogwalking.json';
-    im_dir = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/';
-    data_split_dir = 'data_splits/dogwalking_validation';
+    situation_file  = 'situation_definitions/dogwalking.json';
+    im_dir          = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/';
+    data_split_dir  = 'data_splits/dogwalking_validation';
     
     situation_struct = situate.situation_struct_load_json(situation_file);
     situation_objects = situation_struct.situation_objects;

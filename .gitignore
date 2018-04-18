@@ -47,11 +47,11 @@ Thumbs.db
 #################
 *.pdf
 results/*
-other stuff/*
+local only/*
 matconvnet/*
 
 
 # Do not ignore #
 #################
-# !+cnn/imagenet-vgg-f.mat
+
 

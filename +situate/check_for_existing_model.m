@@ -20,7 +20,7 @@ function selected_model_fname = check_for_existing_model( possible_paths, vararg
         mat_files = {};
         for pi = 1:length(possible_paths)
             if isdir(possible_paths{pi})
-                temp = dirfiles( possible_paths{pi}, '.mat' );
+                temp = dir2filenames( possible_paths{pi}, '*.mat' );
                 mat_files = [mat_files temp];
             end
         end

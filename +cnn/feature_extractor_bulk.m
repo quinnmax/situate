@@ -13,16 +13,8 @@ function [fname_out] = feature_extractor_bulk( directory_in, directory_out, situ
     % future. it does it at the directory level, but keeps track of what image each crop came from,
     % so you can still engage in proper training testing separation when using the resulting file
     
-    debug = false;
-    if ~exist('directory_in','var') ...
-    && ~exist('directory_out','var') ...
-    && ~exist('situation_struct','var') ...
-
-        directory_in = '/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train';
+    if ~exist('directory_out','var') || isempty(directory_out)
         directory_out = 'pre_extracted_feature_data';
-        situation_struct = situate.situation_struct_load_json('situation_definitions/dogwalking.json');
-        debug = true;
-        
     end
         
 %% get objects of interest

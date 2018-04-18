@@ -15,22 +15,6 @@ function [] = grounding_and_retrieval( input, varargin )
 
     %% process the input, get cell of mat file names 
 
-
-    if ~exist('input','var') || isempty(input) 
-        % input = {'/Users/Max/Dropbox/Projects/situate/results/dogwalking_positives_test_2018.03.27.23.28.01/parameters_situate_w_pool_priming_fold_01_2018.03.28.00.45.43.mat'};
-
-        % input = {'/Users/Max/Dropbox/Projects/situate/results/dogwalking_negatives_check_2018.03.28.08.12.24'};
-
-        %input = {'/Users/Max/Dropbox/Projects/situate/results/dogwalking_positives_test_2018.03.27.23.28.01/parameters_situate_w_pool_priming_fold_01_2018.03.28.00.45.43.mat'; ...
-        %         '/Users/Max/Dropbox/Projects/situate/results/dogwalking_negatives_check_2018.03.28.08.12.24'};
-
-        input = {'/Users/Max/Dropbox/Projects/situate/results/dogwalking_positives_test_2018.03.27.23.28.01/parameters_situate_w_pool_priming_fold_01_2018.03.28.00.45.43.mat'; ...
-                 '/Users/Max/Dropbox/Projects/situate/results/dogwalking_negatives_general_2018.03.30.17.52.03'};
-
-        varargin = {'rcnn box data/'};
-        warning('using debug directories, not real data');        
-    end
-
     if isfile(input) 
         input = { input };
     end
