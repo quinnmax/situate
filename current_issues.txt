@@ -1,52 +1,40 @@
 
-
-
-before making code public
-
-	x clean out tools folder
-
-	x clean up the image label loader
-
-	x analysis script
-		one for grounding analysis
-		one for retrieval analysis
-		one for outputting final workspaces (subjective) 
-		(change naming convention of saved workspaces, situation score, gt pos-neg)
-		one that calls all of them
-		
-		one for agent-level analysis (good for setting up detailed analyses)
-		
-	x put into it's own little package
-
-	x make sure recall@ is in the analysis code, 
-
-	x two folders, not in results at all, two data sets, same method, caused error
-
+current
 	x update parallel mode
-
-	x see if saved structure for per-agent records can be made smaller. what all is being saved?
-
 	x include precision recall code, clean up, removing recall @ n stuff
-
 	x save off results more often (every 100 images or so?)
 		added function situate.data_generate_split_files_for_long_run
 		this makes split files that use the same training set, but split up the testing data in 100 image chunks for saving. no changes needed to experiment_handler
 
+clean up
+	x clean out tools folder
+	x clean up the image label loader
+	x update analysis scripts
+	x wrap in packages
+	x see if saved structure for per-agent records can be made smaller. what all is being saved?
+	x remove references to local machines
+
+bugs
+	x two folders, not in results at all, two data sets, same method, caused error
+
+backlog
+	additional readme for extras
 	make sure repeated runs are being grouped properly in analysis code
 		decide what analysis steps should include run variance (if any)
 		at least, a distribution of final support scores, with some error bounds
+	issue: removing good boxes from workspace and not putting them back into the pool
+		i think the way we have it may create a second-attempted-entry advantage with some of the 
+		box a is checked in for person 1
+		box b is attempted for person 1, rejected
+		box a is attempted for person 2, accepted, replaces existing entry for person 1 (higher external support)
+		now we've already tried box b for person 1 and moved on, so won't get another shot
+	issue: if not good stuff in workspace, everything stays bad
+		total support should be individual object features, box parameters support, each pair support, full situation support
 
-	another pass on the readme (new analysis scripts)
 
 
 
-
-
-
-
-
-
-experiments for paper
+experiments
 
 	situations
 		dogwalking
@@ -76,15 +64,8 @@ experiments for paper
 
 other outstanding issues
 
-	removing good boxes from workspace and not putting them back into the pool
-		i think the way we have it may create a second-attempted-entry advantage with some of the 
-		box a is checked in for person 1
-		box b is attempted for person 1, rejected
-		box a is attempted for person 2, accepted, replaces existing entry for person 1 (higher external support)
-		now we've already tried box b for person 1 and moved on, so won't get another shot
-
-	total support should be individual object features, box parameters support, each pair support, full situation support
-
+	
+	
 
 
 old issues
