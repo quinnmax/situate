@@ -51,6 +51,7 @@ matconvnet/*
 results/*
 rcnn box data/*
 saved_models/*
++cnn/
 
 
 # Do not ignore #

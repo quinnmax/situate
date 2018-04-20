@@ -5,6 +5,7 @@ current
 	x save off results more often (every 100 images or so?)
 		added function situate.data_generate_split_files_for_long_run
 		this makes split files that use the same training set, but split up the testing data in 100 image chunks for saving. no changes needed to experiment_handler
+	clean up the git repo
 
 clean up
 	x clean out tools folder
