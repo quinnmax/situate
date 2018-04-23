@@ -1,0 +1,180 @@
+
+if images aren't found, need to display what exactly it was looking for that wasn't found. this should be in the situate.experiment_handler code
+
+analysis bonked on string input, and directory string input
+
+change name of "rcnn box data" to "external box data" and update the readme
+
+include link to portland simple dogwalking in the readme
+	http://web.cecs.pdx.edu/~mm/PortlandStateDogWalkingImages.html
+
+note: the jsons are not in there yet, just the .labl files
+
+easiest way might be to erase the history on situate, give it another go though.
+
+label x-axis on the distribution of support scores figure
+
+
+
+
+
+before making code public
+
+	x clean out tools folder
+
+	x clean up the image label loader
+
+	x analysis script
+		one for grounding analysis
+		one for retrieval analysis
+		one for outputting final workspaces (subjective) 
+		(change naming convention of saved workspaces, situation score, gt pos-neg)
+		one that calls all of them
+		
+		one for agent-level analysis (good for setting up detailed analyses)
+		
+	x put into it's own little package
+
+	x make sure recall@ is in the analysis code, 
+
+	x two folders, not in results at all, two data sets, same method, caused error
+
+	x update parallel mode
+
+	x see if saved structure for per-agent records can be made smaller. what all is being saved?
+
+	x include precision recall code, clean up, removing recall @ n stuff
+
+	x save off results more often (every 100 images or so?)
+		added function situate.data_generate_split_files_for_long_run
+		this makes split files that use the same training set, but split up the testing data in 100 image chunks for saving. no changes needed to experiment_handler
+
+	x avoid hard-coded directory structures
+		added base_image_directories.txt
+
+	make sure repeated runs are being grouped properly in analysis code
+		decide what analysis steps should include run variance (if any)
+		at least, a distribution of final support scores, with some error bounds
+
+	another pass on the readme (new analysis scripts)
+
+
+
+
+
+
+
+
+
+experiments for paper
+
+	situations
+		dogwalking
+		handhsaking
+		pingpong
+	data
+		positives test set
+		large negatives set
+		hard-negatives set
+	parameters
+		uniform
+		naive faster rcnn (just top box -> situation score)
+		situate as proposed 
+			detection-based classifier (not iou est)
+			fixed internal-external support values
+			local search, no box-adjust
+		situate final
+			iou estimation classifier
+			internal-external support based on AUROC
+			box-adjust
+			pool priming with rcnn
+		situate with faster-rcnn boxes
+			(same, but faster-rcnn boxes for priming)
+	
+		
+
+
+other outstanding issues
+
+	removing good boxes from workspace and not putting them back into the pool
+		i think the way we have it may create a second-attempted-entry advantage with some of the 
+		box a is checked in for person 1
+		box b is attempted for person 1, rejected
+		box a is attempted for person 2, accepted, replaces existing entry for person 1 (higher external support)
+		now we've already tried box b for person 1 and moved on, so won't get another shot
+
+	total support should be individual object features, box parameters support, each pair support, full situation support
+
+
+
+old issues
+
+	x when situate tries to load models from "saved_models," if that directory exists, it crashes.
+
+	x the gt IOU is not correct in the workspace. 
+	check for when it's adjusted to make sure the correct boxes are being compared (and that the workspace entry is being properly updated when something goes in and is replaced)
+
+	x add the new RCNN pre-computed box files, make sure that pipeline works properly
+
+	x include workspace / gt reconciliation as a function external to 
+
+	x in the results file, copy the experiment script, situation struct, and situate parameters used in the run
+
+	x when situate tries to load models from "saved_models," if that directory doesn't exist, it crashes.
+	make sure that it just creates that directory if it doesn't already exist.
+
+	x the gt IOU is not correct in the workspace. 
+		check for when it's adjusted to make sure the correct boxes are being compared (and that the workspace entry is being properly updated when something goes in and is replaced)
+		update: added an additional check of correct gt IOU in the main_loop and couldn't reproduce this
+
+	x initialize pool with rcnn data
+		add the new RCNN pre-computed box files, make sure that pipeline works properly
+		currently crashes because i wanted to check the string comparison
+		right now, trying to use the information in the situation structure to automatically pick a directory from the rcnn folder
+		just include the directory that contains the relevant rcnn data as an arg?
+
+		"agent_pool_initialization_function" : "@(a,b,c,d) situate.agent.pool_initialize_rcnn(a,b,c,d,10,30);"
+
+		 vs
+
+		"agent_pool_initialization_function" : "@(a,b,c,d) situate.agent.pool_initialize_rcnn(a,b,c,d,10,30,{'rcnn box data/dogwalking/});",
+
+		always have rcnn boxes that match situation objects
+
+		mapping from csv data to situation objects is sorta complicated
+		person1 person2, vs person
+		person_left person_right
+
+
+	x training iou regression classifier
+		there's a display when running trust rounds that is unclear
+
+	x loading pre-extracted features mat
+	 	lots of warnings
+		mat has p_struct in it, which has anon functions, which look for their original source in a hardcoded path. not actually used though
+
+		that file should just be the pre-extracted features
+		
+		a separate function should learn a conditional model and estimate external and total support functions
+
+	x melanie's warnings when starting up matlab
+
+	x continue to update analysis code
+
+	x have an explicit setting for the max number of boxes taken from the rcnn like mechanism
+
+	x issue with negative images in the visualizer
+
+	x check that analysis code works with only negative images
+
+	x include figures that show top results in positives, negatives, false pos, and false neg
+
+	x install matconvnet if not already installed during setup
+
+
+
+
+
+
+
+	

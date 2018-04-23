@@ -46,15 +46,12 @@ Thumbs.db
 # Results, notes, matconvnet #
 #################
 *.pdf
+results/*
 local only/*
 matconvnet/*
-results/*
-rcnn box data/*
-saved_models/*
-+cnn/
 
 
 # Do not ignore #
 #################
-
+# ~*.json
 

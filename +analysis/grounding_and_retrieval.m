@@ -138,7 +138,6 @@ function [] = grounding_and_retrieval( input, varargin )
         % make sure each condition was applied to the same set of images
             assert( all( cellfun( @(x) isequal( im_fnames{1}, x), im_fnames(2:end) ) ) );
             im_fnames = im_fnames{1};
-
             lb_fnames = cellfun( @(x) [fileparts_mq(x, 'path/name') '.json'], im_fnames, 'UniformOutput', false );
             lb_exists = cellfun( @(x) exist( x, 'file' ), lb_fnames );
             lb_fnames( ~lb_exists ) = cell(1,sum(~lb_exists)); % not deleting, just leaving empty
@@ -147,10 +146,10 @@ function [] = grounding_and_retrieval( input, varargin )
         % (not doing it per condition because we've asserted the same image file list for all conditions)
             %is_situation_instance = cellfun( @(x) exist([fileparts_mq(x,'path/name'),'.json'],'file') |  exist([fileparts_mq(x,'path/name'),'.labl'],'file'), im_fnames );
             label_structs = situate.labl_load( lb_fnames, situation_struct );
-            is_situation_instance = false( size(label_structs) );
+            is_situation_instance = false( size(label_structs) )';
             for li = 1:length(label_structs)
-                if ~isempty( label_structs{li} ) ...
-                && isempty( setsub( situation_objects, label_structs{li}.labels_adjusted ) )
+                if ~isempty( label_structs(li) ) ...
+                && isempty( setsub( situation_objects, label_structs(li).labels_adjusted ) )
                     is_situation_instance(li) = true;
                 end
             end
@@ -182,7 +181,7 @@ function [] = grounding_and_retrieval( input, varargin )
         % rescore workspaces (account for objects of the same type that are arbitrarily assigned a number)
             for ci = 1:num_conditions
                 for imi = 1:num_images
-                    workspaces_final{ci}(imi) = situate.workspace_score( workspaces_final{ci}(imi), label_structs{imi}, condition_structs_unique{ci} );
+                    workspaces_final{ci}(imi) = situate.workspace_score( workspaces_final{ci}(imi), label_structs(imi), condition_structs_unique{ci} );
                 end
             end
 
