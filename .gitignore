@@ -49,6 +49,7 @@ Thumbs.db
 results/*
 local only/*
 matconvnet/*
+external box data/*
 
 
 # Do not ignore #
