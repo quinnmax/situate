@@ -1,8 +1,6 @@
 
 if images aren't found, need to display what exactly it was looking for that wasn't found. this should be in the situate.experiment_handler code
 
-analysis bonked on string input, and directory string input
-
 change name of "rcnn box data" to "external box data" and update the readme
 
 include link to portland simple dogwalking in the readme
