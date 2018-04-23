@@ -39,6 +39,10 @@
 ehthumbs.db
 Thumbs.db
 
+# text editor backups #
+##############
+*~
+
 # Binaries #
 #####################
 *.mat
