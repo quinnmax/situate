@@ -1,22 +1,23 @@
 {
-	"situation_definition_fname" : "situation_definitions/handshaking.json",
+	"situation_definition_fname" : "situation_definitions/dogwalking.json",
 			
 	"situate_parameterizations_fnames" : [
-				"parameters_situate_homebrew_rcnn_priming.json"
-				//"parameters_situate_faster_rcnn_priming.json"
+				"parameterizations_run/parameters_situate_homebrew_rcnn_priming.json"
+				//"parameterizations_run/parameters_situate_faster_rcnn_priming.json"
+				//"parameterizations_run/parameters_situate_uniform.json"
 			],	
 
 	"experiment_settings" : {
 
-			"description" : "handshaking_positives_check",
+			"description" : "parallel check",
 
-			// full path, or relative to base_image_directories
-			"directory_train" : "Handshaking_train/",
-			"directory_test"  : "Handshaking_train/",
+			// full path, or relative to base_image_directories.txt
+			"directory_train" : "DogWalking_PortlandSimple_train/",
+			"directory_test"  : "DogWalking_PortlandSimple_train/",
 
-			"use_parallel"					: 0, 
+			"use_parallel"					: 1, 
 			
-			"run_analysis_after_completion"	: 0,
+			"run_analysis_after_completion"	: 1,
 
 			"use_visualizer" : 0,
 
@@ -29,9 +30,8 @@
 	 		},
 
 			// training / testing image lists
-			// 	if directory_train and directory_test are the same, 
-			// 	then the division of images specified in this directory will be used
-			"training_testing_split_directory" : "handshaking_validation",
+			// empty should use all files in specified folders
+			"training_testing_split_directory" : "data_splits/dogwalking_validation/",
 
 			// number of folds
 			// 	if image lists were provided
@@ -43,7 +43,7 @@
 
 			"specific_folds" : [1],
 
-			"max_testing_images" : 10,
+			"max_testing_images" : 12,
 			
 			// if specified, this will be used to seed the RNG during testing.
 			// otherwise, each parameterization will get a different time-based seed

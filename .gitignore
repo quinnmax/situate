@@ -41,7 +41,8 @@ Thumbs.db
 
 # text editor backups #
 ##############
-*~
+*.*~
+.*~
 
 # Binaries #
 #####################
@@ -54,7 +55,6 @@ results/*
 local only/*
 matconvnet/*
 external box data/*
-
 
 # Do not ignore #
 #################

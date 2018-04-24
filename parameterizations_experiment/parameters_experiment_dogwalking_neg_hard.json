@@ -2,22 +2,22 @@
 	"situation_definition_fname" : "situation_definitions/dogwalking.json",
 			
 	"situate_parameterizations_fnames" : [
-				"parameters_situate_homebrew_rcnn_priming.json"
-				//"parameters_situate_faster_rcnn_priming.json"
-				//"parameters_situate_uniform.json"
+				"parameterizations_run/parameters_situate_homebrew_rcnn_priming.json"
+				//"parameterizations_run/parameters_situate_faster_rcnn_priming.json"
+				//"parameterizations_run/parameters_situate_uniform.json"
 			],	
 
 	"experiment_settings" : {
 
-			"description" : "parallel check",
+			"description" : "dogwalking negatives hard",
 
-			// full path, or relative to base_image_directories.txt
+			// full path, or relative to base_image_directories
 			"directory_train" : "DogWalking_PortlandSimple_train/",
-			"directory_test"  : "DogWalking_PortlandSimple_train/",
+			"directory_test"  : "DogWalking_hard_neg/",
 
-			"use_parallel"					: 1, 
+			"use_parallel"					: 0, 
 			
-			"run_analysis_after_completion"	: 1,
+			"run_analysis_after_completion"	: 0,
 
 			"use_visualizer" : 0,
 
@@ -31,7 +31,7 @@
 
 			// training / testing image lists
 			// empty should use all files in specified folders
-			"training_testing_split_directory" : "data_splits/dogwalking_validation/",
+			"training_testing_split_directory" : "",
 
 			// number of folds
 			// 	if image lists were provided
@@ -43,7 +43,7 @@
 
 			"specific_folds" : [1],
 
-			"max_testing_images" : 12,
+			"max_testing_images" : "",
 			
 			// if specified, this will be used to seed the RNG during testing.
 			// otherwise, each parameterization will get a different time-based seed
