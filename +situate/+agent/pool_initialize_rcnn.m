@@ -1,4 +1,4 @@
-function primed_agent_pool = pool_initialize_rcnn( p, im, im_fname, ~, varargin )
+function primed_agent_pool = pool_initialize_rcnn( situation_struct, im, im_fname, ~, varargin )
 
 % primed_agent_pool = pool_initialize_rcnn( p, im, im_fname, learned_models, [num_rcnn_agents_per_obj], [num_non_rcnn_agents] );
 %
@@ -24,13 +24,13 @@ function primed_agent_pool = pool_initialize_rcnn( p, im, im_fname, ~, varargin 
     
     
     im_size = [ size(im,1), size(im,2) ];
-    situation_objects = p.situation_objects;
+    situation_objects = situation_struct.situation_objects;
     
     % get boxes for each situation object
     csv_data = cell(1,length(situation_objects));
     for oi = 1:length(situation_objects)
         cur_obj = situation_objects{oi};
-        csv_fname = fullfile( 'rcnn box data', p.situation_description, cur_obj, [fileparts_mq( im_fname, 'name' ) '.csv'] );
+        csv_fname = fullfile( 'external box data/rcnn boxes', situation_struct.situation_description, cur_obj, [fileparts_mq( im_fname, 'name' ) '.csv'] );
         assert( isfile(csv_fname) );
         csv_data_columns = {'x','y','w','h','confidence','gt iou initial'}; % note to self
         conf_column = find( strcmp( csv_data_columns, 'confidence' ) );
@@ -72,8 +72,8 @@ function primed_agent_pool = pool_initialize_rcnn( p, im, im_fname, ~, varargin 
     for oi = 1:length(situation_objects)
     for bi = 1:size( csv_data{oi}, 1 )
         primed_agent_pool(ai).interest = situation_objects{oi};
-        if isfield(p,'situation_objects_urgency_pre')
-            primed_agent_pool(ai).urgency = p.situation_objects_urgency_pre(oi);
+        if isfield(situation_struct,'situation_objects_urgency_pre')
+            primed_agent_pool(ai).urgency = situation_struct.situation_objects_urgency_pre(oi);
         end
         x  = csv_data{oi}(bi,1);
         y  = csv_data{oi}(bi,2);

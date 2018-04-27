@@ -30,7 +30,10 @@ function [] = grounding_and_retrieval( input, varargin )
         dir_inds = find( cellfun( @isdir, input  ) );
         for di = 1:length(dir_inds)
             temp = dir(fullfile(input{dir_inds(di)}, '*.mat'));
-            mat_file_names(end+1:end+length(temp)) = cellfun( @(x) fullfile( input{dir_inds(di)}, x ), {temp.name}, 'UniformOutput', false );
+            names = {temp.name};
+            names = setsub( names, 'results_grounding.mat');
+            names = setsub( names, 'results_retrieval.mat');
+            mat_file_names(end+1:end+length(names)) = cellfun( @(x) fullfile( input{dir_inds(di)}, x ), names, 'UniformOutput', false );
         end
         mat_file_names(end+1:end+length(mat_inds)) = input(mat_inds);
         if ~isempty(setsub( 1:length(input), [mat_inds, dir_inds] ))
@@ -84,8 +87,8 @@ function [] = grounding_and_retrieval( input, varargin )
         end
         
         descriptions = cellfun( @(x) x.description, condition_structs_unique, 'UniformOutput', false );
+        descriptions = cellfun( @(x) fileparts_mq(x,'name'), descriptions, 'UniformOutput', false );
         descriptions = cellfun( @(x) strrep( x, '_', ' ' ), descriptions, 'UniformOutput', false );
-        descriptions = cellfun( @(x) strrep( x, '/', '' ),  descriptions, 'UniformOutput', false );
         descriptions = cellfun( @(x) strrep( x, '.json', '' ),  descriptions, 'UniformOutput', false );
         descriptions = cellfun( @(x) strrep( x, 'parameters', '' ),  descriptions, 'UniformOutput', false );
         descriptions = cellfun( @strtrim, descriptions, 'UniformOutput', false );
@@ -498,7 +501,7 @@ function [] = grounding_and_retrieval( input, varargin )
     %% visualize 
 
         % visualize grounding
-        linespec = {'k-','k--','k..','k-.'};
+        linespec = {'k-','k--','k:','k-.','k-o','k--o','k:o','k-.o'};
 
         % successful groundings 
         %   x axis, threshold
@@ -612,13 +615,16 @@ function [] = grounding_and_retrieval( input, varargin )
             for ci = 1:num_conditions
                 subplot2(num_conditions, 2, ci, 1);
                 hist( final_support_full_situation{ci}(is_situation_instance) );
-                ylabel( descriptions{ci} );
+                ylabel( {descriptions{ci};'count'} );
                 xlim([-.1,1.1])
+                xlabel('situation support score');
                 title('positives');
 
                 subplot2(num_conditions, 2, ci, 2);
                 hist( final_support_full_situation{ci}(~is_situation_instance) );
                 xlim([-.1,1.1])
+                xlabel('situation support score');
+                ylabel('count');
                 title('negatives');
             end
 
@@ -695,6 +701,7 @@ function [] = grounding_and_retrieval( input, varargin )
         % pos images
         if any(is_situation_instance)
             num_examples = 4;
+            num_examples = min( num_examples, num_images);
             for ci = 1:num_conditions
 
                 [~,sort_order_high] = sort( final_support_full_situation{ci}, 'descend' );

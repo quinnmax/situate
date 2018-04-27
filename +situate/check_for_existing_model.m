@@ -52,7 +52,6 @@ function selected_model_fname = check_for_existing_model( possible_paths, vararg
                 selected_model_fname = mat_files{mi};
                 
                 return;
-
             end
         end
               

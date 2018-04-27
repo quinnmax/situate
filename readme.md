@@ -11,6 +11,8 @@ Details can be found in our paper:
 
 Quinn, M. H., Conser, E., Witte, J. M., and Mitchell, M. (2018). [Semantic image retrieval via active grounding of visual situations](https://arxiv.org/abs/1711.00088). In *Proceedings of the 12th International Conference on Semantic Computing*. IEEE.
 
+The Portland State Dog-Walking Images dataset used in the paper can be found [here](http://web.cecs.pdx.edu/~mm/PortlandStateDogWalkingImages.html).
+
 # Setup
 
 Situate was written in and has been tested with:

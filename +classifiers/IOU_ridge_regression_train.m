@@ -1,14 +1,12 @@
 
 function classifier_struct = IOU_ridge_regression_train( situation_struct, fnames_in, saved_models_directory )
 
-
-
     % classifier_struct = classifiers.IOU_ridge_regression_train( situation_struct, fnames_in, saved_models_directory )
 
+    
+    
     model_description = 'IOU ridge regression';
-    
     fnames_in_stripped = fileparts_mq( fnames_in, 'name');
-    
     classes = situation_struct.situation_objects;
     
     
