@@ -5,16 +5,17 @@ function experiment_handler_parallel( experiment_struct, situation_struct, situa
 
 
     %% tidy up parameterizations 
-    
+      
         situate_params_array = situate.parameters_struct_new_to_old( experiment_struct, situation_struct, situate_params_array );
-        assert( situate.parameters_struct_validate( situate_params_array ) );
-        if isempty( situate_params_array.seed_test )
+        assert( all( situate.parameters_struct_validate( situate_params_array ) ) );
+        num_parameterizations = numel(situate_params_array);
+        if (num_parameterizations == 1 && isempty( situate_params_array.seed_test )) || any(isempty([situate_params_array.seed_test]))
             rng('shuffle');
-            curr_rng = rng();
-            for parameters_ind = 1:length(situate_params_array)
-                situate_params_array(parameters_ind).seed_test = curr_rng.Seed;
+            cur_rng = rng();
+            for parameters_ind = 1:num_parameterizations
+                situate_params_array(parameters_ind).seed_test = cur_rng.Seed;
             end
-            display(['testing seed was empty, set to: ' num2str(situate_params_array.seed_test)]);
+            display(['testing seed was empty, set to: ' num2str(cur_rng.Seed)]);
         end
         
         
@@ -44,7 +45,7 @@ function experiment_handler_parallel( experiment_struct, situation_struct, situa
         end
     end
     
-    train_test_dirs_match   = isequal(  experiment_struct.experiment_settings.directory_train, experiment_struct.experiment_settings.directory_test );
+    train_test_dirs_match = isequal(  experiment_struct.experiment_settings.directory_train, experiment_struct.experiment_settings.directory_test );
     if isempty( experiment_struct.experiment_settings.training_testing_split_directory )
         have_training_split_dir = false;
     else
@@ -116,10 +117,20 @@ function experiment_handler_parallel( experiment_struct, situation_struct, situa
     %   assert( all( [] ) ) passes.
     for fii = 1:length(fold_inds)
         fi = fold_inds(fii);
-        assert( all( cellfun( @(x) exist(fullfile(experiment_struct.experiment_settings.directory_train, x), 'file' ), data_split_struct(fi).fnames_lb_train) ) );
-        assert( all( cellfun( @(x) exist(fullfile(experiment_struct.experiment_settings.directory_train, x), 'file' ), data_split_struct(fi).fnames_im_train) ) );
-        assert( all( cellfun( @(x) exist(fullfile(experiment_struct.experiment_settings.directory_test,  x), 'file' ), data_split_struct(fi).fnames_lb_test)  ) );
-        assert( all( cellfun( @(x) exist(fullfile(experiment_struct.experiment_settings.directory_test,  x), 'file' ), data_split_struct(fi).fnames_im_test)  ) );
+        
+        full_file_lb_train = cellfun( @(x) fullfile( experiment_struct.experiment_settings.directory_train, x), data_split_struct(fi).fnames_lb_train, 'UniformOutput', false );
+        full_file_im_train = cellfun( @(x) fullfile( experiment_struct.experiment_settings.directory_train, x), data_split_struct(fi).fnames_im_train, 'UniformOutput', false );
+        full_file_lb_test  = cellfun( @(x) fullfile( experiment_struct.experiment_settings.directory_test, x),  data_split_struct(fi).fnames_lb_test,  'UniformOutput', false );
+        full_file_im_test  = cellfun( @(x) fullfile( experiment_struct.experiment_settings.directory_test, x),  data_split_struct(fi).fnames_im_test,  'UniformOutput', false );
+        expected_files = [full_file_lb_train; full_file_im_train; full_file_lb_test; full_file_im_test];
+        expected_files_exist = cellfun( @(x) exist(x,'file'), expected_files );
+        
+        if any( ~expected_files_exist )
+            warning('expected files not found');
+            display( expected_files( ~expected_files_exist ) );
+            error('expected files not found');
+        end
+           
     end
 
     % make sure all training labels and images have their partners

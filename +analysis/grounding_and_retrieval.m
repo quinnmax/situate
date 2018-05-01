@@ -71,7 +71,7 @@ function [] = grounding_and_retrieval( input, varargin )
             cur_condition.seed_test   = [];
             cur_condition.description = [];
 
-            [cur_condition_assignment, equality_caveats] = find( cellfun( @(x) isequal_struct( cur_condition, x ), condition_structs_unique ) );
+            cur_condition_assignment = find( cellfun( @(x) isequal_struct( cur_condition, x ), condition_structs_unique ) );
             if isempty(cur_condition_assignment)
                 condition_structs_unique{end+1}  = cur_condition;
                 condition_struct_assignments(fi) = length(condition_structs_unique);
@@ -130,61 +130,63 @@ function [] = grounding_and_retrieval( input, varargin )
 
     %% data work 
 
-        % final workspaces by condition
+        % get fnames
             im_fnames = cell(1,num_conditions);
             for ci = 1:num_conditions
                 cur_mat_fnames = mat_file_names(eq(ci,condition_struct_assignments));
                 temp = cellfun( @(x) load( x,'fnames_im_test'), cur_mat_fnames );
                 im_fnames{ci} = vertcat(temp.fnames_im_test);
             end
-
-        % make sure each condition was applied to the same set of images
-            assert( all( cellfun( @(x) isequal( im_fnames{1}, x), im_fnames(2:end) ) ) );
+            try
+                assert( all( cellfun( @(x) isequal( im_fnames{1}, x), im_fnames(2:end) ) ) );
+            catch
+                error('looks like not all conditions ran the same images');
+            end
             im_fnames = im_fnames{1};
             lb_fnames = cellfun( @(x) [fileparts_mq(x, 'path/name') '.json'], im_fnames, 'UniformOutput', false );
             lb_exists = cellfun( @(x) exist( x, 'file' ), lb_fnames );
             lb_fnames( ~lb_exists ) = cell(1,sum(~lb_exists)); % not deleting, just leaving empty
-
-        % get pos/neg assignment (based on presense of label file) for each image
-        % (not doing it per condition because we've asserted the same image file list for all conditions)
-            %is_situation_instance = cellfun( @(x) exist([fileparts_mq(x,'path/name'),'.json'],'file') |  exist([fileparts_mq(x,'path/name'),'.labl'],'file'), im_fnames );
-            label_structs = situate.labl_load( lb_fnames, situation_struct );
-            is_situation_instance = false( size(label_structs) )';
-            for li = 1:length(label_structs)
-                if ~isempty( label_structs(li) ) ...
-                && isempty( setsub( situation_objects, label_structs(li).labels_adjusted ) )
-                    is_situation_instance(li) = true;
-                end
-            end
-            
-        % final workspaces by condition
+        
+        % check for un-run workspaces, make sure they still all match
             workspaces_final = cell( 1, num_conditions );
+            workspace_ran = cell(1,num_conditions);
             for ci = 1:num_conditions
                 cur_mat_fnames = mat_file_names(eq(ci,condition_struct_assignments));
                 temp = cellfun( @(x) load( x, 'workspaces_final'), cur_mat_fnames );
                 workspaces_final{ci} = [temp.workspaces_final];
+                workspace_ran{ci} = cellfun( @(x) ~isempty(x), workspaces_final{ci} );
             end
-
-        % remove un-run workspaces, make sure all conditions still match
-            inds_remove_per_condition = cell(1,num_conditions);
-            for ci = 1:num_conditions
-                inds_remove_per_condition{ci} = cellfun( @isempty, workspaces_final{ci} );
+            try
+                assert( all( cellfun( @(x) isequal( workspace_ran{1}, x), workspace_ran(2:end) ) ) );
+            catch
+                error('looks like which images were run does not match for each condition');
             end
-            % if we bonk here, then some conditions weren't run on all methods
-            assert( all( cellfun( @(x) isequal( inds_remove_per_condition{1}, x ), inds_remove_per_condition(2:end) ) ) );
-            inds_remove = inds_remove_per_condition{1};
+            workspace_ran = workspace_ran{1};
+            im_fnames = im_fnames(workspace_ran);
+            lb_fnames = lb_fnames(workspace_ran);
+            num_images = sum(workspace_ran);
             for ci = 1:num_conditions
-                workspaces_final{ci}(inds_remove) = [];
+                workspaces_final{ci}(~workspace_ran) = [];
                 workspaces_final{ci} = [workspaces_final{ci}{:}];
             end
-            im_fnames(inds_remove) = [];
-            num_images = length( im_fnames );
-            is_situation_instance(inds_remove) = [];
-
+            
+        % get pos/neg assignment (based on presense of label file) for each image
+        % (not doing it per condition because we've asserted the same image file list for all conditions)
+            %is_situation_instance = cellfun( @(x) exist([fileparts_mq(x,'path/name'),'.json'],'file') |  exist([fileparts_mq(x,'path/name'),'.labl'],'file'), im_fnames );
+            label_structs = situate.labl_load( lb_fnames, situation_struct );
+            if isstruct(label_structs), label_structs = mat2cell(label_structs, ones(1,size(label_structs,1)),ones(1,size(label_structs,2))); end
+            is_situation_instance = cellfun( @(x) ~isempty(x), label_structs );
+            for li = 1:length(label_structs)
+                if ~isempty( label_structs{li} ) ...
+                && isempty( setsub( situation_objects, label_structs{li}.labels_adjusted ) )
+                    is_situation_instance(li) = true;
+                end
+            end
+      
         % rescore workspaces (account for objects of the same type that are arbitrarily assigned a number)
             for ci = 1:num_conditions
                 for imi = 1:num_images
-                    workspaces_final{ci}(imi) = situate.workspace_score( workspaces_final{ci}(imi), label_structs(imi), condition_structs_unique{ci} );
+                    workspaces_final{ci}(imi) = situate.workspace_score( workspaces_final{ci}(imi), label_structs{imi}, condition_structs_unique{ci} );
                 end
             end
 
@@ -699,9 +701,9 @@ function [] = grounding_and_retrieval( input, varargin )
             
             
         % pos images
+        num_examples = 4;
         if any(is_situation_instance)
-            num_examples = 4;
-            num_examples = min( num_examples, num_images);
+            num_examples_pos = min( num_examples, sum(is_situation_instance) );
             for ci = 1:num_conditions
 
                 [~,sort_order_high] = sort( final_support_full_situation{ci}, 'descend' );
@@ -713,14 +715,14 @@ function [] = grounding_and_retrieval( input, varargin )
                 fig_title = ['high low support, positive instances, ' descriptions{ci}];
                 h = figure('color','white','Name',fig_title,'position',[720 2 1400 600]);
 
-                for imi = 1:num_examples
-                    subplot2(2,num_examples,1,imi);
+                for imi = 1:num_examples_pos
+                    subplot2(2,num_examples_pos,1,imi);
                     cur_ind = sort_order_high_pos(imi);
                     situate.workspace_draw( im_fnames{cur_ind}, condition_structs_unique{ci}, workspaces_final{ci}(cur_ind) );
                     xlabel(sprintf('situation support: %f', final_support_full_situation{ci}(cur_ind)));
                     if imi == 1, ylabel(sprintf('%s\n%s\n%s',descriptions{ci},'positive instances','high support')); end
 
-                    subplot2(2,num_examples,2,imi);
+                    subplot2(2,num_examples_pos,2,imi);
                     cur_ind = sort_order_low_pos(imi);
                     situate.workspace_draw( im_fnames{cur_ind}, condition_structs_unique{ci}, workspaces_final{ci}(cur_ind) );
                     xlabel(sprintf('situation support: %f', final_support_full_situation{ci}(cur_ind)));
@@ -735,8 +737,8 @@ function [] = grounding_and_retrieval( input, varargin )
             
             
         % neg images
+        num_examples_neg = min( num_examples, sum(~is_situation_instance) );
         if any( ~is_situation_instance )
-            num_examples = 4;
             for ci = 1:num_conditions
 
                 [~,sort_order_high] = sort( final_support_full_situation{ci}, 'descend' );
@@ -748,14 +750,14 @@ function [] = grounding_and_retrieval( input, varargin )
                 fig_title = ['high low support, negative instances, ' descriptions{ci}];
                 h = figure('color','white','Name',fig_title,'position',[720 2 1400 600]);
 
-                for imi = 1:num_examples
-                    subplot2(2,num_examples,1,imi);
+                for imi = 1:num_examples_neg
+                    subplot2(2,num_examples_neg,1,imi);
                     cur_ind = sort_order_high_neg(imi);
                     situate.workspace_draw( im_fnames{cur_ind}, condition_structs_unique{ci}, workspaces_final{ci}(cur_ind) );
                     xlabel(sprintf('situation support: %f', final_support_full_situation{ci}(cur_ind)));
                     if imi == 1, ylabel(sprintf('%s\n%s\n%s',descriptions{ci},'negative instances','high support')); end
 
-                    subplot2(2,num_examples,2,imi);
+                    subplot2(2,num_examples_neg,2,imi);
                     cur_ind = sort_order_low_neg(imi);
                     situate.workspace_draw( im_fnames{cur_ind}, condition_structs_unique{ci}, workspaces_final{ci}(cur_ind) );
                     xlabel(sprintf('situation support: %f', final_support_full_situation{ci}(cur_ind)));

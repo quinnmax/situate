@@ -5,8 +5,7 @@ function experiment_run( experiment_file_fname )
 
     if ~exist('experiment_file_fname','var') || isempty(experiment_file_fname)
 
-        experiment_file_fname = 'parameters_experiment_dogwalking_check.json';
-        % experiment_file_fname = 'parameters_experiment_dogwalking_viz.json';
+        experiment_file_fname = 'params_exp/test_script_apply_pos.json';
 
     end
 

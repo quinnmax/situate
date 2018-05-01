@@ -79,7 +79,9 @@ function [lb_struct, lb_structs_possible] = labl_load( label_file_name, varargin
         % if it's a cell, get data from each entry
             if iscell(label_file_name)
                 lb_struct = cellfun( @(x) situate.labl_load(x,situation_struct), label_file_name, 'UniformOutput', false );
-                lb_struct = [lb_struct{:}];
+                if all( cellfun( @(x) ~isempty(x), lb_struct ) )
+                    lb_struct = [lb_struct{:}];
+                end
                 return;
             end
 
@@ -98,7 +100,7 @@ function [lb_struct, lb_structs_possible] = labl_load( label_file_name, varargin
                     warning('only found old label format, using that');
                     lb_struct = situate.labl_load_old(label_file_name,situation_struct);
                 else
-                    warning('label file not found');
+                    % warning('label file not found');
                     lb_struct = [];
                     return;
                 end

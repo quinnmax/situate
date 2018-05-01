@@ -1,12 +1,17 @@
 function primed_agent_pool = pool_initialize_rcnn( situation_struct, im, im_fname, ~, varargin )
 
-% primed_agent_pool = pool_initialize_rcnn( p, im, im_fname, learned_models, [num_rcnn_agents_per_obj], [num_non_rcnn_agents] );
+% primed_agent_pool = pool_initialize_rcnn( situation_struct, im, im_fname, learned_models, [num_rcnn_agents_per_obj], [num_non_rcnn_agents] );
 %
 % num_rcnn_agents_per_obj [optionally] sets how many of the top rcnn boxes are added to the initial agent pool
 %   default is 10
 % num_non_rcnn_agents [optionally] is the number of unassigned agents. they will sample and interest and location
 %   default is 30
-        
+%
+% rcnn box data for each object in the image should be found in
+%   external box data/rcnn boxes/[situation desc]/[object desc]/[image name].csv
+%
+
+
 
     % process inputs
     if length(varargin) >= 1

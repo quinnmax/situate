@@ -7,7 +7,7 @@ function [response, differences] = isequal_struct( a, b )
     %   response 0: not equal
     %   differences: cell array of explanations of differences and possible differences
 
-    response = true;
+    response = 1;
     differences = {};
     
     a_not_b_fields = setdiff( fields(a), fields(b) );
@@ -15,7 +15,7 @@ function [response, differences] = isequal_struct( a, b )
     shared_fields  = intersect( fields(a), fields(b) );
     
     if ~isempty(a_not_b_fields) || ~isempty(b_not_a_fields)
-        response = false;
+        response = 0;
         differences{end+1} = fprints( 'fields do NOT match, a not b fields: %s', a_not_b_fields );
         differences{end+1} = fprints( 'fields do NOT match, b not a fields: %s', b_not_a_fields );
         return;
@@ -29,7 +29,7 @@ function [response, differences] = isequal_struct( a, b )
             [sub_resp, sub_diff] = isequal_struct( a.(shared_fields{fi}), b.(shared_fields{fi}) );
             if ~sub_resp
                 differences{end+1} = [shared_fields{fi} ':' sub_diff{1}];
-                response = false; 
+                response = 0; 
             end
             
         elseif isequal( class( a.(shared_fields{fi}) ), 'function_handle' )
@@ -38,7 +38,7 @@ function [response, differences] = isequal_struct( a, b )
             sub_resp = strcmp( func2str( a.(shared_fields{fi}) ), func2str( b.(shared_fields{fi}) ) );
             if ~sub_resp
                 differences{end+1} = [shared_fields{fi} ' are NOT equal'];
-                response = false;
+                response = 0;
             else
                 differences{end+1} = [shared_fields{fi} ' MAY be equal (if their frozen vars are equal)'];
                 response = response * 2;
@@ -52,7 +52,7 @@ function [response, differences] = isequal_struct( a, b )
             sub_resp = isequal( temp_a, temp_b );
             if ~sub_resp
                 differences{end+1} = [shared_fields{fi} ' are NOT equal'];
-                response = false;
+                response = 0;
             else
                 differences{end+1} = [shared_fields{fi} ' MAY be equal (if you don''t mind Nans'];
                 response = response * 3;
@@ -63,7 +63,7 @@ function [response, differences] = isequal_struct( a, b )
             
             sub_resp = isequal( a.(shared_fields{fi}), b.(shared_fields{fi}) );
             if ~sub_resp
-                response = false;
+                response = 0;
                 differences{end+1} = [shared_fields{fi} ' are NOT equal'];
             end
             

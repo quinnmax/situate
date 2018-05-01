@@ -1,26 +1,38 @@
 
 current
 		
-	if images aren't found, need to display what exactly it was looking for that wasn't found. this should be in the situate.experiment_handler code
+	include setup script
+		check for matconvnet and try to compile
+		download the pre-trained network
+		add folders that are epxected but not included in the repo (local only, external box data, etc)
+		include model that identifies the test_script_images as an acceptable training set
 
-	change name of "rcnn box data" to "external box data" and update the readme
+	when matconvnet fails to compile, try to catch that and direct the user to the matconvnet site with compilation advice
 
-	include link to portland simple dogwalking in the readme
+	there's still a warning for a label file not being present on a testing image. shouldn't do that
+
+	analysis bonked when only one negative image
+
+	when run on a small subset of specified images, analysis bonks at 182
+
+	x if images aren't found, need to display what exactly it was looking for that wasn't found. this should be in the situate.experiment_handler code
+
+	x change name of "rcnn box data" to "external box data" and update the readme
+
+	x include link to portland simple dogwalking in the readme
 		http://web.cecs.pdx.edu/~mm/PortlandStateDogWalkingImages.html
 
-	note: the jsons are not in there yet, just the .labl files
+	x note: the jsons are not in there yet, just the .labl files
 
-	easiest way might be to erase the history on situate, give it another go though.
+	x label x-axis on the distribution of support scores figure
 
-	label x-axis on the distribution of support scores figure
-
-	update classifier check
-
-	include setup script
-		remove check for matconvnet from the main code
-		include one or two trained classifiers, an image to run on
-		set up for saved situation models, include a saved one
-
+	x test script
+		tries training on a few images
+		has some existing models to apply to a few images
+		package up the trained validation models
+		include a script that runs those
+		
+	x situation model train calls things p struct, but is always situation struct, fix
 
 
 clean up

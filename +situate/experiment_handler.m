@@ -120,8 +120,8 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
         
         full_file_lb_train = cellfun( @(x) fullfile( experiment_struct.experiment_settings.directory_train, x), data_split_struct(fi).fnames_lb_train, 'UniformOutput', false );
         full_file_im_train = cellfun( @(x) fullfile( experiment_struct.experiment_settings.directory_train, x), data_split_struct(fi).fnames_im_train, 'UniformOutput', false );
-        full_file_lb_test  = cellfun( @(x) fullfile( experiment_struct.experiment_settings.directory_train, x), data_split_struct(fi).fnames_lb_test,  'UniformOutput', false );
-        full_file_im_test  = cellfun( @(x) fullfile( experiment_struct.experiment_settings.directory_train, x), data_split_struct(fi).fnames_im_test,  'UniformOutput', false );
+        full_file_lb_test  = cellfun( @(x) fullfile( experiment_struct.experiment_settings.directory_test, x),  data_split_struct(fi).fnames_lb_test,  'UniformOutput', false );
+        full_file_im_test  = cellfun( @(x) fullfile( experiment_struct.experiment_settings.directory_test, x),  data_split_struct(fi).fnames_im_test,  'UniformOutput', false );
         expected_files = [full_file_lb_train; full_file_im_train; full_file_lb_test; full_file_im_test];
         expected_files_exist = cellfun( @(x) exist(x,'file'), expected_files );
         

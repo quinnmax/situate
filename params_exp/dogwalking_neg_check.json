@@ -2,18 +2,18 @@
 	"situation_definition_fname" : "situation_definitions/dogwalking.json",
 			
 	"situate_parameterizations_fnames" : [
-				"parameterizations_run/parameters_situate_homebrew_rcnn_priming.json"
-				//"parameterizations_run/parameters_situate_faster_rcnn_priming.json"
-				//"parameterizations_run/parameters_situate_uniform.json"
+				"params_run/homebrew_rcnn_priming.json"
+				//"params_run/faster_rcnn_priming.json"
+				//"params_run/uniform.json"
 			],	
 
 	"experiment_settings" : {
 
-			"description" : "dogwalking negatives general",
+			"description" : "dogwalking negatives check",
 
 			// full path, or relative to base_image_directories
 			"directory_train" : "DogWalking_PortlandSimple_train/",
-			"directory_test"  : "Negatives_general/",
+			"directory_test"  : "DogWalking_hard_neg/",
 
 			"use_parallel"					: 0, 
 			
@@ -43,7 +43,7 @@
 
 			"specific_folds" : [1],
 
-			"max_testing_images" : "",
+			"max_testing_images" : 10,
 			
 			// if specified, this will be used to seed the RNG during testing.
 			// otherwise, each parameterization will get a different time-based seed

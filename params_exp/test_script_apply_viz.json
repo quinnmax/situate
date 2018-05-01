@@ -2,14 +2,14 @@
 	"situation_definition_fname" : "situation_definitions/dogwalking.json",
 			
 	"situate_parameterizations_fnames" : [
-				"parameterizations_run/parameters_situate_homebrew_rcnn_priming.json",
-				"parameterizations_run/parameters_situate_faster_rcnn_priming.json",
-				"parameterizations_run/parameters_situate_uniform.json"
+				"params_run/homebrew_rcnn_priming.json"
+				//"params_run/faster_rcnn_priming.json",
+				//"params_run/uniform.json"
 			],	
 
 	"experiment_settings" : {
 
-			"description" : "situate update testing",
+			"description" : "situate update testing, viz",
 
 			// full path, or relative to base_image_directories
 			"directory_train" : "DogWalking_PortlandSimple_train/",
@@ -17,9 +17,9 @@
 
 			"use_parallel"					: 0, 
 			
-			"run_analysis_after_completion"	: 1,
+			"run_analysis_after_completion"	: 0,
 
-			"use_visualizer" : 0,
+			"use_visualizer" : 1,
 
 			// additional visualization options
 		 	"viz_options" : {

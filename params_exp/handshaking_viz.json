@@ -1,19 +1,19 @@
 {
-	"situation_definition_fname" : "situation_definitions/dogwalking.json",
+	"situation_definition_fname" : "situation_definitions/handshaking.json",
 			
 	"situate_parameterizations_fnames" : [
-				"parameterizations_run/parameters_situate_homebrew_rcnn_priming.json"
-				//"parameterizations_run/parameters_situate_faster_rcnn_priming.json"
-				//"parameterizations_run/parameters_situate_uniform.json"
+				"params_run/homebrew_rcnn_priming.json"
+				//"params_run/faster_rcnn_priming.json",
+				//"params_run/uniform.json"
 			],	
 
 	"experiment_settings" : {
 
-			"description" : "dogwalking visualizer with validation images",
+			"description" : "handshaking viz",
 
 			// full path, or relative to base_image_directories
-			"directory_train" : "DogWalking_PortlandSimple_train/",
-			"directory_test"  : "DogWalking_PortlandSimple_train/",
+			"directory_train" : "Handshaking_train/",
+			"directory_test"  : "Handshaking_train/",
 
 			"use_parallel"					: 0, 
 			
@@ -30,9 +30,9 @@
 	 		},
 
 			// training / testing image lists
-			// empty should use all files in specified folders
-			//"training_testing_split_directory" : "data_splits/dogwalking_validation/",
-			"training_testing_split_directory" : "data_splits/dogwalking_validation/",
+			// 	if directory_train and directory_test are the same, 
+			// 	then the division of images specified in this directory will be used
+			"training_testing_split_directory" : "data_splits/handshaking_validation/",
 
 			// number of folds
 			// 	if image lists were provided

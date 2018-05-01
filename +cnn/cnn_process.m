@@ -4,10 +4,6 @@ function data = cnn_process( image, image_size, layer_in )
 % layer 18 is the last layer before classification
 % layer 15 is the last layer where there's still a spatial layout
 
-    if ~exist('matconvnet/imagenet-vgg-f.mat','file')
-        cnn.matconvnet_setup();
-    end
-
     persistent net;
     persistent layer;
     
