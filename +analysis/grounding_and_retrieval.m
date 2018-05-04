@@ -6,6 +6,8 @@ function [] = grounding_and_retrieval( input, varargin )
 % grounding_and_retrieval( cell_array_of_directories_and_or_mat_file_names );
 % grounding_and_retrieval( ..., [additional_results_directory] )
 %
+% figures will be saved to a results directory. to keep them open, include the flag '-ko'
+%
 % using the additional_results_directory
 %   [additional_results_directory]/[situation_description]/[object_name]/[image_name.csv]
 %   format: 
@@ -51,11 +53,18 @@ function [] = grounding_and_retrieval( input, varargin )
     end
 
     % deal with varargin
+    keep_figs_open = false;
     additional_results_directory = [];
     if ~isempty( varargin )
+        if any(strcmp('-ko', varargin ) )
+            varargin(strcmp('-ko', varargin )) = [];
+            keep_figs_open = true;
+        end
+    end
+    
+    if ~isempty( varargin ) && ischar(varargin{1}) && isdir(varargin{1})
         additional_results_directory = varargin{1}; 
     end
-   
 
 
     %% group on condition 
@@ -176,6 +185,7 @@ function [] = grounding_and_retrieval( input, varargin )
             label_structs = situate.labl_load( lb_fnames, situation_struct );
             if isstruct(label_structs), label_structs = mat2cell(label_structs, ones(1,size(label_structs,1)),ones(1,size(label_structs,2))); end
             is_situation_instance = cellfun( @(x) ~isempty(x), label_structs );
+            is_situation_instance = reshape( is_situation_instance, [], 1 );
             for li = 1:length(label_structs)
                 if ~isempty( label_structs{li} ) ...
                 && isempty( setsub( situation_objects, label_structs{li}.labels_adjusted ) )
@@ -282,7 +292,7 @@ function [] = grounding_and_retrieval( input, varargin )
                 end
 
                 save( fullfile( additional_results_directory, 'processed_box_data.mat'), '-struct', 'additional_results' );
-
+                
             end
 
             num_conditions = num_conditions + 1;
@@ -549,8 +559,9 @@ function [] = grounding_and_retrieval( input, varargin )
             end
             legend(descriptions, 'Location', 'northeast' );
 
-            saveas(h,fullfile(results_directory,fig_title),'png')
-
+            saveas(h,fullfile(results_directory,fig_title),'png');
+            if ~keep_figs_open, close(h); end
+            
         end
 
             
@@ -574,8 +585,9 @@ function [] = grounding_and_retrieval( input, varargin )
             ylim([1 1.1*num_pos_images])
             xlabel('iteration');
             ylabel({'situation detections','(cumulative)'})
-            saveas(h,fullfile(results_directory,fig_title),'png')
-
+            saveas(h,fullfile(results_directory,fig_title),'png');
+            if ~keep_figs_open, close(h); end
+            
         end
 
             
@@ -605,7 +617,8 @@ function [] = grounding_and_retrieval( input, varargin )
                 text( .6*upper_rank, max(1,max_y*1.1)*.95, ['median rank: ' num2str(results_struct_retrieval.median_rank(ci))] );
             end
 
-            saveas(h,fullfile(results_directory,fig_title),'png')
+            saveas(h,fullfile(results_directory,fig_title),'png');
+            if ~keep_figs_open, close(h); end
         end
 
 
@@ -630,7 +643,8 @@ function [] = grounding_and_retrieval( input, varargin )
                 title('negatives');
             end
 
-            saveas(h,fullfile(results_directory,fig_title),'png')
+            saveas(h,fullfile(results_directory,fig_title),'png');
+            if ~keep_figs_open, close(h); end
 
 
             
@@ -654,7 +668,8 @@ function [] = grounding_and_retrieval( input, varargin )
             xlim([0 1]);
             ylim([0 1]);
 
-            saveas(h,fullfile(results_directory,fig_title),'png')
+            saveas(h,fullfile(results_directory,fig_title),'png');
+            if ~keep_figs_open, close(h); end
         end
         
         
@@ -677,7 +692,8 @@ function [] = grounding_and_retrieval( input, varargin )
             xlim([0 1]);
             ylim([0 1]);
 
-            saveas(h,fullfile(results_directory,fig_title),'png')
+            saveas(h,fullfile(results_directory,fig_title),'png');
+            if ~keep_figs_open, close(h); end
         end
 
 
@@ -695,7 +711,8 @@ function [] = grounding_and_retrieval( input, varargin )
             ylabel('recall')
             legend(descriptions);
             
-            saveas(h,fullfile(results_directory,fig_title),'png')
+            saveas(h,fullfile(results_directory,fig_title),'png');
+            if ~keep_figs_open, close(h); end
         end
             
             
@@ -729,7 +746,8 @@ function [] = grounding_and_retrieval( input, varargin )
                     if imi == 1, ylabel(sprintf('%s\n%s\n%s',descriptions{ci},'positive instances','low support')); end
                 end
 
-                saveas(h,fullfile(results_directory,fig_title),'png')
+                saveas(h,fullfile(results_directory,fig_title),'png');
+                if ~keep_figs_open, close(h); end
 
             end
         end
@@ -764,7 +782,8 @@ function [] = grounding_and_retrieval( input, varargin )
                     if imi == 1, ylabel(sprintf('%s\n%s\n%s',descriptions{ci},'negative instances','low support')); end
                 end
 
-                saveas(h,fullfile(results_directory,fig_title),'png')
+                saveas(h,fullfile(results_directory,fig_title),'png');
+                if ~keep_figs_open, close(h); end
 
             end
         end

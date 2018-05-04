@@ -59,4 +59,16 @@ external box data/*
 # Do not ignore #
 #################
 # ~*.json
+~results/analysis_check_pos/uniform_1.mat
+~results/analysis_check_pos/faster_rcnn_priming_1.mat
+~results/analysis_check_pos/homebrew_rcnn_priming_1.mat
+~results/analysis_check_neg/uniform_1.mat
+~results/analysis_check_neg/faster_rcnn_priming_1.mat
+~results/analysis_check_neg/homebrew_rcnn_priming_1.mat
+~results/analysis_check_both/uniform_1.mat
+~results/analysis_check_both/faster_rcnn_priming_1.mat
+~results/analysis_check_both/homebrew_rcnn_priming_1.mat
+~results/analysis_check_both/uniform_2.mat
+~results/analysis_check_both/faster_rcnn_priming_2.mat
+~results/analysis_check_both/homebrew_rcnn_priming_2.mat
 

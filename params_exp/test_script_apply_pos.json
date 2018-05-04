@@ -41,7 +41,7 @@
 			//		training/testing image lists
 			"num_folds" : 1,
 			"specific_folds" : [1],
-			"max_testing_images" : 1,
+			"max_testing_images" : 2,
 			
 			// if specified, this will be used to seed the RNG during testing.
 			// otherwise, each parameterization will get a different time-based seed
