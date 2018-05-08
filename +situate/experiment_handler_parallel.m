@@ -246,11 +246,7 @@ function experiment_handler_parallel( experiment_struct, situation_struct, situa
             end
 
             % save off results, each condition and fold pair gets a file
-            if ~isempty(strfind(cur_parameterization.description,'.'))
-                cur_param_desc = cur_parameterization.description(1:strfind(cur_parameterization.description,'.')-1);
-            else
-                cur_param_desc = cur_parameterization.description;
-            end
+            cur_param_desc = fileparts_mq(cur_parameterization.description,'name');
             save_fname = fullfile(experiment_struct.results_directory, [cur_param_desc '_fold_' num2str(fi,'%02d') '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
 
             results_struct = [];
@@ -261,16 +257,10 @@ function experiment_handler_parallel( experiment_struct, situation_struct, situa
             results_struct.fnames_im_test   = fnames_im_test;
 
             save(save_fname, '-v7', '-struct','results_struct');
-
             fprintf('saved to:\n    %s\n', save_fname);
 
         end
 
-        % bail after the first fold if we're using the visualizer
-        if experiment_struct.experiment_settings.use_visualizer
-            break;
-        end
-  
     end
 
     

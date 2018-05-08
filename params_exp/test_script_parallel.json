@@ -17,7 +17,7 @@
 
 			"use_parallel" : 1, 
 			
-			"run_analysis_after_completion"	: 1,
+			"run_analysis_after_completion"	: 0,
 
 			"use_visualizer" : 0,
 

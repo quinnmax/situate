@@ -437,6 +437,8 @@ function [] = grounding_and_retrieval( input, varargin )
 
         inds_pos = find(  is_situation_instance );
         inds_neg = ~is_situation_instance;
+        num_images_neg = sum(inds_neg);
+        num_images_pos = sum(is_situation_instance);
         rank     = cell(1,num_conditions);
         for ci = 1:num_conditions
             rank{ci} = zeros(length(inds_pos),1);
@@ -455,7 +457,7 @@ function [] = grounding_and_retrieval( input, varargin )
         
         
         % ROC analysis
-        AUROC = nan(1,num_conditions);
+        AUROC = nan( 1,num_conditions);
         FPR   = cell(1,num_conditions);
         TPR   = cell(1,num_conditions);
         for ci = 1:num_conditions
@@ -476,7 +478,7 @@ function [] = grounding_and_retrieval( input, varargin )
         % recall @ n (an un-normalized ROC-type analysis)
         recall_at_n = cell(1,num_conditions);
         for ci = 1:num_conditions
-            recall_at_n{ci} = arrayfun( @(x) sum( rank{ci} <= x ), 1:num_images ) ./ sum(is_situation_instance);
+            recall_at_n{ci} = arrayfun( @(x) sum( rank{ci} <= x ), 1:num_images_neg ) ./ num_images_pos;
         end
         
         
@@ -704,7 +706,7 @@ function [] = grounding_and_retrieval( input, varargin )
             h = figure('color','white','Name',fig_title,'position',[720 2 500 400]);
             
             for ci = 1:num_conditions
-                plot( 1:num_images, recall_at_n{ci}, linespec{ci} );
+                plot( 1:num_images_neg, recall_at_n{ci}, linespec{ci} );
                 hold on;
             end
             xlabel('number of images returned')
@@ -720,7 +722,7 @@ function [] = grounding_and_retrieval( input, varargin )
         % pos images
         num_examples = 4;
         if any(is_situation_instance)
-            num_examples_pos = min( num_examples, sum(is_situation_instance) );
+            num_examples_pos = min( num_examples, num_images_pos );
             for ci = 1:num_conditions
 
                 [~,sort_order_high] = sort( final_support_full_situation{ci}, 'descend' );

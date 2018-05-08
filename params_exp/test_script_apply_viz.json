@@ -15,7 +15,7 @@
 			"directory_train" : "DogWalking_PortlandSimple_train/",
 			"directory_test"  : "DogWalking_PortlandSimple_train/",
 
-			"use_parallel"					: 0, 
+			"use_parallel" : 0, 
 			
 			"run_analysis_after_completion"	: 0,
 
@@ -40,9 +40,7 @@
 			//	if image list is not provided, this will be used when generating 
 			//		training/testing image lists
 			"num_folds" : 1,
-
 			"specific_folds" : [1],
-
 			"max_testing_images" : 1,
 			
 			// if specified, this will be used to seed the RNG during testing.
