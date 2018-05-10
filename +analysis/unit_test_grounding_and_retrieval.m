@@ -9,12 +9,12 @@ folder_pos  = 'results/analysis_check_pos';
 folder_neg  = 'results/analysis_check_neg';
 folder_both = 'results/analysis_check_both';
 
-folder_absolute_both = '/Users/Max/Dropbox/Projects/situate/local only/analysis_check_both';
-folder_absolute_neg  = '/Users/Max/Dropbox/Projects/situate/local only/analysis_check_neg';
-folder_absolute_pos  = '/Users/Max/Dropbox/Projects/situate/local only/analysis_check_pos';
-file_absolute_neg_1  = '/Users/Max/Dropbox/Projects/situate/local only/analysis_check_neg/homebrew_rcnn_priming_1.mat';
-file_absolute_neg_2  = '/Users/Max/Dropbox/Projects/situate/local only/analysis_check_neg/faster_rcnn_priming_1.mat';
-file_absolute_neg_3  = '/Users/Max/Dropbox/Projects/situate/local only/analysis_check_neg/uniform_1.mat';
+folder_absolute_both = '/Users/Max/Desktop/analysis_unit_test/analysis_check_both';
+folder_absolute_neg  = '/Users/Max/Desktop/analysis_unit_test/analysis_check_neg';
+folder_absolute_pos  = '/Users/Max/Desktop/analysis_unit_test/analysis_check_pos';
+file_absolute_neg_1  = '/Users/Max/Desktop/analysis_unit_test/analysis_check_neg/homebrew_rcnn_priming_1.mat';
+file_absolute_neg_2  = '/Users/Max/Desktop/analysis_unit_test/analysis_check_neg/faster_rcnn_priming_1.mat';
+file_absolute_neg_3  = '/Users/Max/Desktop/analysis_unit_test/analysis_check_neg/uniform_1.mat';
 
 % results folder stuff
 if all( cellfun( @exist, {file_pos,file_neg_1,file_neg_2,file_neg_3,folder_pos,folder_neg,folder_both}))
@@ -52,7 +52,7 @@ if all( cellfun( @exist, {folder_absolute_both,folder_absolute_pos,file_absolute
 
     analysis.grounding_and_retrieval(folder_absolute_both);
     analysis.grounding_and_retrieval(file_absolute_neg_1);
-    analysis.grounding_and_retrieval({file_absolute_neg_1,folder_absolute_pos,file_absolute_neg_2,file_absolute_neg_3});
+    analysis.grounding_and_retrieval({folder_absolute_pos,folder_absolute_neg});
 
 else
     warning('results files with absolute addressing weren''t found');

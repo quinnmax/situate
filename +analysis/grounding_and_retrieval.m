@@ -45,13 +45,6 @@ function [] = grounding_and_retrieval( input, varargin )
         error('should be a mat file, a directory, or a cellstr');
     end
 
-    % get everyone on relative path footing if we can
-    for mi = 1:length(mat_file_names)
-        if strcmp( pwd, mat_file_names{mi}(1:length(pwd)) )
-            mat_file_names{mi} = mat_file_names{mi}(length(pwd)+2:end);
-        end
-    end
-
     % deal with varargin
     keep_figs_open = false;
     additional_results_directory = [];
@@ -77,8 +70,10 @@ function [] = grounding_and_retrieval( input, varargin )
             cur_condition = temp.p_condition;
             raw_descriptions{fi} = cur_condition.description;
             % ignore these fields for purposes of grouping conditions
-            cur_condition.seed_test   = [];
-            cur_condition.description = [];
+            cur_condition.seed_test      = [];
+            cur_condition.description    = [];
+            cur_condition.use_visualizer = [];
+            cur_condition.use_parallel   = [];
 
             cur_condition_assignment = find( cellfun( @(x) isequal_struct( cur_condition, x ), condition_structs_unique ) );
             if isempty(cur_condition_assignment)
