@@ -706,6 +706,7 @@ function [] = grounding_and_retrieval( input, varargin )
             end
             xlabel('number of images returned')
             ylabel('recall')
+            ylim([0 1.1]);
             legend(descriptions);
             
             saveas(h,fullfile(results_directory,fig_title),'png');
