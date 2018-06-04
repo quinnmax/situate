@@ -16,6 +16,14 @@ function [fnames_pass, ...
         was_situation_struct = true;
     end
     
+    if isempty(fnames_in)
+        fnames_pass = {};
+        fnames_fail = {};
+        exceptions = [];
+        failed_inds = [];
+        return;
+    end
+    
     label_data = situate.labl_load( fnames_in, situation_struct );
     fnames_in_all = {label_data.fname_lb};
     

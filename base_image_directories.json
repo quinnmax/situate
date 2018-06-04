@@ -2,6 +2,7 @@
 	"base_dirs" : [
 		"/Users/Max/Documents/MATLAB/data/situate_images/",
 		"/home/maxq/Documents/Data/situate_images/",
-		"/Users/mm/Desktop/SituateData/"
+		"/Users/mm/Desktop/SituateData/",
+		""
 	]
 }

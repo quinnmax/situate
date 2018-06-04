@@ -11,6 +11,29 @@ function classifier_struct = IOU_ridge_regression_train( situation_struct, fname
     
     
     
+    %% check for empty training data
+    
+        if isempty( fnames_in_stripped )
+
+            warning('training fnames were empty, using default IOU ridge regression model for dogwalking');
+            selected_model_fname = 'saved_models/unit_test_classifier_IOU_ridge_regression.mat';
+            loaded_data = load( selected_model_fname );
+            models = loaded_data.models;
+            AUROCs = loaded_data.AUROCs;
+            disp(['loaded ' model_description ' model from: ' selected_model_fname ]);
+
+            classifier_struct                   = [];
+            classifier_struct.models            = models;
+            classifier_struct.classes           = classes;
+            classifier_struct.fnames_lb_train   = fnames_in_stripped;
+            classifier_struct.model_description = model_description;
+            classifier_struct.AUROCs            = AUROCs;
+
+            return;
+        end
+
+    
+    
     %% check for existing model
     
         if exist(saved_models_directory,'dir')
@@ -28,7 +51,7 @@ function classifier_struct = IOU_ridge_regression_train( situation_struct, fname
             loaded_data = load( selected_model_fname );
             models = loaded_data.models;
             AUROCs = loaded_data.AUROCs;
-            display(['loaded ' model_description ' model from: ' selected_model_fname ]);
+            disp(['loaded ' model_description ' model from: ' selected_model_fname ]);
 
             classifier_struct                   = [];
             classifier_struct.models            = models;
@@ -41,11 +64,11 @@ function classifier_struct = IOU_ridge_regression_train( situation_struct, fname
 
         end
 
-        disp('training IOU ridge regression model');
-    
         
         
     %% load or generate crops
+    
+        disp('training IOU ridge regression model');
     
         % see if we have pre-existing features, or if we need to extract them
         existing_feature_directory = 'pre_extracted_feature_data';

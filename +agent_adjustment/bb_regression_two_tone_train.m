@@ -6,6 +6,22 @@ function model = bb_regression_two_tone_train ( situation_struct, fnames_in, sav
 
     model_description = 'box_adjust_two_tone';
     
+    
+    
+    %% check for empty training data
+    
+        if isempty( fnames_in )
+            warning('training fnames were empty, using default bb regression two tone model for dogwalking');
+            selected_model_fname = 'saved_models/unit_test_agent_adjust_two_tone.mat';
+            model = load( selected_model_fname );
+            disp(['loaded ' model_description ' model from: ' selected_model_fname ]);
+            return;
+        end
+    
+        
+        
+    %% check for existing model
+    
     fnames_in_pathless = fileparts_mq(fnames_in, 'name' );
     if exist(saved_models_directory,'dir')
         model_fname = situate.check_for_existing_model(...
@@ -24,6 +40,10 @@ function model = bb_regression_two_tone_train ( situation_struct, fnames_in, sav
         display(repmat(' ',1,100));
         return;
     end
+    
+    
+    
+    %% train a new model
 
     model = [];
     model.model_description = model_description;

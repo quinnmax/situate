@@ -12,8 +12,8 @@
 			"description" : "situate update testing, parallel",
 
 			// full path, or relative to base_image_directories
-			"directory_train" : "DogWalking_PortlandSimple_train/",
-			"directory_test"  : "DogWalking_PortlandSimple_train/",
+			"directory_train" : "test_script_images/pos/",
+			"directory_test"  : "test_script_images/pos/",
 
 			"use_parallel" : 1, 
 			
@@ -31,7 +31,7 @@
 
 			// training / testing image lists
 			// empty should use all files in specified folders
-			"training_testing_split_directory" : "data_splits/dogwalking_validation/",
+			"training_testing_split_directory" : "",
 
 			// number of folds
 			// 	if image lists were provided

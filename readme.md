@@ -26,6 +26,8 @@ You may need to do a little work to install MatConvNet to `situate/matconvnet`. 
 
 # Running Situate
 
+Situate can be run on a single image if the necessary models provided. However, in general, I've been calling it from an experiment handler that defines training and testing images, and specifications of models to train (or load). The experiment handler is run using a few specification files. 
+
 ### Experiment parameters
 	
 The *experiment parameters* file specifies:
@@ -34,7 +36,7 @@ The *experiment parameters* file specifies:
 - training and testing images
 - visualization settings
 	
-example: `parameters_experiment_dogwalking_viz.json`
+example: `params_exp/dogwalking_pos_check.json`
 
 #### Situation definition
 	
@@ -48,7 +50,7 @@ example: `situation_definitions/dogwalking.json`
 	
 The *Situate running parameters* file defines the functions that are used by situate. These includes the functions used to train and apply the classifier, to define and apply the conditional relationships among objects, and numerous others.
 
-example: `parameters_situate_default.json`
+example: `params_run/default.json`
 
 A list of several *Situate running parameters* files can be included in the *experiment parameters file*. If they are, each parameterization will be run.
 
@@ -90,13 +92,13 @@ As long as the relative directory exists in one of the provided base directories
 	
 To run Situate, call `situate.experiment_run` with an experiment parameters file
 
-	situate.experiment_run( 'parameters_experiment_dogwalking_viz.json' );
+	situate.experiment_run( 'params_exp/dogwalking_pos_check.json' );
 
 
 
 # Defining a Situation
 
-Defining a new situation requires a file that defines the situation and set of positive training example images that have labels specifying the relevant objects in each image. 
+Defining a new situation requires a file that specifies the objects in the situation. To train Situate to recognize the situation, you need a set of positive training example images that have labels specifying the relevant objects in each image. 
 
 ### Situation definition file
 
@@ -140,8 +142,8 @@ Labels can be generated with the tool:
 
 These images and label files will be used to train:
 - the situation model
-- visual classifiers [edit:cite]
-- bounding box regressors [edit:cite]
+- visual classifiers (which use the pre-trained MatConvNet network linked above and ridge regression)
+- bounding box regressors (which uses the same features and performs a box adjustment similar to that discussed [here]())
 
 The reliability of the individual classifiers can be estimated and used to weight the classifiers contribution to situation detections.
 
@@ -250,9 +252,9 @@ You can specify the number of folds, which in turn defines the number of trainin
 When the same directory is specified for training and testing and no split files are provided, split files will be generated and saved in 
 *data_splits/[situation description]_[time stamp]/*
 
-#### Including maximum number of testing images
+#### Specifying maximum number of testing images
 
-For any of the above methods, a maximum number of testing images to run on can be specified and will simply limit the number of images that Situate will run on. It will not change how many images are used for training. For example, if there are 100 images included in the testing image directory,
+For any of the above methods, a maximum number of testing images to run on can be specified and will simply limit the number of images run. It will not change how many images are used for training. For example, if there are 100 images included in the testing image directory,
 
 	"max_testing_images" : 10,
 
@@ -283,7 +285,7 @@ Experiments are evaluated in two ways. First, with respect to grounding results,
 
 	analysis.grounding_and_retrieval.m
 
-The input specifies files can include results from Situate experiments. The input can be the path and filename of a .mat results file, the path of a directory that contains several .mat results files, or a cell array with a combination of any number from either category. For example, each of the following should work:  
+The input specifies results from Situate experiments. The input can be the path and filename of a .mat results file, the path of a directory that contains several .mat results files, or a cell array with a combination of any number from either category. For example, each of the following should work:  
 
 	analysis.grounding_and_retrieval( ...
 		'results_dir1/results_parameterization_1.mat',

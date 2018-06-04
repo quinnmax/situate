@@ -9,11 +9,11 @@
 
 	"experiment_settings" : {
 
-			"description" : "situate update testing, neg",
+			"description" : "situate update testing, pos",
 
 			// full path, or relative to base_image_directories
-			"directory_train" : "DogWalking_PortlandSimple_train/",
-			"directory_test"  : "Negatives_general/",
+			"directory_train" : "",
+			"directory_test"  : "test_script_images/pos/",
 
 			"use_parallel" : 0, 
 			

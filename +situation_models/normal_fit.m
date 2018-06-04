@@ -16,6 +16,17 @@ function situation_model = normal_fit( situation_struct, data_in, saved_models_d
     end
     
     
+    %% check for empty training data
+
+        if isempty( fnames_in_stripped )
+            warning('training fnames were empty, using default situation model for dogwalking');
+            selected_model_fname = 'saved_models/unit_test_situation_model_normal.mat';
+            situation_model = load( selected_model_fname );
+            disp(['loaded ' model_description ' model from: ' selected_model_fname ]);
+            return;
+        end
+
+    
     
     %% check for existing model
         

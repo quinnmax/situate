@@ -2,14 +2,14 @@
 	"situation_definition_fname" : "situation_definitions/dogwalking.json",
 			
 	"situate_parameterizations_fnames" : [
-				//"params_run/homebrew_rcnn_priming.json"
-				"params_run/faster_rcnn_priming.json"
+				"params_run/homebrew_rcnn_priming.json"
+				//"params_run/faster_rcnn_priming.json"
 				//"params_run/uniform.json"
 			],	
 
 	"experiment_settings" : {
 
-			"description" : "dogwalking positives validation",
+			"description" : "dogwalking positives check",
 
 			// full path, or relative to base_image_directories
 			"directory_train" : "DogWalking_PortlandSimple_train/",
