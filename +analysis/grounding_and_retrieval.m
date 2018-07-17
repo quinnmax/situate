@@ -240,7 +240,8 @@ function [] = grounding_and_retrieval( input, varargin )
             
             if exist( fullfile( additional_results_directory, 'processed_box_data.mat'), 'file' )
 
-                data_fname = situate.check_for_existing_model(additional_results_directory,'im_fnames',im_fnames);
+                data_fname = situate.check_for_existing_model(additional_results_directory, ...
+                    'im_fnames',im_fnames, @(a,b) isempty(setxor(fileparts_mq(a,'name.ext'),fileparts_mq(b,'name.ext'))) );
                 
                 if ~isempty(data_fname)
                     
@@ -459,8 +460,6 @@ function [] = grounding_and_retrieval( input, varargin )
             [AUROC(ci), TPR{ci}, FPR{ci}] = ROC( final_support_full_situation{ci}, is_situation_instance );
         end
         
-        
-        
         % PR analysis
         precision = cell(1,num_conditions);
         recall    = cell(1,num_conditions);
@@ -468,14 +467,21 @@ function [] = grounding_and_retrieval( input, varargin )
            [precision{ci}, recall{ci}] = PR_analysis( final_support_full_situation{ci}, is_situation_instance );
         end
         
-        
-        
         % recall @ n (an un-normalized ROC-type analysis)
         recall_at_n = cell(1,num_conditions);
         for ci = 1:num_conditions
             recall_at_n{ci} = arrayfun( @(x) sum( rank{ci} <= x ), 1:num_images_neg ) ./ num_images_pos;
         end
         
+        % per object PR analysis
+        PR_obj_precision = cell(num_conditions, num_situation_objects);
+        PR_obj_recall    = cell(num_conditions, num_situation_objects);
+        for ci = 1:num_conditions
+        for oi = 1:num_situation_objects
+            [PR_obj_precision{ci,oi}, PR_obj_recall{ci,oi}] = PR_analysis( final_support_total{ci}(:,oi), is_situation_instance );
+        end
+        end
+            
         
         
         % save results
@@ -568,7 +574,6 @@ function [] = grounding_and_retrieval( input, varargin )
         %   y axis, cummulative full detections
         %   lines, conditions
         if any(is_situation_instance)
-
             fig_title = 'detections over iteration';
             h = figure('color','white','Name',fig_title,'position',[720 2 500 400]);
             x = 1:max(cellfun( @(x) x.num_iterations, condition_structs_unique ));
@@ -579,7 +584,7 @@ function [] = grounding_and_retrieval( input, varargin )
             end
             plot( x,repmat(num_pos_images,1,length(x)), '--','Color',[.75 .75 .75] );
             legend( descriptions, 'Location', 'northeast');
-            ylim([1 1.1*num_pos_images])
+            ylim([0 1.1*num_pos_images])
             xlabel('iteration');
             ylabel({'situation detections','(cumulative)'})
             saveas(h,fullfile(results_directory,fig_title),'png');

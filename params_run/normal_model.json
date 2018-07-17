@@ -2,15 +2,15 @@
 	
 	"situate_parameterization":{
 
-		"description" : "homebrew rcnn priming",
+		"description" : "defaults",
 
 		// situation model
 		"situation_model" : {
 			"description" : "uniform then mixture of uniform and normal",
-			"learn"  : "@(a,b) situation_models.uniform_normal_mix_fit(a,b,.5)",
-			"update" : "situation_models.uniform_normal_mix_condition",
-			"sample" : "situation_models.uniform_normal_mix_sample",
-			"draw"   : "situation_models.uniform_normal_mix_draw"
+			"learn"  : "situation_models.normal_fit",
+			"update" : "situation_models.normal_condition",
+			"sample" : "situation_models.normal_sample",
+			"draw"   : "situation_models.normal_draw"
 			},
 
 		// pipeline options
@@ -32,23 +32,23 @@
 		},
 		
 		// support functions
-		"support_function_external" : "support_functions_external.atan_fit",
-		"support_function_total" : "support_functions_total.AUROC_based",
+		"support_function_external"       : "support_functions_external.atan_fit",
+		"support_function_total"          : "support_functions_total.AUROC_based",
 		"support_function_full_situation" : "support_functions_situation.geometric_mean_padded",
-		
+
 		// support thresholds
 		"support_thresholds" : {
-			"internal_support"          : ".2",
+			"internal_support"          : ".1",
 			"internal_support_retain"   : "inf",
 			"total_support_provisional" : "inf",
 			"total_support_final"       : ".5"
 		},
 
 		// agent pool initialization function
-		"agent_pool_initialization_function" : "situate.agent.pool_initialize_covering_rcnn_like",
+		"agent_pool_initialization_function" : "situate.agent.pool_initialize_default",
 
 		// agent pool adjustment rules
-		"agent_pool_adjustment_rule" : "@(x) situate.agent.pool_clear_high_generation( x, 3 )",
+		"agent_pool_adjustment_rule" : "@(x) situate.agent.pool_clear_low_urgency( x, .3 );",
 		
 		// agent adjustment model
 		"agent_adjustment_model" : {

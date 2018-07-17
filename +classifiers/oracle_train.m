@@ -1,5 +1,7 @@
 function classifier_struct = oracle_train( ~, ~, ~, additional_parameters_struct )
-% classifier_struct = oracle_train( [noise_level_mu], [noise_level_sigma] );
+% classifier_struct = oracle_train( ~, ~, ~, noise_struct );
+%
+% where nosie_struct is nosie_struct.mu, nosie_struct.sigma
 
     if ~exist('additional_parameters_struct','var') || isempty(additional_parameters_struct)
         mu = 0;

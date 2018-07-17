@@ -1,6 +1,6 @@
 
 
-function [mu_bar Sigma_bar] = mvn_conditional( mu, Sigma, known_dimensions, known_values )
+function [mu_bar, Sigma_bar] = mvn_conditional( mu, Sigma, known_dimensions, known_values )
 
     % [mu_conditional Sigma_conditional] = mvn_conditional( mu_joint, Sigma_joint, known_dimensions, known_values );
     %

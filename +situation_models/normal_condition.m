@@ -1,4 +1,4 @@
-function model_out = normal_condition( model_in, object_type, workspace )
+function model_out = normal_condition( model_in, varargin )
 
     % model_out = situation_model_normal_condition( model_in, object_type, workspace );
     %   model_in: should have mu, Sigma, situation_objects list and column_description list
@@ -10,6 +10,9 @@ function model_out = normal_condition( model_in, object_type, workspace )
     % num_features_per_object = length of model.mu / num situaiton objects;
     % need to match up situation objects and objects in workspace
     % then construct the 'have' vector so we can condition
+    
+    object_type = varargin{1};
+    workspace   = varargin{2};
     
     if isempty(workspace) || ~isstruct(workspace) || ~isfield(workspace,'labels') || isempty( setsub( workspace.labels, object_type ) )
         % nothing to condition on

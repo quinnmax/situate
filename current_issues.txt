@@ -32,6 +32,7 @@ current
 
 	analysis issues
 
+		the per-object detection rates are just for positives right now - should include precision recall for each object when pos and neg images are present (although this is challenging, as dogs are present in negatives, but not labeled)
 		x close figures in analysis script, with flag for keep open
 		x change name of "rcnn box data" to "external box data" and update the readme
 		x recall at n x axis goes too far. 100 images, shows 200

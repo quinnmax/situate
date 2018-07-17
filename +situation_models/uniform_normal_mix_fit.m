@@ -8,6 +8,7 @@ function model = uniform_normal_mix_fit( situation_struct, data_in, uniform_afte
 
     model = situation_models.normal_fit( situation_struct, data_in );
     model.probability_of_uniform_after_conditioning = uniform_after_conditioning_probability;
+    model.model_description = 'uniform_normal_mix';
     
 end
 

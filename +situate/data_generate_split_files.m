@@ -46,6 +46,9 @@ function data_folds = data_generate_split_files( data_path, varargin )
         rp = randperm( length(fnames_lb) );
         fnames_lb = fnames_lb(rp);
         
+        % get vertical
+        fnames_lb = reshape(fnames_lb, [], 1 );
+        
         n = length(fnames_lb);
         
     % oof, the logic of these options

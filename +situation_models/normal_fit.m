@@ -1,5 +1,5 @@
 
-function situation_model = normal_fit( situation_struct, data_in, saved_models_directory )
+function situation_model = normal_fit( situation_struct, fnames_in, saved_models_directory )
 
     % model = normal_fit( situation_struct, data_in );
     %   p should be a Situate parameters struct
@@ -8,7 +8,7 @@ function situation_model = normal_fit( situation_struct, data_in, saved_models_d
     
     
     model_description = 'normal situation model';
-    fnames_in_stripped = fileparts_mq( data_in, 'name');
+    fnames_in_stripped = fileparts_mq( fnames_in, 'name');
     classes = situation_struct.situation_objects;
     
     if ~exist('saved_models_directory','var') || isempty(saved_models_directory)
@@ -33,9 +33,9 @@ function situation_model = normal_fit( situation_struct, data_in, saved_models_d
         if exist(saved_models_directory,'dir')
             selected_model_fname = ...
                 situate.check_for_existing_model( saved_models_directory, ...
-                'fnames_lb_train', sort(fnames_in_stripped), ...
-                'model_description', model_description, ...
-                'situation_struct', situation_struct );
+                'fnames_lb_train', fnames_in, @(a,b) isempty(setxor(fileparts_mq(a,'name'),fileparts_mq(b,'name'))), ...
+                'model_description', model_description, @isequal, ...
+                'situation_struct', situation_struct, @isequal_struct );
         else
             selected_model_fname = [];
         end
@@ -50,7 +50,7 @@ function situation_model = normal_fit( situation_struct, data_in, saved_models_d
     %% train
 
         % get image data from a directory
-            image_data = situate.labl_load(data_in, situation_struct);
+            image_data = situate.labl_load(fnames_in, situation_struct);
 
         % turn data into a single matrix
             row_description = {'r0' 'rc' 'rf' 'c0' 'cc' 'cf' 'log w' 'log h' 'log aspect ratio' 'log area ratio'};
@@ -95,7 +95,7 @@ function situation_model = normal_fit( situation_struct, data_in, saved_models_d
             situation_model.situation_objects      = situation_struct.situation_objects;
             situation_model.parameters_description = row_description;
             situation_model.fnames_lb_train = sort(fnames_in_stripped);
-            
+            situation_model.model_description = model_description;
             situation_model.is_conditional = false;
 
         

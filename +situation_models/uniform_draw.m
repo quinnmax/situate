@@ -1,5 +1,5 @@
-function h = uniform_draw( d, object_string, what_to_draw, input_agent, box_format_arg, initial_draw  )
-% h = uniform_draw( d, object_string, what_to_draw, input_agent, format_arg, [box_r0rfc0cf], [box_format_arg], [initial_draw] );
+function h = uniform_draw( d, object_string, viz_spec, input_agent, box_format_arg, is_initial_draw  )
+% h = uniform_draw(        d, object_string, viz_spec, input_agent, format_arg, [box_r0rfc0cf], [box_format_arg], [is_initial_draw] );
 %
 %   what to draw can be 'xy', 'shape', or 'size'
 %       xy will be a heat map the shape of the image
@@ -16,8 +16,8 @@ function h = uniform_draw( d, object_string, what_to_draw, input_agent, box_form
         box_r0rfc0cf = input_agent;
     end
 
-    if ~exist('initial_draw','var') || isempty(initial_draw)
-        initial_draw = false;
+    if ~exist('initial_draw','var') || isempty(is_initial_draw)
+        is_initial_draw = false;
     end
 
         i = find(strcmp( {d.interest}, object_string ));
@@ -29,11 +29,11 @@ function h = uniform_draw( d, object_string, what_to_draw, input_agent, box_form
         persistent prev_distribution_xy;
         persistent up_to_date_inds_xy;
         
-        switch what_to_draw
+        switch viz_spec
 
             case 'xy'
                 
-                if ~initial_draw && ~isempty(prev_distribution_xy) && isequal(d,prev_distribution_xy) && any( i == up_to_date_inds_xy )
+                if ~is_initial_draw && ~isempty(prev_distribution_xy) && isequal(d,prev_distribution_xy) && any( i == up_to_date_inds_xy )
                     % no need to redraw
                 else
                     

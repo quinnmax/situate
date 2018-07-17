@@ -3,6 +3,8 @@
 
 # Situate
 
+![example output](example_output.png)
+
 Situate is a system for active grounding of visual situations in images. Given an image and a situation definition, Situate localizes objects that make up a situation and produces a confidence score expressing how much the system believes that a given situation is present in an image. 
 
 Situate is an active system, using detected objects to direct search. Confidence that a given situation is present is based on the confidence of constituent classifiers that specific objects are present, the reliability of those classifiers, and the spatial configuration of objects in the scene.
@@ -48,11 +50,11 @@ example: `situation_definitions/dogwalking.json`
 
 #### Situate running parameters
 	
-The *Situate running parameters* file defines the functions that are used by situate. These includes the functions used to train and apply the classifier, to define and apply the conditional relationships among objects, and numerous others.
+The *Situate running parameters* file defines the functions that are used by situate. These includes the functions used to train and apply the classifier, to define and apply the conditional relationships among objects, and numerous others. A more detailed explanation of options can be found in `situate/README_params_run.md`
 
 example: `params_run/default.json`
 
-A list of several *Situate running parameters* files can be included in the *experiment parameters file*. If they are, each parameterization will be run.
+A list of several *Situate running parameters* files can be included in the *experiment parameters file*. If they are, each parameterization will be run using the same training and testing images. 
 
 #### Training and testing images
 

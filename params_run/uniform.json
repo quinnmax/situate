@@ -5,7 +5,6 @@
 		"description" : "uniform",
 
 		// situation model
-
 		"situation_model" : {
 			"description" : "uniform (log size/shape ratios)",
 			"learn"  : "situation_models.uniform_fit",
@@ -15,15 +14,10 @@
 			},
 
 		// pipeline options
-		
 		"use_direct_scout_to_workspace_pipeline" : "true",
-
 		"maximum_iterations" : 500,
-		
 		"stopping_condition" : "situate.stopping_condition_finish_up_pool",
-		
 		"min_number_of_scouts" : 10,
-		
 		"agent_urgency_defaults" : {
 			"scout"    : 1,
 			"reviewer" : 5,
@@ -31,7 +25,6 @@
 		},
 
 		// classifier
-		
 		"classifier" : {
 			"train" : "classifiers.IOU_ridge_regression_train",
 			"apply" : "classifiers.IOU_ridge_regression_apply",
@@ -39,15 +32,11 @@
 		},
 		
 		// support functions
-
 		"support_function_external" : "@(x) x;",
-
 		"support_function_total" : "@(int,ext,a,b) int;",
-
 		"support_function_full_situation" : "support_functions_situation.geometric_mean_padded",
 
 		// support thresholds
-
 		"support_thresholds" : {
 			"internal_support"          : ".5",
 			"internal_support_retain"   : "inf",
@@ -60,9 +49,6 @@
 
 		// agent pool adjustment rules
 		"agent_pool_adjustment_rule" : "@(x) x;",
-		
-		// clear scouts with internal support under threshold. 
-		"scout_internal_support_keep_threshold" : "inf",
 		
 		// agent adjustment model
 		"agent_adjustment_model" : {

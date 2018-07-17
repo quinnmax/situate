@@ -29,7 +29,7 @@ function [d,d_joint] = distribution_struct_initialize(p,im,learned_models,worksp
     d_joint.interest          = 'joint distribution';
     d_joint.interest_priority = 0;
     d_joint.distribution      = learned_models.situation_model;
-    d_joint.distribution = p.situation_model.update( d(dist_index).distribution, p.situation_objects{dist_index}, workspace, im );
+    d_joint.distribution      = p.situation_model.update( d(dist_index).distribution, p.situation_objects{dist_index}, workspace, im );
     d_joint.image_size        = [size(im,1)   size(im,2)];
     d_joint.image_size_px     =  size(im,1) * size(im,2);
     

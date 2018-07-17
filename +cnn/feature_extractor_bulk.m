@@ -23,25 +23,24 @@ function [fname_out] = feature_extractor_bulk( directory_in, directory_out, situ
     num_situation_objects = length(situation_objects);
     
     
-    
 %% find data
     
-    d = dir(fullfile(directory_in, '*.labl'));
+    d1 = dir(fullfile(directory_in, '*.json'));
+    d2 = dir(fullfile(directory_in, '*.labl'));
+    if length(d1)>length(d2)
+        d = d1;
+    else
+        d = d2;
+    end
     fnames = cellfun(@(x) fullfile(directory_in, x), {d.name}, 'UniformOutput', false )';
     num_images = length(fnames);
-    if debug
-        num_images = 5;
-        fnames = fnames(1:num_images);
-    end
-    
-    
+   
     
 %% poke at the cnn output
     
     demo_image = repmat( imread('cameraman.tif'),1,1,3);
     cnn_output_full = cnn.cnn_process(demo_image);
     num_cnn_features = length(cnn_output_full);
-    
     
     
 %% get stats on shape,size for each object type
@@ -63,7 +62,6 @@ function [fname_out] = feature_extractor_bulk( directory_in, directory_out, situ
         end
         
     end 
-    
     
     
 %% define box set for each image

@@ -1,5 +1,5 @@
-function h = normal_draw( d, object_string, what_to_draw, input_agent, box_format_arg, initial_draw  )
-% h = normal_draw( d, object_string, what_to_draw, input_agent, format_arg, [box_r0rfc0cf], [box_format_arg], [initial_draw] );
+function h = normal_draw( d, object_string, viz_spec, input_agent, box_format_arg, is_initial_draw  )
+% h = normal_draw(        d, object_string, viz_spec, input_agent, format_arg, [box_r0rfc0cf], [box_format_arg], [is_initial_draw] );
 %
 %   what to draw can be 'xy', 'shape', or 'size'
 %       xy will be a heat map the shape of the image
@@ -11,7 +11,7 @@ function h = normal_draw( d, object_string, what_to_draw, input_agent, box_forma
 %   include a representation of the sample (as a point or box) indicating the location or desnity 
 %   of that sample
 
-    h = situation_models.uniform_normal_mix_draw( d, object_string, what_to_draw, input_agent, box_format_arg, initial_draw  );
+    h = situation_models.uniform_normal_mix_draw( d, object_string, viz_spec, input_agent, box_format_arg, is_initial_draw  );
     
 end
                     
