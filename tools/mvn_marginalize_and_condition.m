@@ -10,6 +10,12 @@ function [mu_bar, Sigma_bar] = mvn_marginalize_and_condition( joint_mu, joint_Si
     %
     %   see also mvn_conditional, mvn_marginalize_and_condition_ts
 
+    if ~exist('have_data_inds','var') || isempty(have_data_inds)
+        % just marginalize
+        have_data_inds = false(size(want_data_inds));
+        known_data = nan(size(want_data_inds));
+    end
+    
     if length(have_data_inds) == length(want_data_inds)
         relevant_inds  = or(have_data_inds, want_data_inds); % dimensions to keep. marginalize out the rest right off
     else
