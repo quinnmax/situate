@@ -11,6 +11,8 @@ function [mu_bar, Sigma_bar] = mvn_marginalize_and_condition( joint_mu, joint_Si
     %
     %   see also mvn_conditional, mvn_marginalize_and_condition_ts
     
+    if ~exist('have_data_inds','var'), have_data_inds = []; known_data = []; end
+    
     % special case
         if ~isempty(have_data_inds) && ~islogical(have_data_inds) && ~isequal(have_data_inds, sort(have_data_inds)) && length(known_data) == length(have_data_inds)
             [~,sort_order] = sort(have_data_inds);
