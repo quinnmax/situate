@@ -51,9 +51,9 @@ ylim([-4 8]);
 
 
 % condition given some data
-want_inds = [1 0];
+want_inds  = logical([1 0]);
 known_inds = logical([0 1]);
-known_vals = [nan 5];
+known_vals = [5];
 model_conditional = gmm_condition( model_est, want_inds, known_inds, known_vals );
 
 
