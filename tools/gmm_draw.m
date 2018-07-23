@@ -1,5 +1,6 @@
-function h = uniform_normal_mix_draw( d, object_string, viz_spec, samples_respresented, samples_represented_formatting, is_initial_draw  )
-% h = uniform_normal_mix_draw(        d, object_string, viz_spec, input_agent_or_box, is_initial_draw );
+
+function h = gmm_draw( d, object_string, viz_spec, input_agent, box_r0rfc0cf, is_initial_draw  )
+% h = gmm_draw(        d, object_string, viz_spec, input_agent, box_r0rfc0cf, is_initial_draw );
 %
 %   what to draw can be 'xy', 'shape', or 'size'
 %       xy will be a heat map the shape of the image
@@ -11,9 +12,9 @@ function h = uniform_normal_mix_draw( d, object_string, viz_spec, samples_respre
 %   a representation of the sample (as a point or box) indicating the location or desnity 
 %   of that sample will be included in the figure
 
-    if ~isempty(samples_respresented) 
+    if ~isempty(input_agent) 
         %box_r0rfc0cf = input_agent.box.r0rfc0cf;
-        box_r0rfc0cf = samples_respresented;
+        box_r0rfc0cf = input_agent;
     end
 
     if ~exist('initial_draw','var') || isempty(is_initial_draw)
@@ -44,18 +45,11 @@ function h = uniform_normal_mix_draw( d, object_string, viz_spec, samples_respre
 
         case 'xy'
 
-            % visualize the distribution of box centers
-            
             if ~is_initial_draw && ~isempty(prev_distribution_struct) && isequal(d,prev_distribution_struct) && ismember( i, up_to_date_fig_inds )
                 % no need to redraw
-                % the majority of calls fall into this category
             else
 
-                % define a uniform component
-                
-                uniform_viz = ones(im_r,im_c);
-                
-                % define the normal component
+                uniform_viz = .5 * ones(im_r,im_c);
                 
                 rc_ind = strcmp( d(i).distribution.parameters_description, 'rc' ); % row-center ind
                 cc_ind = strcmp( d(i).distribution.parameters_description, 'cc' ); % column-center ind
@@ -71,30 +65,13 @@ function h = uniform_normal_mix_draw( d, object_string, viz_spec, samples_respre
                 Z = reshape( Z_flat,im_r, im_c );
                 mvn_viz = Z;
                 
-                % figure out the mix
-                
-                if d(i).distribution.is_conditional
-                    if isfield( d(i).distribution, 'p_uniform_post_conditioning' )
-                        alpha = d(i).distribution.p_uniform_post_conditioning;
-                    else
-                        alpha = 0;
-                    end
+                if model.is_conditional
+                    alpha = d(i).distribution.p_uniform_post_conditioning;
                 else
-                    if isfield( d(i).distribution, 'p_uniform_pre_conditioning' )
-                        alpha = d(i).distribution.p_uniform_pre_conditioning;
-                    else
-                        alpha = 0;
-                    end
+                    alpha = d(i).distribution.p_uniform_pre_conditioning;
                 end
                 
                 final_viz = (1-alpha) * mat2gray(mvn_viz) + alpha * uniform_viz;
-                if median(final_viz(:)) > .95
-                    % a constant 1 for the uniform distribution is jarring, so make it .5
-                    final_viz = final_viz * .5;
-                end
-                    
-                
-                % draw
                 
                 imshow(final_viz);
                 
@@ -115,15 +92,15 @@ function h = uniform_normal_mix_draw( d, object_string, viz_spec, samples_respre
                 % so we'll do that.
                 boxes_to_draw = size(box_r0rfc0cf,1);
                 if boxes_to_draw > 1 && isequal( box_r0rfc0cf(1,:), box_r0rfc0cf(2,:) ), boxes_to_draw = 1; end
-                if ~exist('samples_represented_formatting','var') || isempty(samples_represented_formatting), samples_represented_formatting = 'b'; end
+                if ~exist('box_format_arg','var') || isempty(box_format_arg), box_format_arg = 'b'; end
 
                 h = zeros(1,boxes_to_draw);
                 for bi = 1:boxes_to_draw
                     hold on; 
-                    if iscell(samples_represented_formatting)
-                        h(bi) = draw_box( box_r0rfc0cf(bi,:), 'r0rfc0cf', samples_represented_formatting{bi} );
+                    if iscell(box_format_arg)
+                        h(bi) = draw_box( box_r0rfc0cf(bi,:), 'r0rfc0cf', box_format_arg{bi} );
                     else
-                        h(bi) = draw_box( box_r0rfc0cf(bi,:), 'r0rfc0cf', samples_represented_formatting );
+                        h(bi) = draw_box( box_r0rfc0cf(bi,:), 'r0rfc0cf', box_format_arg );
                     end
                     hold off
                 end
@@ -144,13 +121,15 @@ function h = uniform_normal_mix_draw( d, object_string, viz_spec, samples_respre
             h_temp = gca;
             h_temp.XTick      = [ log(.25)  log(.5) log(1) log(2) log(4) ];
             h_temp.XTickLabel = { '1:4' '1:2' '1:1' '2:1' '4:1'};
+            %xticks([ log(.25)  log(.5) log(1) log(2) log(4) ]);
+            %xticklabels({ '1:4' '1:2' '1:1' '2:1' '4:1'});
             xlabel('shape (W:H)');
 
             if exist('box_r0rfc0cf','var') && ~isempty(box_r0rfc0cf)
 
                 boxes_to_draw = size(box_r0rfc0cf,1);
                 if boxes_to_draw > 1 && isequal( box_r0rfc0cf(1,:), box_r0rfc0cf(2,:) ), boxes_to_draw = 1; end
-                if ~exist('samples_represented_formatting','var') || isempty(samples_represented_formatting), samples_represented_formatting = 'ob'; end
+                if ~exist('box_format_arg','var') || isempty(box_format_arg), box_format_arg = 'ob'; end
 
                 for bi = 1:boxes_to_draw
                     r0 = box_r0rfc0cf(bi,1);
@@ -162,10 +141,10 @@ function h = uniform_normal_mix_draw( d, object_string, viz_spec, samples_respre
                     x_val = log(width/height);
                     y_val = normpdf( x_val, mu_bar, sigma_bar );
                     hold on;
-                    if iscell(samples_represented_formatting)
-                        plot( x_val, y_val, ['o' samples_represented_formatting{bi}(end)] );
+                    if iscell(box_format_arg)
+                        plot( x_val, y_val, ['o' box_format_arg{bi}(end)] );
                     else
-                        plot( x_val, y_val, ['o' samples_represented_formatting(end)]);
+                        plot( x_val, y_val, ['o' box_format_arg(end)]);
                     end
                     hold off
                 end
@@ -186,13 +165,15 @@ function h = uniform_normal_mix_draw( d, object_string, viz_spec, samples_respre
             h_temp = gca;
             h_temp.XTick = [ log(.001) log(.01) log(.1)   log(.5) log(1) ];
             h_temp.XTickLabel = {'.001' '.01' '.1'   '.5' '1'};
+            %xticks([log(.001) log(.01) log(.05)   log(.5) log(1) ]);
+            %xticklabels({'.001' '.01' '.05'   '.5' '1'});
             xlabel('area (box/image)');
 
             if exist('box_r0rfc0cf','var') && ~isempty(box_r0rfc0cf)
 
                 boxes_to_draw = size(box_r0rfc0cf,1);
                 if boxes_to_draw > 1 && isequal( box_r0rfc0cf(1,:), box_r0rfc0cf(2,:) ), boxes_to_draw = 1; end
-                if ~exist('box_format_arg','var') || isempty(samples_represented_formatting), samples_represented_formatting = 'ob'; end
+                if ~exist('box_format_arg','var') || isempty(box_format_arg), box_format_arg = 'ob'; end
 
                 for bi = 1:boxes_to_draw
                     r0 = box_r0rfc0cf(bi,1);
@@ -205,29 +186,33 @@ function h = uniform_normal_mix_draw( d, object_string, viz_spec, samples_respre
                     y_val = normpdf( x_val, mu_bar, sigma_bar );
                     hold on;
                     assert( y_val > 0 );
-                    if iscell(samples_represented_formatting)
-                        plot( x_val, y_val, ['o' samples_represented_formatting{bi}(end)] );
+                    if iscell(box_format_arg)
+                        plot( x_val, y_val, ['o' box_format_arg{bi}(end)] );
                     else
-                        plot( x_val, y_val, ['o' samples_represented_formatting(end)]);
+                        plot( x_val, y_val, ['o' box_format_arg(end)]);
                     end
                     hold off
                 end
 
             end
 
-        otherwise
-            warning(['unrecognized viz spec: ' viz_spec]);
-            
     end
         
 end
 
                     
                     
-               
+                 
+            
         
         
 
 
         
         
+
+
+
+
+
+

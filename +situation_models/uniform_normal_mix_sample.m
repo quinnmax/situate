@@ -35,12 +35,8 @@ function [boxes_r0rfc0cf, sample_density] = uniform_normal_mix_sample( model, ob
         % marginalize out the location and return the density with
         % respect to the shape, size, width, and heigth parameters.
 
-        % row_description = {'r0' 'rc' 'rf' 'c0' 'cc' 'cf' 'log w' 'log h' 'log aspect ratio' 'log area ratio'};
-
-        if model.is_conditional
-            sample_density = mvnpdf( box_vect, model.mu, model.Sigma );
-            boxes_r0rfc0cf = existing_box_r0rfc0cf;
-        else
+        % row_description = {'r0' 'rc' 'rf' 'c0' 'cc' 'cf' 'log w' 'log h' 'log aspect ratio' 'log area ratio'};  
+        if ~model.is_conditional && model.p_uniform_pre_conditioning > 0 %% give the uniform density
             % then we just want to return the density with respect to a
             % uniform distribution over location. Because the location
             % distribution is based on a unit square, the density with
@@ -60,6 +56,10 @@ function [boxes_r0rfc0cf, sample_density] = uniform_normal_mix_sample( model, ob
             box_vect_limited = box_vect([7 8 9 10]);
             sample_density   = mvnpdf( box_vect_limited, mu_marginalized, Sigma_marginalized );
             boxes_r0rfc0cf   = existing_box_r0rfc0cf;
+        else
+            % give the mvn density
+            sample_density = mvnpdf( box_vect, model.mu, model.Sigma );
+            boxes_r0rfc0cf = existing_box_r0rfc0cf;
         end
         
         return;
@@ -77,11 +77,18 @@ function [boxes_r0rfc0cf, sample_density] = uniform_normal_mix_sample( model, ob
     log_aspect_col = strcmp( 'log aspect ratio', model.parameters_description );
     log_area_col   = strcmp( 'log area ratio',   model.parameters_description );
     
-    resample_from_uniform = false;
+    
+    
+    if model.is_conditional
+        resample_location_from_uniform = rand() <= model.p_uniform_post_conditioning;
+    else
+        resample_location_from_uniform = rand() <= model.p_uniform_pre_conditioning;
+    end
+    
+    
     
     if model.is_conditional
         obj_samples = raw_samples;
-        resample_from_uniform = rand() < model.probability_of_uniform_after_conditioning;
     else
         % get the columns associated with the object of interest
         num_vars_per_obj = length(model.mu)/length(model.situation_objects);
@@ -89,11 +96,9 @@ function [boxes_r0rfc0cf, sample_density] = uniform_normal_mix_sample( model, ob
         sub_ind_0   = (obj_ind-1) * num_vars_per_obj + 1;
         sub_ind_f   = sub_ind_0 + num_vars_per_obj - 1;
         obj_samples = raw_samples(:, sub_ind_0:sub_ind_f );
-        
-        resample_from_uniform = true;
     end
     
-    if resample_from_uniform
+    if resample_location_from_uniform
         lsf = sqrt( 1 / (im_dims(1) * im_dims(2)) ); % linear scaling factor
         rc = lsf * ( im_dims(1) * rand() - im_dims(1)/2 );
         cc = lsf * ( im_dims(2) * rand() - im_dims(2)/2 );
@@ -116,8 +121,14 @@ function [boxes_r0rfc0cf, sample_density] = uniform_normal_mix_sample( model, ob
     % if we have im_dims, rescale
     % else, return for unit box centered at origin
     if isempty(im_dims)
+        
         boxes_r0rfc0cf = boxes_r0rfc0cf_unit;
-        sample_density = mvnpdf( raw_samples, model.mu, model.Sigma );
+        if model.is_conditional
+            sample_density = mvnpdf( obj_samples, model.mu, model.Sigma );
+        else
+            sample_density = mvnpdf( raw_samples, model.mu, model.Sigma );
+        end
+        
     else
         r_mid = im_dims(1) / 2;
         c_mid = im_dims(2) / 2;
