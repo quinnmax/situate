@@ -87,7 +87,11 @@ function h = uniform_normal_mix_draw( d, object_string, viz_spec, samples_respre
                     end
                 end
                 
+                % this is just a general representation. the matgray on the normal distorts this
+                % substantially, and the alpha should be pretty small compared to the normal
+                % component, despite accounting for a lot of the total mass
                 final_viz = (1-alpha) * mat2gray(mvn_viz) + alpha * uniform_viz;
+                
                 if median(final_viz(:)) > .95
                     % a constant 1 for the uniform distribution is jarring, so make it .5
                     final_viz = final_viz * .5;

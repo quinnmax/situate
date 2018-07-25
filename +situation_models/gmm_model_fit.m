@@ -1,13 +1,12 @@
 
-function situation_model = normal_fit( situation_struct, fnames_in, saved_models_directory )
+function situation_model = gmm_model_fit( situation_struct, fnames_in, saved_models_directory )
 
-    % model = normal_fit( situation_struct, data_in );
-    %   p should be a Situate parameters struct
+    % model = gmm_model_fit( situation_struct, fname_in, saved_models_directory );
     %   data_in can be a cell array of file paths and names of label files, or a directory containing label files
 
     
     
-    model_description = 'normal situation model';
+    model_description = 'gmm situation model';
     fnames_in_stripped = fileparts_mq( fnames_in, 'name');
     classes = situation_struct.situation_objects;
     
@@ -78,16 +77,37 @@ function situation_model = normal_fit( situation_struct, fnames_in, saved_models
                 data_pile(ii,:) = cur_row;
             end
 
-        % see if the covariance matrix satisfies old man cholesky
-            mu = mean(data_pile);
-            Sigma = cov(data_pile);
-            Sigma = covar_mat_fix(Sigma);
-
+        % do the fitting
+            k = 3;
+            num_iterations = 100;
+            repeated_trials = 10;
+            [model,loglik,alt_models] = gmm_fit( data_pile, k, num_iterations, repeated_trials);
+            debugtown = false;
+            if debugtown
+                sampled_data = gmm_sample( model, size(data_pile,1) );
+                for oi = 1:length(situation_struct.situation_objects)
+                   
+                    c0 = (oi-1)*num_variables+1;
+                    cf = c0 + num_variables - 1;
+                    
+                    figure;
+                    plotmatrix( data_pile( :, c0+6:cf ) );
+                    title(['training data for ' situation_struct.situation_objects{oi}]);
+                    
+                    figure;
+                    plotmatrix( sampled_data( :, c0+6:cf ) );
+                    title(['modeled data for ' situation_struct.situation_objects{oi}]);
+                  
+                end
+            end
 
         % gather joint distribution info
             situation_model       = [];
-            situation_model.mu    = mu;
-            situation_model.Sigma = Sigma;
+            
+            situation_model.mu    = model.mu;
+            situation_model.Sigma = model.Sigma;
+            situation_model.pi    = model.pi;
+            
             situation_model.situation_objects      = situation_struct.situation_objects;
             situation_model.parameters_description = row_description;
             situation_model.fnames_lb_train = sort(fnames_in_stripped);

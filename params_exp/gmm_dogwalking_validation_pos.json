@@ -2,16 +2,16 @@
 	"situation_definition_fname" : "situation_definitions/dogwalking.json",
 			
 	"situate_parameterizations_fnames" : [
+				//"params_run/normal_model.json"
 				//"params_run/homebrew_rcnn_priming.json"
 				//"params_run/faster_rcnn_priming.json"
 				//"params_run/uniform.json"
-				//"params_run/normal_model.json"
 				"params_run/gmm_model.json"
 			],	
 
 	"experiment_settings" : {
 
-			"description" : "dogwalking visualizer with validation images",
+			"description" : "gmm check with dogwalking validation",
 
 			// full path, or relative to base_image_directories
 			"directory_train" : "DogWalking_PortlandSimple_train/",
@@ -21,7 +21,7 @@
 			
 			"run_analysis_after_completion"	: 0,
 
-			"use_visualizer" : 1,
+			"use_visualizer" : 0,
 
 			// additional visualization options
 		 	"viz_options" : {
@@ -33,7 +33,6 @@
 
 			// training / testing image lists
 			// empty should use all files in specified folders
-			//"training_testing_split_directory" : "data_splits/dogwalking_validation/",
 			"training_testing_split_directory" : "data_splits/dogwalking_validation/",
 
 			// number of folds
@@ -46,10 +45,12 @@
 
 			"specific_folds" : [1],
 
-			"max_testing_images" : "",
+			"max_testing_images" : 10,
 			
 			// if specified, this will be used to seed the RNG during testing.
 			// otherwise, each parameterization will get a different time-based seed
 			"testing_seed"  : ""
+
 	}
+
 }

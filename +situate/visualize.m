@@ -246,7 +246,7 @@ function [h, return_status_string] = visualize( h, im, p, d, workspace, cur_agen
             [num_each_history, unique_histories] = counts( {agent_pool.history} );
             h_temp = bar( 1:length(unique_histories), num_each_history );
             h_temp.Parent.XTickLabel = unique_histories;
-            h_temp.Parent.XTickLabelRotation = 45;
+            h_temp.Parent.XTickLabelRotation = 30;
             xlim([0 max(3,length(unique_histories)+1)]);
             title('history dist');
             
