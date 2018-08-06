@@ -211,6 +211,8 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
 
             keep_going = true;
             cur_image_ind = 1;
+            
+            fprintf(['params                           image       steps      time(s)            [ '  repmat('%-15s',1,3) '] \n'], situation_struct.situation_objects{:})
             while keep_going
 
                 % run on the current image
@@ -253,9 +255,10 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
                         reconciled_workspace = run_data_cur.workspace_final;
                     end
                     GT_IOUs = [reconciled_workspace.GT_IOU nan(1,length(labels_missed))];
-                    [~,sort_order] = sort( labels_temp );
-                    IOUs_of_last_run = num2str(GT_IOUs(sort_order));
-                    fprintf('%s, %3d / %d, %4d steps, %6.2fs,  IOUs: [%s] \n', ...
+                    [~,sort_order_2] = sort( labels_temp );
+                    [~,sort_order_1] = sort( situation_struct.situation_objects);
+                    IOUs_of_last_run = sprintf(repmat('%1.4f         ',1,length(GT_IOUs)),GT_IOUs(sort_order_2(sort_order_1)));
+                    fprintf('%-28s %3d /%4d        %4d      %6.2f       IOUs: [ %s] \n', ...
                         cur_parameterization.description, ...
                         cur_image_ind, ...
                         num_images, ...

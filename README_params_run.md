@@ -61,6 +61,9 @@ Situation parameters are modeled using a uniform distribution over the possible 
 - **uniform_normal_mix**  
 This parameterization method combines the above two methods. Before any conditioning has been done, the uniform distribution is used to draw samples. Once conditioning has been done, it draws either the normal or uniform distribution based on a mixing parameter. The default mixing parameter is .5.
 
+- **gmm_model**  
+This parameterization method uses the same situation parameterization as the above methods, but models the high dimensional space using a Gaussian mixture model. The features projected onto two dimensional slices show that a high dimensional Guassian alone is not a great match for the data, but a combination of a few Guassians seems to be quite a bit better. However, the final results are similar to using a normal distribution or the uniform_normal_mix. 
+
 ### pipeline options
 
 These options define how Situate manages its pool of agents. 

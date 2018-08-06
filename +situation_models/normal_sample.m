@@ -1,5 +1,5 @@
 
-function [boxes_r0rfc0cf, sample_density] = normal_sample( model, object_type, n, im_dims, existing_box_r0rfc0cf )
+function [boxes_r0rfc0cf, sample_density] = normal_sample( model, object_type, n, im_dims, existing_box_r0rfc0cf, recursion_depth )
     
     % [boxes_r0rfc0cf, sample_density] = normal_sample( model, object_type, [n], [im_row im_col]); 
     %   if run without the existing_box var, then you get a sampled box
@@ -15,6 +15,12 @@ function [boxes_r0rfc0cf, sample_density] = normal_sample( model, object_type, n
     
     if ~exist('im_dims','var')
         im_dims = [];
+    end
+    
+    if ~exist('recursion_depth','var') || isempty(recursion_depth)
+        recursion_depth = 0;
+    elseif recursion_depth >= 10
+        error('recursion depth sorta high, take a look');
     end
     
     % if existing box was passed in, just figure out its density and return
@@ -109,7 +115,7 @@ function [boxes_r0rfc0cf, sample_density] = normal_sample( model, object_type, n
         
         % ugh, if you've goofed this bad, just do it over
         if (r0>=rf) || (c0>=cf)
-            [boxes_r0rfc0cf, sample_density] = situation_models.normal_sample( model, object_type, n, im_dims );
+            [boxes_r0rfc0cf, sample_density] = situation_models.normal_sample( model, object_type, n, im_dims, [], recursion_depth + 1 );
         end
         
     end

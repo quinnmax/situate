@@ -2,7 +2,8 @@
 	"situation_definition_fname" : "situation_definitions/handshaking.json",
 			
 	"situate_parameterizations_fnames" : [
-				"params_run/homebrew_rcnn_priming.json"
+				"params_run/normal_model.json"
+				//"params_run/homebrew_rcnn_priming.json"
 				//"params_run/faster_rcnn_priming.json",
 				//"params_run/uniform.json"
 			],	
@@ -44,7 +45,7 @@
 
 			"specific_folds" : [1],
 
-			"max_testing_images" : 10,
+			"max_testing_images" : 50,
 			
 			// if specified, this will be used to seed the RNG during testing.
 			// otherwise, each parameterization will get a different time-based seed

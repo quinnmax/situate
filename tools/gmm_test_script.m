@@ -12,7 +12,7 @@ repeated_trials = 10;
 
 % make gt model
 dims    = 7;
-k_gt    = 3;
+k_gt    = 4;
 
 % parameter for fitting
 k_est   = 3;

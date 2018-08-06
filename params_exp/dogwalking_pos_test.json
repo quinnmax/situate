@@ -4,13 +4,14 @@
 	"situate_parameterizations_fnames" : [
 				//"params_run/normal_model.json"
 				//"params_run/homebrew_rcnn_priming.json"
-				"params_run/faster_rcnn_priming.json"
+				//"params_run/faster_rcnn_priming.json"
 				//"params_run/uniform.json"
+				"params_run/gmm_model.json"
 			],	
 
 	"experiment_settings" : {
 
-			"description" : "dogwalking positives test",
+			"description" : "gmm dogwalking positives test",
 
 			// full path, or relative to base_image_directories
 			"directory_train" : "DogWalking_PortlandSimple_train/",

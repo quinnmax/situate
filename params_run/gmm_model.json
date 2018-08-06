@@ -15,7 +15,7 @@
 
 		// pipeline options
 		"use_direct_scout_to_workspace_pipeline" : "true",
-		"maximum_iterations" : 500,
+		"maximum_iterations" : 300,
 		"stopping_condition" : "situate.stopping_condition_finish_up_pool",
 		"min_number_of_scouts" : 10,
 		"agent_urgency_defaults" : {
