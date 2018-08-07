@@ -6,7 +6,7 @@
 
 		// situation model
 		"situation_model" : {
-			"description" : "uniform then mixture of uniform and normal",
+			"description" : "normal model",
 			"learn"  : "situation_models.normal_fit",
 			"update" : "situation_models.normal_condition",
 			"sample" : "situation_models.normal_sample",
@@ -15,7 +15,7 @@
 
 		// pipeline options
 		"use_direct_scout_to_workspace_pipeline" : "true",
-		"maximum_iterations" : 500,
+		"maximum_iterations" : 300,
 		"stopping_condition" : "situate.stopping_condition_finish_up_pool",
 		"min_number_of_scouts" : 10,
 		"agent_urgency_defaults" : {
@@ -38,7 +38,7 @@
 
 		// support thresholds
 		"support_thresholds" : {
-			"internal_support"          : ".1",
+			"internal_support"          : ".2",
 			"internal_support_retain"   : "inf",
 			"total_support_provisional" : "inf",
 			"total_support_final"       : ".5"
