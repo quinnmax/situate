@@ -54,7 +54,12 @@ function selected_model_fname = check_for_existing_model( possible_paths, vararg
             try
                 for vari = 1:3:length(varargin)-1
                     file_data =  matobj.(varargin{vari});
-                    assert( varargin{vari+2}( varargin{vari+1}, file_data ) );
+                    if( varargin{vari+2}( varargin{vari+1}, file_data ) )
+                        % great
+                    else
+                        % problem
+                        assert(false);
+                    end
                 end
 
                 selected_model_fname = mat_files{mi};

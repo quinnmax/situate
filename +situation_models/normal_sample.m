@@ -19,8 +19,10 @@ function [boxes_r0rfc0cf, sample_density] = normal_sample( model, object_type, n
     
     if ~exist('recursion_depth','var') || isempty(recursion_depth)
         recursion_depth = 0;
-    elseif recursion_depth >= 10
-        error('recursion depth sorta high, take a look');
+    elseif recursion_depth >= 5
+        warning('the normal model is sampling outside of the image bounds repeatedly');
+        boxes_r0rfc0cf = repmat( [1 2 1 2], n, 1 );
+        sample_density = 0;
     end
     
     % if existing box was passed in, just figure out its density and return

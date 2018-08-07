@@ -35,13 +35,14 @@ function situation_model = normal_fit( situation_struct, fnames_in, saved_models
                 situate.check_for_existing_model( saved_models_directory, ...
                 'fnames_lb_train', fnames_in, @(a,b) isempty(setxor(fileparts_mq(a,'name'),fileparts_mq(b,'name'))), ...
                 'model_description', model_description, @isequal, ...
-                'situation_struct', situation_struct, @isequal_struct );
+                'situation_objects', situation_struct.situation_objects, @(a,b)isempty(setxor(a,b)) );
         else
             selected_model_fname = [];
         end
 
         if ~isempty(selected_model_fname)
             situation_model = load( selected_model_fname );
+            display([ 'loaded ' model_description ' from ' selected_model_fname ]);
             return;
         end
 

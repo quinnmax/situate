@@ -1,7 +1,7 @@
 
 current
 		
-	include setup script
+		x include setup script
 		
 		x include some built-in models that identifies the test_script_images as an acceptable training set
 
