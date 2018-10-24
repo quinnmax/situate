@@ -1,19 +1,18 @@
 
 current
+
+		update to save off results after every n images for easier resume after crash
 		
 		x include setup script
-		
 		x include some built-in models that identifies the test_script_images as an acceptable training set
-
 		x check for matconvnet and try to compile
 		x download the pre-trained network
 		x add folders that are expected but not included in the repo (local only, external box data, etc)
-		
 		x when matconvnet fails to compile, try to catch that and direct the user to the matconvnet site with compilation advice
 
 	sundries
 
-		check running in parallel mode
+		x check running in parallel mode
 
 		x there's still a warning for a label file not being present on a testing image. shouldn't do that
 
@@ -21,7 +20,7 @@ current
 
 		x situation model train calls things p struct, but is always situation struct, fix
 
-	analysis unit test
+	analysis unit tests
 
 		x single run filename, positives
 		x single run filename, negatives
@@ -32,7 +31,7 @@ current
 
 	analysis issues
 
-		the per-object detection rates are just for positives right now - should include precision recall for each object when pos and neg images are present (although this is challenging, as dogs are present in negatives, but not labeled)
+		the per-object detection rates are just for positives right now - should include precision recall for each object when pos and neg images are present (although this is challenging, as objects of interest are present in negatives, but not labeled)
 		x close figures in analysis script, with flag for keep open
 		x change name of "rcnn box data" to "external box data" and update the readme
 		x recall at n x axis goes too far. 100 images, shows 200
@@ -76,7 +75,7 @@ backlog
 
 	change situate.labl_load to throw errors when label isn't found
 	current behavior: returns empty label struct
-	better behavior: everything that calls it to use try/catch to generate their own empty label structs when necessary.
+	better behavior: everything that calls labl_load should have their own try/catch to determine behavior when n/a
 
 	make sure repeated runs are being grouped properly in analysis code
 		decide what analysis steps should include run variance (if any)

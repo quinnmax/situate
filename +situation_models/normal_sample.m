@@ -19,10 +19,22 @@ function [boxes_r0rfc0cf, sample_density] = normal_sample( model, object_type, n
     
     if ~exist('recursion_depth','var') || isempty(recursion_depth)
         recursion_depth = 0;
-    elseif recursion_depth >= 5
+    elseif recursion_depth >= 10
         warning('the normal model is sampling outside of the image bounds repeatedly');
-        boxes_r0rfc0cf = repmat( [1 2 1 2], n, 1 );
+        % just return the middle 1% square of the image
+        boxes_r0rfc0cf_unit = repmat( [-.05 .05 -.05 .05], n, 1 );
+        if exist('im_dims','var') && ~isempty(im_dims)
+            lsf = sqrt( 1 / (im_dims(1)*im_dims(2)) ); % linear scaling factor
+            r0 = round( lsf * boxes_r0rfc0cf_unit(:,1) + im_dims(1)/2 );
+            rf = round( lsf * boxes_r0rfc0cf_unit(:,2) + im_dims(1)/2 );
+            c0 = round( lsf * boxes_r0rfc0cf_unit(:,3) + im_dims(2)/2 );
+            cf = round( lsf * boxes_r0rfc0cf_unit(:,4) + im_dims(2)/2 );
+            boxes_r0rfc0cf = [r0 rf c0 cf];
+        else
+            boxes_r0rfc0cf = boxes_r0rfc0cf_unit;
+        end
         sample_density = 0;
+        return;
     end
     
     % if existing box was passed in, just figure out its density and return
@@ -116,6 +128,7 @@ function [boxes_r0rfc0cf, sample_density] = normal_sample( model, object_type, n
         [~, sample_density] = situation_models.normal_sample( model, object_type, n, im_dims, [r0 rf c0 cf] );
         
         % ugh, if you've goofed this bad, just do it over
+        %   (you sampled a box that was entirely outside of the image)
         if (r0>=rf) || (c0>=cf)
             [boxes_r0rfc0cf, sample_density] = situation_models.normal_sample( model, object_type, n, im_dims, [], recursion_depth + 1 );
         end
