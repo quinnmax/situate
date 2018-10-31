@@ -1,0 +1,58 @@
+{
+	"situation_definition_fname" : "situation_definitions/dogwalking.json",
+			
+	"situate_parameterizations_fnames" : [
+				"params_run/default.json"
+				//"params_run/normal_model.json"
+				//"params_run/homebrew_rcnn_priming.json"
+				//"params_run/faster_rcnn_priming.json"
+				//"params_run/uniform.json"
+			],	
+
+	"experiment_settings" : {
+
+			"description" : "dogwalking positives check",
+
+			// training params for vision model
+			"vision_model" : {
+				"directory_train" : "DogWalking_PortlandSimple_train/",
+				"training_testing_split_directory" : "data_splits/dogwalking_validation/"
+			},
+
+			// training params for situation model
+			"situation_model" : {
+				"directory_train" : "DogWalking_PortlandSimple_train/",
+				"training_testing_split_directory" : "data_splits/dogwalking_validation/"
+				// "training_testing_split_directory" : "data_splits/dogwalking_validation_small/"
+			},
+
+			// testing image directory
+			"directory_test"  : "DogWalking_PortlandSimple_train/",
+
+			// experiment running parameters
+			"use_parallel"					: 0, 
+			"run_analysis_after_completion"	: 0,
+			
+			// split parameters
+			//	num_folds: 
+			//		either defines the folds generated (if no folds given) 
+			//  	or limits the folds run (if there are more existing folds specified)
+			//	specified_folds: list of specific folds to run, shadows num_folds
+			//	max_testing_images: first n images, respects specified fold information
+			"num_folds"                     : 1,
+			"specific_folds"                : [1],
+			"max_testing_images"            : 10,
+			"testing_seed"                  : "",
+
+			// visualization options
+			"viz_options" : {
+				"use_visualizer"      : 0,
+		 		"on_iteration_mod"    : 1,
+		 		"on_workspace_change" : 0,
+		 		"on_end"              : 1,
+		 		"start_paused"        : 1
+	 		}
+
+	}
+
+}

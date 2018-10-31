@@ -1,6 +1,7 @@
 function p = parameters_initialize_from_file( params_situate_fname )
 
 
+
     %% parameters from situate param file
     
     d_json = jsondecode_file( params_situate_fname );
@@ -89,10 +90,6 @@ function p = parameters_initialize_from_file( params_situate_fname )
     p.viz_options    = [];
     p.use_parallel   = [];
     
-    
-
-        
-        
         
     
 end
