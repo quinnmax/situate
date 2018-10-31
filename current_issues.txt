@@ -1,6 +1,24 @@
 
 current
 
+		recent update is incomplete
+			experiment definition script now uses two separate training specifications for vision model and situation model.
+			
+			training directories match each other and testing? sure, just need testing images to match for each fold
+
+			training directories match, testing directory is different? sure
+
+			all three directories are different? sure
+
+			training directories are different, one matches testing? no
+
+			to use the same training directory for vision and situation models, but to include fewer examples in one or the other, set it up using data_splits files, and is currently just done manually.
+
+			the parallel mode has not been updated yet (ie, situate.experiment_handler_parallel)
+
+			the params_exp files have not been updated. there is an example of the new format in params_exp_rev. The readme.md hasn't been updated 
+
+
 		update to save off results after every n images for easier resume after crash
 		
 		x include setup script

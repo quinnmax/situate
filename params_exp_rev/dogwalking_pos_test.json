@@ -2,16 +2,16 @@
 	"situation_definition_fname" : "situation_definitions/dogwalking.json",
 			
 	"situate_parameterizations_fnames" : [
-				"params_run/default.json"
-				//"params_run/normal_model.json"
-				//"params_run/homebrew_rcnn_priming.json"
-				//"params_run/faster_rcnn_priming.json"
-				//"params_run/uniform.json"
-			],	
+			//"params_run/normal_model.json"
+			//"params_run/homebrew_rcnn_priming.json"
+			//"params_run/faster_rcnn_priming.json"
+			//"params_run/uniform.json"
+			"params_run/gmm_model.json"
+		],	
 
 	"experiment_settings" : {
 
-		"description" : "dogwalking positives check",
+		"description" : "gmm dogwalking positives test",
 
 		// training params for vision model
 		"vision_model" : {
@@ -26,7 +26,7 @@
 		},
 
 		// testing image directory
-		"directory_test"  : "DogWalking_PortlandSimple_train/",
+		"directory_test"  : "DogWalking_PortlandSimple_test/",
 
 		// experiment running parameters
 		"use_parallel"					: 0, 
@@ -40,7 +40,7 @@
 		//	max_testing_images: first n images, respects specified fold information
 		"num_folds"                     : 1,
 		"specific_folds"                : [1],
-		"max_testing_images"            : 10,
+		"max_testing_images"            : "",
 		"testing_seed"                  : "",
 
 		// visualization options

@@ -37,21 +37,31 @@ function [data_split_struct, fold_inds, experiment_settings] = experiment_proces
     
 %% now try to reconcile
 
-    try
-        assert( isequal( [data_split_struct_vision.fnames_lb_test], [data_split_struct_situation.fnames_lb_test] ) )
-    catch
-        error('it looks like the testing sets don''t match, can''t really go on from here yet')
-    end
+    load_testing_images_separately = false;
     
     if isequal( experiment_settings.vision_model.directory_train, experiment_settings.situation_model.directory_train )
         
-        % good. return the two separate split structs, use them during training, and move on
+        % good. if the testing folder also matches, we use the splits. 
+        % if testing directory does not match, we respect the splits for training, but load testing
+        % separately
+        
+        try
+            assert( isequal( [data_split_struct_vision.fnames_im_test], [data_split_struct_situation.fnames_im_test] ) )
+        catch
+            error('error while training vision and situation models: same training sets, different testing sets');
+        end
+        
+        load_testing_images_separately = true;
         
     elseif ~isequal( experiment_settings.vision_model.directory_train, experiment_settings.situation_model.directory_train ) ...
-        && ~data_split_struct_vision.train_test_dirs_match ...
-        && ~data_split_struct_situation.train_test_dirs_match 
-    
-        % good. return the two separate split structs, use them during training, and move on
+        && ~isequal( experiment_settings.vision_model.directory_train, experiment_settings.directory_test ) ...
+        && ~isequal( experiment_settings.situation_model.directory_train, experiment_settings.directory_test )
+            
+        % good. none of them match. 
+        % respect the split directories of the training sets (as they may be specifying a saved model)
+        % use all of the images in the testing directory (restricted by experiment_settings.max_testing_images)
+        
+        load_testing_images_separately = true;
         
     else
         
@@ -76,6 +86,23 @@ function [data_split_struct, fold_inds, experiment_settings] = experiment_proces
         end
         error( error_string );
     
+    end
+    
+    if load_testing_images_separately
+        
+        fnames_im_test = arrayfun( @(x) x.name, dir(fullfile(experiment_settings.directory_test, '*.jpg')), 'UniformOutput', false );
+        fnames_lb_test = arrayfun( @(x) x.name, dir(fullfile(experiment_settings.directory_test, '*.json')), 'UniformOutput', false );
+        
+        for fi = 1:length(data_split_struct_vision)
+            data_split_struct_vision(fi).fnames_im_test = fnames_im_test;
+            data_split_struct_vision(fi).fnames_lb_test = fnames_lb_test;
+        end
+        
+        for fi = 1:length(data_split_struct_situation)
+            data_split_struct_situation(fi).fnames_im_test = fnames_im_test;
+            data_split_struct_situation(fi).fnames_lb_test = fnames_lb_test;
+        end
+        
     end
             
     
@@ -187,7 +214,7 @@ function [data_split_struct,directory_train] = process_per_model_split_sturct( d
     
     if have_training_split_dir
         data_split_struct = situate.data_load_splits_from_directory( training_testing_split_directory );
-        display(['loaded vision model training splits from: ' training_testing_split_directory]);
+        display(['loaded training splits from: ' training_testing_split_directory]);
     end
     
     if ~have_training_split_dir && data_split_struct.train_test_dirs_match 
@@ -206,7 +233,7 @@ function [data_split_struct,directory_train] = process_per_model_split_sturct( d
 
     if ~have_training_split_dir && ~data_split_struct.train_test_dirs_match 
         % use everything in directories
-        disp('using all vision model training images');
+        disp('using all training images');
         data_split_struct.fnames_lb_train = arrayfun( @(x) x.name, dir(fullfile(directory_train, '*.json')), 'UniformOutput', false );
         data_split_struct.fnames_lb_test  = arrayfun( @(x) x.name, dir(fullfile(directory_test,  '*.json')), 'UniformOutput', false );
         data_split_struct.fnames_im_train = arrayfun( @(x) x.name, dir(fullfile(directory_train, '*.jpg')),  'UniformOutput', false );
