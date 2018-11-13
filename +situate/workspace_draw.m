@@ -27,7 +27,12 @@ function h = workspace_draw( input, p, workspace, font_size )
         if ~isempty(input)
             switch class(input)
                 case 'char'
-                    x = imread(input);
+                    try
+                        x = imread(input);
+                    catch
+                        warning(['image not found: ' input]);
+                        x = .25 * ones( workspace.im_size(1), workspace.im_size(2), 3);
+                    end
                     h(1) = imshow( x, [] );
                 case {'double', 'uint8'}
                     if all(ishandle(input))
