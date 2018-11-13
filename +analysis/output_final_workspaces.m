@@ -25,9 +25,12 @@ function [] = output_final_workspaces( input )
     end
 
 
-
-
     situate_results_data = load(situate_results_file_fname,'fnames_im_test','workspaces_final','p_condition');
+    if ~isfield( situate_results_data, 'fnames_im_test') ...
+    || ~isfield( situate_results_data, 'workspaces_final') ...
+    || ~isfield( situate_results_data, 'p_condition') ...
+        return
+    end
     output_directory = fullfile( fileparts( situate_results_file_fname), 'workspaces_final' );
 
     if ~exist(output_directory,'dir')
