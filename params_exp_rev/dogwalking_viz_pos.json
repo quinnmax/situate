@@ -11,7 +11,7 @@
 
 	"experiment_settings" : {
 
-		"description" : "dogwalking positives check",
+		"description" : "dogwalking positives viz check",
 
 		// training params for vision model
 		"vision_model" : {
@@ -45,7 +45,7 @@
 
 		// visualization options
 		"viz_options" : {
-			"use_visualizer"      : 0,
+			"use_visualizer"      : 1,
 	 		"on_iteration_mod"    : 1,
 	 		"on_workspace_change" : 0,
 	 		"on_end"              : 1,

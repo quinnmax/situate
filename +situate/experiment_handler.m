@@ -111,66 +111,70 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
 
                 tic;
                 [ ~, run_data_cur, visualizer_status_string ] = situate.main_loop( cur_fname_im, cur_parameterization, learned_models );
+               
+                if ~experiment_struct.experiment_settings.viz_options.use_visualizer 
+                
+                    % try to reconcile workspace with GT boxes
+                    cur_fname_lb = [fileparts_mq(cur_fname_im,'path/name') '.json'];
+                    if exist(cur_fname_lb,'file')
+                        reconciled_workspace = situate.workspace_score(run_data_cur.workspace_final, cur_fname_lb, cur_parameterization );
+                    else
+                        reconciled_workspace = run_data_cur.workspace_final;
+                    end
 
-                % try to reconcile workspace with GT boxes
-                cur_fname_lb = [fileparts_mq(cur_fname_im,'path/name') '.json'];
-                if exist(cur_fname_lb,'file')
-                    reconciled_workspace = situate.workspace_score(run_data_cur.workspace_final, cur_fname_lb, cur_parameterization );
-                else
-                    reconciled_workspace = run_data_cur.workspace_final;
+                    labels_missed = setdiff(cur_parameterization.situation_objects,run_data_cur.workspace_final.labels);
+                    labels_temp = [run_data_cur.workspace_final.labels labels_missed];
+                    GT_IOUs = [reconciled_workspace.GT_IOU nan(1,length(labels_missed))];
+                    [~,sort_order_2] = sort( labels_temp );
+                    [~,sort_order_1] = sort( cur_parameterization.situation_objects);
+                    IOUs_of_last_run = sprintf(repmat('%1.4f         ',1,length(GT_IOUs)),GT_IOUs(sort_order_2(sort_order_1)));
+
+                    % display update to console
+                    num_iterations_run = sum(~eq(0,[run_data_cur.agent_record.interest]));
+                    fprintf('%-28s %3d /%4d        %4d      %6.2f       IOUs: [ %s] \n', ...
+                        cur_parameterization.description, ...
+                        cur_image_ind, ...
+                        num_images, ...
+                        num_iterations_run, ...
+                        toc, ...
+                        IOUs_of_last_run );
+
+                    % store results
+                    workspaces_final{cur_image_ind} = run_data_cur.workspace_final;
+                    agent_records{cur_image_ind}    = run_data_cur.agent_record;
+                    
                 end
-                
-                labels_missed = setdiff(cur_parameterization.situation_objects,run_data_cur.workspace_final.labels);
-                labels_temp = [run_data_cur.workspace_final.labels labels_missed];
-                GT_IOUs = [reconciled_workspace.GT_IOU nan(1,length(labels_missed))];
-                [~,sort_order_2] = sort( labels_temp );
-                [~,sort_order_1] = sort( cur_parameterization.situation_objects);
-                IOUs_of_last_run = sprintf(repmat('%1.4f         ',1,length(GT_IOUs)),GT_IOUs(sort_order_2(sort_order_1)));
-                
-                % display update to console
-                num_iterations_run = sum(~eq(0,[run_data_cur.agent_record.interest]));
-                fprintf('%-28s %3d /%4d        %4d      %6.2f       IOUs: [ %s] \n', ...
-                    cur_parameterization.description, ...
-                    cur_image_ind, ...
-                    num_images, ...
-                    num_iterations_run, ...
-                    toc, ...
-                    IOUs_of_last_run );
-                
-                % store results
-                workspaces_final{cur_image_ind} = run_data_cur.workspace_final;
-                agent_records{cur_image_ind}    = run_data_cur.agent_record;
 
                 cur_image_ind = cur_image_ind + 1;
                 
                 % decide if we keep going or not
                 
-                    if experiment_struct.experiment_settings.viz_options.use_visualizer % handle visualizer status
-                        switch visualizer_status_string
-                            case 'restart'
-                                % keep_going = true;
-                            case 'next_image'
-                                % keep_going = true;
-                                cur_image_ind = cur_image_ind - 1; % go back, redo the previous image
-                            case 'stop'
-                                keep_going = false;
-                            otherwise
-                                keep_going = false;
-                                % because we probably killed it with a window close
-                        end
+                if experiment_struct.experiment_settings.viz_options.use_visualizer % handle visualizer status
+                    switch visualizer_status_string
+                        case 'restart'
+                            % keep_going = true;
+                            cur_image_ind = cur_image_ind - 1; % go back, redo the previous image
+                        case 'next_image'
+                            % keep_going = true;
+                        case 'stop'
+                            keep_going = false;
+                        otherwise
+                            keep_going = false;
+                            % because we probably killed it with a window close
                     end
+                end
 
-                    if cur_image_ind > experiment_struct.experiment_settings.max_testing_images ...
-                    || cur_image_ind > length(fnames_im_test)
-                        keep_going = false;
-                        if experiment_struct.experiment_settings.viz_options.use_visualizer
-                            msgbox('out of testing images');
-                        end
+                if cur_image_ind > experiment_struct.experiment_settings.max_testing_images ...
+                || cur_image_ind > length(fnames_im_test)
+                    keep_going = false;
+                    if experiment_struct.experiment_settings.viz_options.use_visualizer
+                        msgbox('out of testing images');
                     end
+                end
 
-                    if ~keep_going
-                        break;
-                    end
+                if ~keep_going
+                    break;
+                end
 
             end
 

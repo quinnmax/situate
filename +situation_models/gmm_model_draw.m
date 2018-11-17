@@ -20,7 +20,7 @@ function h = gmm_model_draw( d, object_string, viz_spec, samples_respresented, s
         box_r0rfc0cf = samples_respresented;
     end
 
-    if ~exist('initial_draw','var') || isempty(is_initial_draw)
+    if ~exist('is_initial_draw','var') || isempty(is_initial_draw)
         is_initial_draw = false;
     end
 

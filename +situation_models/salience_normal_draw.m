@@ -1,4 +1,4 @@
-function h = salience_normal_draw( d, object_string, what_to_draw, input_agent, box_format_arg, initial_draw  )
+function h = salience_normal_draw( d, object_string, what_to_draw, input_agent, box_format_arg, is_initial_draw  )
 %
 %   what to draw can be 'xy', 'shape', or 'size'
 %       xy will be a heat map the shape of the image
@@ -12,8 +12,8 @@ function h = salience_normal_draw( d, object_string, what_to_draw, input_agent, 
 
     box_r0rfc0cf = input_agent.box.r0rfc0cf;
 
-    if ~exist('initial_draw','var') || isempty(initial_draw)
-        initial_draw = false;
+    if ~exist('is_initial_draw','var') || isempty(is_initial_draw)
+        is_initial_draw = false;
     end
 
         i = find(strcmp( {d.interest}, object_string ));
@@ -40,7 +40,7 @@ function h = salience_normal_draw( d, object_string, what_to_draw, input_agent, 
 
             case 'xy'
                 
-                if ~initial_draw && ~isempty(prev_distribution_xy) && isequal(d,prev_distribution_xy) && any( i == up_to_date_inds_xy )
+                if ~is_initial_draw && ~isempty(prev_distribution_xy) && isequal(d,prev_distribution_xy) && any( i == up_to_date_inds_xy )
                     % no need to redraw
                 else
                     

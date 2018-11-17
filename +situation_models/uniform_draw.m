@@ -16,7 +16,7 @@ function h = uniform_draw( d, object_string, viz_spec, input_agent, box_format_a
         box_r0rfc0cf = input_agent;
     end
 
-    if ~exist('initial_draw','var') || isempty(is_initial_draw)
+    if ~exist('is_initial_draw','var') || isempty(is_initial_draw)
         is_initial_draw = false;
     end
 

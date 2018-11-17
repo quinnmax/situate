@@ -36,7 +36,6 @@ function [h, return_status_string] = visualize( h, im, p, d, workspace, cur_agen
     sp_cols = 4 + length(p.situation_objects); % number of columns in the subplot
     
     initial_figure_generation = false;
-    redraw_density_maps = false;
     if ~exist('h','var') || isempty(h)
         
         initial_figure_generation = true;
@@ -71,7 +70,6 @@ function [h, return_status_string] = visualize( h, im, p, d, workspace, cur_agen
         % see if the workspace or temperature have changed since we last updated
         if sum(workspace.total_support) ~= UserData.workspace_support_total ...
         || (isfield(UserData,'workspace_temperature') && UserData.workspace_temperature ~= workspace.temperature)
-            redraw_density_maps = true;
             UserData.workspace_support_total = sum( workspace.total_support);
             UserData.workspace_temperature = workspace.temperature;
         end
