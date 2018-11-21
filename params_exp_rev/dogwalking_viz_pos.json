@@ -15,7 +15,8 @@
 
 		// training params for vision model
 		"vision_model" : {
-			"directory_train" : "DogWalking_PortlandSimple_train/",
+			//"directory_train" : "DogWalking_PortlandSimple_train/",
+			"directory_train" : "/Users/Max/Documents/MATLAB/data/situate_images/DogWalking_PortlandSimple_train/",
 			"training_testing_split_directory" : "data_splits/dogwalking_validation/"
 		},
 

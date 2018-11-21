@@ -201,8 +201,8 @@ function [data_split_struct,directory_train] = process_per_model_split_sturct( d
     data_split_struct.train_test_dirs_match = isequal( directory_test, directory_train );
 
     if isempty( training_testing_split_directory ) ...
-    && ~exist( training_testing_split_directory, 'dir') ...
-    && ~exist( fullfile( 'data_splits', training_testing_split_directory), 'dir' )
+    || ( ~exist( training_testing_split_directory, 'dir') ...
+        && ~exist( fullfile( 'data_splits', training_testing_split_directory), 'dir' ) )
         have_training_split_dir = false;
     else
         have_training_split_dir = true;

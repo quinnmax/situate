@@ -1,0 +1,86 @@
+{
+	"situation_definition_fname" : "situation_definitions/pingpong.json",
+			
+	"situate_parameterizations_fnames" : [
+				//"parameters_run_mm.json"
+				"params_run/parameters_run_mm.json"
+			],	
+
+	"experiment_settings" : {
+
+			"description" : "PingPongPositive",
+
+
+
+
+
+
+
+			///////////////////////////////////////////////////////////////
+			// old format
+
+			//	// full path, or relative to base_image_directories
+			//	"directory_train" : "/Users/mm/Desktop/SituateData/PingPongTrain/",
+			//	"directory_test"  : "/Users/mm/Desktop/SituateData/PingPongTest/",
+			//	"training_testing_split_directory" : "",
+
+
+
+			///////////////////////////////////////////////////////////////
+			// new format
+
+			// training params for vision model
+			"vision_model" : {
+				//"directory_train" : "/Users/mm/Desktop/SituateData/PingPongTrain/",
+				"directory_train" : "/Users/Max/Documents/MATLAB/data/situate_images/PingPong_train",
+				"training_testing_split_directory" : ""
+			},
+
+			// training params for situation model
+			"situation_model" : {
+				//"directory_train" : "/Users/mm/Desktop/SituateData/PingPongTrain/",
+				"directory_train" : "/Users/Max/Documents/MATLAB/data/situate_images/PingPong_train",
+				"training_testing_split_directory" : ""
+			},
+
+			// testing image directory
+			//"directory_test"  : "/Users/mm/Desktop/SituateData/PingPongTest/",
+			"directory_test" : "/Users/Max/Documents/MATLAB/data/situate_images/PingPong_test",
+
+			///////////////////////////////////////////////////////////////
+
+
+
+
+
+
+			///////////////////////////////////////////////////////////////
+			// use parallel not updated to use the new split training format yet
+			// "use_parallel"					: 1, 
+			"use_parallel"					: 0, 
+			"run_analysis_after_completion"	: 0,
+
+		
+			// split parameters
+			//	num_folds: 
+			//		either defines the folds generated (if no folds given) 
+			//  	or limits the folds run (if there are more existing folds specified)
+			//	specified_folds: list of specific folds to run, shadows num_folds
+			//	max_testing_images: first n images, respects specified fold information
+			"num_folds" : 1,
+			"specific_folds" : [1],
+			"max_testing_images" : "",
+			"testing_seed"  : "",
+
+			// additional visualization options
+		 	"viz_options" : {
+		 		"use_visualizer"      : 1,
+		 		"on_iteration_mod"    : 1,
+		 		"on_workspace_change" : 0,
+		 		"on_end"              : 1,
+		 		"start_paused"        : 1
+	 		}
+
+	}
+
+}
