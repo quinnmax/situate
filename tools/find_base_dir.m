@@ -14,6 +14,8 @@ function dir_out = find_base_dir( dir_in )
             error('directory could not be reconciled with base image directory');
         end
         dir_out = dir_in;
+    else
+        dir_out = dir_in;
     end
     
 end
