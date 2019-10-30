@@ -11,7 +11,7 @@ function workspace = workspace_initialize(p,im_size)
     workspace.im_size = im_size;
     
     workspace.situation_support = 0;
-    workspace.iteration = 0;
+    workspace.total_iterations = 0;
     
     if isfield(p,'temperature')
         workspace.temperature = p.temperature.initial;

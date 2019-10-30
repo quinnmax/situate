@@ -37,6 +37,6 @@ function support = AUROC_based( internal, external, varargin )
     w_internal = 1 - w_external;
     
     support = w_internal(oi) * internal + w_external(oi) * external;
-    
+  
 end
             

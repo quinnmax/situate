@@ -26,37 +26,35 @@ function experiment_run( experiment_file_fname )
 
 
 
-    %% Make results directory
+    %% Make results directory, add copies of definition files
 
-        experiment_struct.results_directory = fullfile('results',[experiment_struct.experiment_settings.description '_' datestr(now,'yyyy.mm.dd.HH.MM.SS')]);                                                                                          
-        if ~exist(experiment_struct.results_directory,'dir') ...
-        && ~experiment_struct.experiment_settings.viz_options.use_visualizer
-            mkdir(experiment_struct.results_directory); 
-            display(['made results directory ' experiment_struct.results_directory]); 
-        end
-
-
-
-    %% add copies of experiment def, situation def, and parameters def to the results folder
-
-        if ~experiment_struct.experiment_settings.viz_options.use_visualizer
-
-            % experiment def
-            [~,name,ext] = fileparts( experiment_file_fname );
-            copyfile( experiment_file_fname, fullfile( experiment_struct.results_directory, [name ext]) );
-
-            % situation def
-            [~,name,ext] = fileparts( experiment_struct.situation_definition_fname );
-            copyfile( experiment_struct.situation_definition_fname, fullfile( experiment_struct.results_directory, [name ext]) );
-
-            % params defs
-            for i = 1:length( experiment_struct.situate_parameterizations_fnames )
-                [~,name,ext] = fileparts( experiment_struct.situate_parameterizations_fnames{i} );
-                copyfile( experiment_struct.situate_parameterizations_fnames{i}, ...
-                          fullfile( experiment_struct.results_directory, [name ext] ) );
+            experiment_struct.results_directory = fullfile('results',[experiment_struct.experiment_settings.description '_' datestr(now,'yyyy.mm.dd.HH.MM.SS')]);                                                                                          
+            if ~exist(experiment_struct.results_directory,'dir') ...
+            && ~experiment_struct.experiment_settings.viz_options.use_visualizer
+                mkdir(experiment_struct.results_directory); 
+                display(['made results directory ' experiment_struct.results_directory]); 
             end
 
-        end
+        % add copies of experiment def, situation def, and parameters def to the results folder
+
+            if ~experiment_struct.experiment_settings.viz_options.use_visualizer
+
+                % experiment def
+                [~,name,ext] = fileparts( experiment_file_fname );
+                copyfile( experiment_file_fname, fullfile( experiment_struct.results_directory, [name ext]) );
+
+                % situation def
+                [~,name,ext] = fileparts( experiment_struct.situation_definition_fname );
+                copyfile( experiment_struct.situation_definition_fname, fullfile( experiment_struct.results_directory, [name ext]) );
+
+                % params defs
+                for i = 1:length( experiment_struct.situate_parameterizations_fnames )
+                    [~,name,ext] = fileparts( experiment_struct.situate_parameterizations_fnames{i} );
+                    copyfile( experiment_struct.situate_parameterizations_fnames{i}, ...
+                              fullfile( experiment_struct.results_directory, [name ext] ) );
+                end
+
+            end
 
 
 

@@ -1,0 +1,52 @@
+{
+	"situation_definition_fname" : "situation_definitions/handshaking.json",
+			
+	"situate_parameterizations_fnames" : [
+				"parameters_situate_homebrew_rcnn_priming.json"
+				//"parameters_situate_faster_rcnn_priming.json"
+				//"parameters_situate_uniform.json"
+			],	
+
+	"experiment_settings" : {
+
+			"description" : "handshaking viz",
+
+			"directory_train" : "/Users/Max/Documents/MATLAB/data/situate_images/Handshaking_train/",
+			"directory_test"  : "/Users/Max/Documents/MATLAB/data/situate_images/Handshaking_train/",
+
+			"use_parallel"					: 0, 
+			
+			"run_analysis_after_completion"	: 0,
+
+			"use_visualizer" : 1,
+
+			// additional visualization options
+		 	"viz_options" : {
+		 		"on_iteration_mod"    : 1,
+		 		"on_workspace_change" : 0,
+		 		"on_end"              : 1,
+		 		"start_paused"        : 1
+	 		},
+
+			// training / testing image lists
+			// 	if directory_train and directory_test are the same, 
+			// 	then the division of images specified in this directory will be used
+			"training_testing_split_directory" : "data_splits/handshaking_validation/",
+
+			// number of folds
+			// 	if image lists were provided
+			// 		if this is empty, then all of them will be used.
+			//  	if this is not empty, it will be a limit on how many to use.
+			//	if image list is not provided, this will be used when generating 
+			//		training/testing image lists
+			"num_folds" : 1,
+
+			"specific_folds" : [1],
+
+			"max_testing_images" : "",
+			
+			// if specified, this will be used to seed the RNG during testing.
+			// otherwise, each parameterization will get a different time-based seed
+			"testing_seed"  : ""
+	}
+}

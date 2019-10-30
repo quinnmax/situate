@@ -128,6 +128,7 @@ function classifier_struct = IOU_ridge_regression_train( situation_struct, fname
         assert(isequal( sort(data.object_labels), sort(classes) ));
         models = cell( length(classes), 1 );
         AUROCs = zeros(1,length(classes));
+        model_validation_stats = cell(length(classes),1);
         
         for oi = 1:length(classes)
             
@@ -151,9 +152,37 @@ function classifier_struct = IOU_ridge_regression_train( situation_struct, fname
             x = data.box_proposal_cnn_features( rows_test_validation, : );
             y = max( data.IOUs_with_each_gt_obj( rows_test_validation, data_obj_inds ), [], 2);
             temp_scores = [ones(size(x,1),1) x] * temp_model;
+            
+            
             % record trust
-            AUROCs(oi)  = ROC( temp_scores, y>=.5 );
+            dist_stats_temp          = [];
+            dist_stats_temp.mu       = [];
+            dist_stats_temp.sigma    = [];
+            dist_stats_temp.mu(1)    = mean(temp_scores(y<.01));
+            dist_stats_temp.sigma(1) = std(temp_scores(y<.01));
+            dist_stats_temp.mu(2)    = mean(temp_scores(y>.5));
+            dist_stats_temp.sigma(2) = std(temp_scores(y>.5));
+            dist_stats_temp.logreg_b = logregfit( temp_scores, y>.5);
+            
+            num_bins = 20;
+            [bin_assignments,bin_edges,bin_centers] = bin_linear(temp_scores, num_bins );
+            bin_p = nan(1,num_bins);
+            for bi = 1:num_bins
+                bin_p(bi) = mean( y(bin_assignments==bi) );
+            end
+            
+            dist_stats_temp.bin_eges = bin_edges;
+            dist_stats_temp.bin_eges = bin_centers;
+            dist_stats_temp.bin_p = bin_p;
+            dist_stats_temp.AUROC = ROC( temp_scores, y>=.5 );
+            
+            model_validation_stats{oi} = dist_stats_temp;
+            
+            AUROCs(oi) = ROC( temp_scores, y>=.5 );
             disp(['     AUROC: ' num2str(AUROCs(oi))]);
+            
+            
+            
             
             % then retrain on full data
             disp(['training IOU estimation model, all data round: ' classes{oi}]);
@@ -163,13 +192,16 @@ function classifier_struct = IOU_ridge_regression_train( situation_struct, fname
             
         end
       
-        classifier_struct                   = [];
-        classifier_struct.models            = models;
-        classifier_struct.classes           = classes;
-        classifier_struct.fnames_lb_train   = fnames_in_stripped;
-        classifier_struct.model_description = model_description;
-        classifier_struct.AUROCs            = AUROCs;
+        classifier_struct                        = [];
+        classifier_struct.models                 = models;
+        classifier_struct.classes                = classes;
+        classifier_struct.fnames_lb_train        = fnames_in_stripped;
+        classifier_struct.model_description      = model_description;
+        classifier_struct.AUROCs                 = AUROCs;
+        classifier_struct.model_validation_stats = model_validation_stats;
 
+        % store the p( IOU > 5 | est_IOU )?
+        
         
         
     %% save the model

@@ -5,7 +5,7 @@ function p = parameters_initialize_default()
     %
     % lots of options outlined in comments
 
-    p = situate.parameters_initialize_from_file( 'parameterization_situate_default.json' );
+    p = situate.parameters_initialize_from_file( 'params_run/old_school.json' );
       
      % visualization options
         p.viz_options = [];

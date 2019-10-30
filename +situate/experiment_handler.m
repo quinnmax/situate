@@ -6,8 +6,6 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
 
     %% tidy up parameterizations 
       
-        
-    
         situate_params_array = situate.parameters_struct_new_to_old( experiment_struct, situation_struct, situate_params_array );
         assert( all( situate.parameters_struct_validate( situate_params_array ) ) );
         num_parameterizations = numel(situate_params_array);
@@ -26,6 +24,7 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
     
         [data_split_struct, fold_inds, experiment_settings_out] = situate.experiment_process_data_splits( experiment_struct.experiment_settings );
         experiment_struct.experiment_settings = experiment_settings_out;
+        
         
         
     %% run through it all 
@@ -97,11 +96,16 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
             progress( 0, length(fnames_im_test),cur_parameterization.description); 
 
             % loop through images
-            workspaces_final    = cell(1,length(fnames_im_test));
-            agent_records       = cell(1,length(fnames_im_test));
-
+            workspaces_final        = cell(1,length(fnames_im_test));
+            agent_records           = cell(1,length(fnames_im_test));
+            workspaces_alternatives = cell(1,length(fnames_im_test));
+            
             keep_going = true;
-            cur_image_ind = 1;
+            if isfield(experiment_struct.experiment_settings, 'starting_image_ind') && ~isempty(experiment_struct.experiment_settings.starting_image_ind)
+                cur_image_ind = experiment_struct.experiment_settings.starting_image_ind;
+            else
+                cur_image_ind = 1;
+            end
             
             fprintf(['params                           image       steps      time(s)            [ '  repmat('%-15s',1,3) '] \n'], situation_struct.situation_objects{:})
             while keep_going
@@ -110,8 +114,9 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
                 cur_fname_im = fnames_im_test{cur_image_ind};
 
                 tic;
-                [ ~, run_data_cur, visualizer_status_string ] = situate.main_loop( cur_fname_im, cur_parameterization, learned_models );
-               
+                
+                [ ~, run_data_cur, visualizer_status_string, ~, alternative_workspaces ] = situate.run( cur_fname_im, cur_parameterization, learned_models );
+                
                 if ~experiment_struct.experiment_settings.viz_options.use_visualizer 
                 
                     % try to reconcile workspace with GT boxes
@@ -121,13 +126,14 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
                     else
                         reconciled_workspace = run_data_cur.workspace_final;
                     end
-
                     labels_missed = setdiff(cur_parameterization.situation_objects,run_data_cur.workspace_final.labels);
                     labels_temp = [run_data_cur.workspace_final.labels labels_missed];
                     GT_IOUs = [reconciled_workspace.GT_IOU nan(1,length(labels_missed))];
                     [~,sort_order_2] = sort( labels_temp );
                     [~,sort_order_1] = sort( cur_parameterization.situation_objects);
-                    IOUs_of_last_run = sprintf(repmat('%1.4f         ',1,length(GT_IOUs)),GT_IOUs(sort_order_2(sort_order_1)));
+                    GT_IOUs_sorted = GT_IOUs(sort_order_2(sort_order_1));
+                    
+                    IOUs_of_last_run = sprintf(repmat('%1.4f         ',1,length(GT_IOUs)), GT_IOUs_sorted );
 
                     % display update to console
                     num_iterations_run = sum(~eq(0,[run_data_cur.agent_record.interest]));
@@ -142,6 +148,7 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
                     % store results
                     workspaces_final{cur_image_ind} = run_data_cur.workspace_final;
                     agent_records{cur_image_ind}    = run_data_cur.agent_record;
+                    workspaces_alternatives{cur_image_ind} = alternative_workspaces;
                     
                 end
 
@@ -178,11 +185,6 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
 
             end
 
-            % bail after the first experimental setup if we're using the visualizer
-            if experiment_struct.experiment_settings.viz_options.use_visualizer
-                return;
-            end
-
             % save off results, each condition and fold pair gets a file
             cur_param_desc = fileparts_mq(cur_parameterization.description,'name');
             save_fname = fullfile(experiment_struct.results_directory, [cur_param_desc '_fold_' num2str(fi,'%02d') '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
@@ -196,8 +198,12 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
             results_struct.fnames_im_test            = fnames_im_test;
 
             save(save_fname, '-v7', '-struct','results_struct');
-            fprintf('saved to:\n    %s\n', save_fname);
-
+            fprintf('saved to:\n    %s\n\n', save_fname);
+            
+            % alternative workspaces save
+            alt_workspace_fnames = fullfile(experiment_struct.results_directory, [cur_param_desc '_alt_workspaces_fold_' num2str(fi,'%02d') '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.zmat']);
+            save(alt_workspace_fnames, '-v7', 'workspaces_alternatives' );
+            
         end
 
     end

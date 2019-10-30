@@ -22,6 +22,7 @@ function agent = initialize(p)
         agent_base.support.total             = NaN;
         agent_base.support.GROUND_TRUTH      = NaN;
         agent_base.support.sample_densities  = NaN;
+        agent_base.support.sample_densities_prior  = NaN;
         agent_base.eval_function             = []; % not really using it right now :/
         agent_base.GT_label_raw = [];
         agent_base.history = 'blank';

@@ -1,5 +1,5 @@
-function [boxes_r0rfc0cf_return, class_assignments_return, confidences_return, cnn_features_return] = rcnn_homebrew( im, box_area_ratios, box_aspect_ratios, box_overlap_ratio, varargin )
-% [boxes_r0rfc0cf, class_assignments, confidences, cnn_features] = rcnn_homebrew( im, box_area_ratios, box_aspect_ratios, overlap_ratio, classifier_model, box_adjust_model, [use_non_max_suppression], [show_viz], [show_progress] ); );
+function [boxes_r0rfc0cf_return, class_assignments_return, confidences_return, cnn_features_return, total_cnn_calls] = rcnn_homebrew( im, box_area_ratios, box_aspect_ratios, box_overlap_ratio, varargin )
+% [boxes_r0rfc0cf, class_assignments, confidences, cnn_features, total_cnn_calls] = rcnn_homebrew( im, box_area_ratios, box_aspect_ratios, overlap_ratio, classifier_model, box_adjust_model, [use_non_max_suppression],[num_box_adjust_iterations], [show_viz], [show_progress] ); );
 %
 % defaults for:
 %   box_area_ratios   : [1/16 1/9 1/4]
@@ -41,7 +41,7 @@ function [boxes_r0rfc0cf_return, class_assignments_return, confidences_return, c
     
     
 
-    %% process inputs
+%% process inputs
     
         if isempty( box_area_ratios )
             box_area_ratios = [1/16 1/9 1/4];
@@ -87,21 +87,29 @@ function [boxes_r0rfc0cf_return, class_assignments_return, confidences_return, c
     end
     
     if numel(varargin) >= 4  && ~isempty(varargin{4})
-        show_viz = varargin{4};
+        num_box_adjust_iterations = varargin{4};
+    else
+        num_box_adjust_iterations = 1;
+    end
+    
+    
+    if numel(varargin) >= 5  && ~isempty(varargin{5})
+        show_viz = varargin{5};
     else
         show_viz = false;
     end
     
-    if numel(varargin) >= 5  && ~isempty(varargin{5})
-        show_progress = varargin{5};
+    if numel(varargin) >= 6  && ~isempty(varargin{6})
+        show_progress = varargin{6};
     else
         show_progress = false;
     end
     
+   
     situation_objects = classifier_model.classes;
     num_objs = length(situation_objects);
     
-    
+    total_cnn_calls = 0;
     
 %% get boxes, get cnn features, get scores, do suppression
 
@@ -122,7 +130,7 @@ function [boxes_r0rfc0cf_return, class_assignments_return, confidences_return, c
             progress(num_boxes-bi+1,size(boxes_r0rfc0cf,1),'rcnn: extracting cnn features from anchor boxes: ' );
         end
     end
-    num_cnn_features = size(cnn_features,2);
+    total_cnn_calls = total_cnn_calls + num_boxes;
     
     % score boxes
     classification_score_matrix = padarray(cnn_features,[0,1],1,'pre') * horzcat(classifier_model.models{:});
@@ -138,80 +146,110 @@ function [boxes_r0rfc0cf_return, class_assignments_return, confidences_return, c
     
     classification_score_matrix(classification_score_matrix < .05) = 0;
     class_assignments_initial = classification_score_matrix > 0;
-    num_boxes = size(boxes_r0rfc0cf,1);
-  
+    
+    % remove junk
+    inds_remove = ~any( class_assignments_initial,2);
+    class_assignments_initial(inds_remove,:) = [];
+    classification_score_matrix(inds_remove,:) = [];
+    boxes_r0rfc0cf(inds_remove,:) = [];
+    cnn_features(inds_remove,:) = [];
     
     
-%% get adjusted boxes, get updated scores, suppress
-        
-    % get adjusted boxes
-    box_adjust_mats = cell(1,num_objs);
-    boxes_post_r0rfc0cf = nan( num_boxes, 4, num_objs );
-    boxes_post_r0rfc0cf_cell = cell(1,num_objs);
+%% get adjusted boxes, get updated scores
     
-    for oi = 1:num_objs
-        box_adjust_mats{oi} = cell2mat(box_adjust_model.weight_vectors(oi,:));
-        for bi = 1:num_boxes
-            if class_assignments_initial(bi,oi)
-                boxes_post_r0rfc0cf(bi,:,oi) = agent_adjustment.bb_regression_adjust_box( box_adjust_mats{oi}, boxes_r0rfc0cf(bi,:), im, cnn_features(bi,:) );
-            end 
-            temp = boxes_post_r0rfc0cf(:,:,oi);
-            temp = temp( ~isnan(temp(:,1)), : );
-            boxes_post_r0rfc0cf_cell{oi} = temp;
-        end
-    end
-    boxes_post_r0rfc0cf = vertcat( boxes_post_r0rfc0cf_cell{:} );
-    class_assignments = [];
-    for oi = 1:num_objs
-        num_instances_of_obj = size(boxes_post_r0rfc0cf_cell{oi});
-        class_assignments(end+1:end+num_instances_of_obj) = oi;
-    end
-        
-    % get cnn features for post-adjusted boxes
-    num_boxes = size(boxes_post_r0rfc0cf,1);
-    cnn_features_post = nan( num_boxes, num_cnn_features );
-    for bi = 1:num_boxes
-        r0 = boxes_post_r0rfc0cf(bi,1);
-        rf = boxes_post_r0rfc0cf(bi,2);
-        c0 = boxes_post_r0rfc0cf(bi,3);
-        cf = boxes_post_r0rfc0cf(bi,4);
-        if ~any(isnan([r0 rf c0 cf]))
-            cnn_features_post(bi,:) = cnn.cnn_process( im(r0:rf,c0:cf,:) );
-        end
-        if show_progress
-            progress(bi,num_boxes,'rcnn: extracting cnn features post-adjust boxes: ' );
-        end
-    end
+    [boxes_new_r0rfc0cf, cnn_features_new] = generate_new_boxes( boxes_r0rfc0cf, cnn_features, classification_score_matrix, box_adjust_model, im );
+    total_cnn_calls = total_cnn_calls + size(boxes_new_r0rfc0cf,1);
     
     % get updated scores
-    classification_score_matrix_post = padarray(cnn_features_post,[0,1],1,'pre') * horzcat(classifier_model.models{:});
+    classification_score_matrix_new = padarray(cnn_features_new,[0,1],1,'pre') * horzcat(classifier_model.models{:});
+    
+    % remove junk rows
+    inds_remove = all( classification_score_matrix_new < .05, 2 );
+    classification_score_matrix_new(inds_remove,:) = [];
+    boxes_new_r0rfc0cf(inds_remove,:) = [];
+    cnn_features_new(inds_remove,:) = [];
+    
+    
+    
+    
+%% combine and re-supress
     
     % combine original boxes and adjusted boxes
-    boxes_combined_r0rfc0cf = [boxes_r0rfc0cf; boxes_post_r0rfc0cf];
-    classification_score_matrix_combined = [classification_score_matrix; classification_score_matrix_post];
-    cnn_features_combined = [cnn_features; cnn_features_post];
+    boxes_combined_r0rfc0cf = [boxes_r0rfc0cf; boxes_new_r0rfc0cf];
+    classification_score_matrix_combined = [classification_score_matrix; classification_score_matrix_new];
+    cnn_features_combined = [cnn_features; cnn_features_new];
     
     % apply non-max suppression
     if use_non_max_suppression
         for oi = 1:num_objs
             iou_suppression_threshold = .5;
-            
-            %inds_suppress = non_max_supression( boxes_adjusted_r0rfc0cf, classification_score_matrix_post(:,oi), iou_suppression_threshold, 'r0rfc0cf' );
-            %classification_score_matrix_post( inds_suppress, oi ) = 0;
-            
             inds_suppress = non_max_supression( boxes_combined_r0rfc0cf, classification_score_matrix_combined(:,oi), iou_suppression_threshold, 'r0rfc0cf' );
             classification_score_matrix_combined( inds_suppress, oi ) = 0;
             
         end
     end
     
-    classification_score_matrix_combined(classification_score_matrix_post < .05) = 0;
+    % remove junk
+    classification_score_matrix_combined(classification_score_matrix_combined < .05) = 0;
     rows_remove = ~any(classification_score_matrix_combined,2);
     boxes_combined_r0rfc0cf(rows_remove,:) = [];
     classification_score_matrix_combined(rows_remove,:) = [];
     cnn_features_combined(rows_remove,:) = [];
     
     
+%% regenerate, recombine, resupress
+
+for iter = 1:num_box_adjust_iterations
+
+    % winnow
+    chopping_block = nan(size(classification_score_matrix_combined));
+    for oi = 1:num_objs
+        cur_scores = sort(classification_score_matrix_combined(:,oi),'descend');
+        cutoff = min(10,size(classification_score_matrix_combined,1));
+        chopping_block(:,oi) = classification_score_matrix_combined(:,oi) < cur_scores(cutoff);
+    end
+    rows_remove = all(chopping_block,2);
+    boxes_combined_r0rfc0cf(rows_remove,:) = [];
+    classification_score_matrix_combined(rows_remove,:) = [];
+    cnn_features_combined(rows_remove,:) = [];
+    
+    
+
+    [boxes_newer_r0rfc0cf, cnn_features_newer] = generate_new_boxes( boxes_combined_r0rfc0cf, cnn_features_combined, classification_score_matrix_combined, box_adjust_model, im );
+    total_cnn_calls = total_cnn_calls + size(boxes_newer_r0rfc0cf,1);
+    
+    % get updated scores
+    classification_score_matrix_newer = padarray(cnn_features_newer,[0,1],1,'pre') * horzcat(classifier_model.models{:});
+    
+    % remove junk rows
+    inds_remove = all( classification_score_matrix_newer < .05, 2 );
+    classification_score_matrix_newer(inds_remove,:) = [];
+    boxes_newer_r0rfc0cf(inds_remove,:) = [];
+    cnn_features_newer(inds_remove,:) = [];
+    
+    % combine original boxes and adjusted boxes
+    boxes_combined_r0rfc0cf = [boxes_combined_r0rfc0cf; boxes_newer_r0rfc0cf];
+    classification_score_matrix_combined = [classification_score_matrix_combined; classification_score_matrix_newer];
+    cnn_features_combined = [cnn_features_combined; cnn_features_newer];
+   
+    % apply non-max suppression
+    if use_non_max_suppression
+        for oi = 1:num_objs
+            iou_suppression_threshold = .5;
+            inds_suppress = non_max_supression( boxes_combined_r0rfc0cf, classification_score_matrix_combined(:,oi), iou_suppression_threshold, 'r0rfc0cf' );
+            classification_score_matrix_combined( inds_suppress, oi ) = 0;
+            
+        end
+    end
+    
+    % remove junk
+    classification_score_matrix_combined(classification_score_matrix_combined < .05) = 0;
+    rows_remove = ~any(classification_score_matrix_combined,2) | isnan(boxes_combined_r0rfc0cf(:,1));
+    boxes_combined_r0rfc0cf(rows_remove,:) = [];
+    classification_score_matrix_combined(rows_remove,:) = [];
+    cnn_features_combined(rows_remove,:) = [];
+    
+end
     
     %% return vals
     % go ahead and replicate things that are over threshold for multiple categories
@@ -313,6 +351,65 @@ function inds_supress = non_max_supression( boxes, box_scores, IOU_suppression_t
     
 end
 
+
+
+
+function [boxes_new_r0rfc0cf, cnn_features_new] = generate_new_boxes( boxes_r0rfc0cf, cnn_features, classification_score_matrix, box_adjust_model, im )
+
+    % ignore boxes under .05 conf
+    class_assignments_initial = (classification_score_matrix > .05);
+    num_objs = size(classification_score_matrix,2);
+    
+    % get box adjust model
+    if strcmp( box_adjust_model.model_description, 'box_adjust')
+        model_mats = arrayfun( @(oi) [box_adjust_model.weight_vectors{oi,:}], 1:num_objs, 'uniformoutput', false );
+    elseif strcmp( box_adjust_model.model_description, 'box_adjust_two_tone')
+        model_mats{1} = arrayfun( @(oi) [box_adjust_model.sub_models{1}.weight_vectors{oi,:}], 1:num_objs, 'uniformoutput', false );
+        model_mats{2} = arrayfun( @(oi) [box_adjust_model.sub_models{2}.weight_vectors{oi,:}], 1:num_objs, 'uniformoutput', false );
+    end
+    
+ % generate adjusted boxes
+    % some boxes are over threshold for more than one object type. 
+    % we'll make adjustment boxes for both interpretations.
+    boxes_new_r0rfc0cf = nan( sum(class_assignments_initial(:)), 4);
+    iter = 1;
+    for oi = 1:num_objs
+        cur_obj_rows = find(class_assignments_initial(:,oi));
+        for bi = cur_obj_rows(1:numel(cur_obj_rows))'
+            
+            if strcmp( box_adjust_model.model_description, 'box_adjust')
+                boxes_new_r0rfc0cf(iter,:) = agent_adjustment.bb_regression_adjust_box( model_mats{oi}, boxes_r0rfc0cf(bi,:), im, cnn_features(bi,:) ); 
+            elseif strcmp( box_adjust_model.model_description, 'box_adjust_two_tone')
+                cur_conf = classification_score_matrix(bi,oi);
+                if cur_conf < box_adjust_model.model_selection_threshold(oi)
+                    boxes_new_r0rfc0cf(iter,:) = agent_adjustment.bb_regression_adjust_box( model_mats{1}{oi}, boxes_r0rfc0cf(bi,:), im, cnn_features(bi,:) ); 
+                else
+                    boxes_new_r0rfc0cf(iter,:) = agent_adjustment.bb_regression_adjust_box( model_mats{2}{oi}, boxes_r0rfc0cf(bi,:), im, cnn_features(bi,:) ); 
+                end
+            end
+            iter = iter + 1;
+        end
+        
+    end
+    
+    boxes_new_r0rfc0cf( isnan(boxes_new_r0rfc0cf(:,1)), : ) = [];
+        
+    % get cnn features for post-adjusted boxes
+    % this caused a bug when the very last box new was nan. the arrays didn't match in size. 
+    cnn_features_new = [];
+    for bi = size(boxes_new_r0rfc0cf,1):-1:1
+        r0 = boxes_new_r0rfc0cf(bi,1);
+        rf = boxes_new_r0rfc0cf(bi,2);
+        c0 = boxes_new_r0rfc0cf(bi,3);
+        cf = boxes_new_r0rfc0cf(bi,4);
+        if ~any(isnan([r0 rf c0 cf]))
+            cnn_features_new(bi,:) = cnn.cnn_process( im(r0:rf,c0:cf,:) );
+        end
+    end
+    
+end
+    
+   
 
 
    

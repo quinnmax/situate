@@ -32,7 +32,7 @@
 		},
 		
 		// support functions
-		"support_function_external" : "support_functions_external.atan_fit",
+		"support_function_external" : "support_functions_external.expcdf_fit",
 		"support_function_total" : "support_functions_total.AUROC_based",
 		"support_function_full_situation" : "support_functions_situation.geometric_mean_padded",
 

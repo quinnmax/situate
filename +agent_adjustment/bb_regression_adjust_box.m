@@ -7,8 +7,8 @@ function [ adjusted_box_r0rfc0cf, delta_xywh ] = bb_regression_adjust_box( weigh
     % adjusted_box_r0rfc0cf: the adjusted bounding box is returned in r0rfc0cf format
     % delta_xywh: the delta used to generate the adjusted box
     %
-    % if cnn features are provided, these will be used. otherwise, they'll be
-    % extracted from the input image
+    % if cnn features are provided, these will be used. 
+    % otherwise, they'll be extracted from the input image
     
     % get starting stats
     r0 = box_in_r0rfc0cf(1);
@@ -56,7 +56,7 @@ function [ adjusted_box_r0rfc0cf, delta_xywh ] = bb_regression_adjust_box( weigh
         rf_adjusted = min( rf_adjusted, size(image,1) );
         cf_adjusted = min( cf_adjusted, size(image,2) );
     else
-        warning('image was empty. need it to make sure boxes are in bounds.');
+        %warning('image was empty. need it to make sure boxes are in bounds.');
     end
     
     if r0_adjusted >= rf_adjusted || c0_adjusted >= cf_adjusted 

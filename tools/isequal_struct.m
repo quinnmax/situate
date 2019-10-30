@@ -16,8 +16,8 @@ function [response, differences] = isequal_struct( a, b )
     
     if ~isempty(a_not_b_fields) || ~isempty(b_not_a_fields)
         response = 0;
-        differences{end+1} = fprints( 'fields do NOT match, a not b fields: %s', a_not_b_fields );
-        differences{end+1} = fprints( 'fields do NOT match, b not a fields: %s', b_not_a_fields );
+        differences{end+1} = fprintf( 'fields do NOT match, a not b fields: %s', a_not_b_fields{:} );
+        differences{end+1} = fprintf( 'fields do NOT match, b not a fields: %s', b_not_a_fields{:} );
         return;
     end
     

@@ -4,6 +4,8 @@ function iou = intersection_over_union(A,B,format_A,format_B)
     % iou = intersection_over_union(A,B,format_A,format_B);
     %
     % assumes whole valued inds, with starting values at pixel start and ending vals at pixel end.
+    % if you want to treat the values as continuous, ignoring pixel round-off, use
+    %   intersection_over_union_continuous(A,B,format_A,format_B)
     %
     % if 2 args, each row of A is intersected with each row of B
     % if 1 arg, then each row is intersected with each row
@@ -18,6 +20,8 @@ function iou = intersection_over_union(A,B,format_A,format_B)
     % intersection_over_union(A_xywh,[],'xywh')
     % intersection_over_union(A_xywh,B_xywh,'xywh')
     % intersection_over_union(A_xywh,B_r0rfc0cf,'xywh','r0rfc0cf')
+    %
+    % see also intersection_over_union_continuous
    
     if nargin < 4
 

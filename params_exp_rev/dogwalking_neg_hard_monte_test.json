@@ -2,31 +2,34 @@
 	"situation_definition_fname" : "situation_definitions/dogwalking.json",
 			
 	"situate_parameterizations_fnames" : [
+			"params_run/situate_v3_monte_500.json"
 			//"params_run/normal_model.json"
 			//"params_run/homebrew_rcnn_priming.json"
 			//"params_run/faster_rcnn_priming.json"
 			//"params_run/uniform.json"
-			"params_run/gmm_model.json"
+			//"params_run/gmm_model.json"
+			//"params_run/old_school.json"
+			//"params_run/default_1iter.json"
 		],	
 
 	"experiment_settings" : {
 
-		"description" : "gmm dogwalking positives test",
+		"description" : "dogwalking, monte, test",
 
 		// training params for vision model
 		"vision_model" : {
 			"directory_train" : "DogWalking_PortlandSimple_train/",
-			"training_testing_split_directory" : "data_splits/dogwalking_validation/"
+			"training_testing_split_directory" : ""
 		},
 
 		// training params for situation model
 		"situation_model" : {
 			"directory_train" : "DogWalking_PortlandSimple_train/",
-			"training_testing_split_directory" : "data_splits/dogwalking_validation_reduced/"
+			"training_testing_split_directory" : ""
 		},
 
 		// testing image directory
-		"directory_test"  : "DogWalking_PortlandSimple_test/",
+		"directory_test"  : "DogWalking_hard_neg/",
 
 		// experiment running parameters
 		"use_parallel"					: 0, 

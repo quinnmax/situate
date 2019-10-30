@@ -1,4 +1,6 @@
 function params_struct_out = parameters_struct_new_to_old( experiment_struct, situation_struct, situate_params_array )
+
+% params_struct_out = parameters_struct_new_to_old( experiment_struct, situation_struct, situate_params_array );
     
     
     if isstruct(situate_params_array) && length(situate_params_array) > 1

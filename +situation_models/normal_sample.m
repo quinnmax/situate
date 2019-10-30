@@ -8,6 +8,8 @@ function [boxes_r0rfc0cf, sample_density] = normal_sample( model, object_type, n
     % if you run with the existing_box var, the return box will match it,
     %   and the density will be the density of the box with respect to the
     %   model provided
+    %
+    % if im_dims are not provided, then the box is returned based on unit image centered at origin
     
     if ~exist('n','var') || isempty(n)
         n = 1;
@@ -17,11 +19,13 @@ function [boxes_r0rfc0cf, sample_density] = normal_sample( model, object_type, n
         im_dims = [];
     end
     
+    
+    
     if ~exist('recursion_depth','var') || isempty(recursion_depth)
         recursion_depth = 0;
     elseif recursion_depth >= 10
         warning('the normal model is sampling outside of the image bounds repeatedly');
-        % just return the middle 1% square of the image
+        % just return the middle 1% square of the image to get us out of here
         boxes_r0rfc0cf_unit = repmat( [-.05 .05 -.05 .05], n, 1 );
         if exist('im_dims','var') && ~isempty(im_dims)
             lsf = sqrt( 1 / (im_dims(1)*im_dims(2)) ); % linear scaling factor
@@ -37,20 +41,22 @@ function [boxes_r0rfc0cf, sample_density] = normal_sample( model, object_type, n
         return;
     end
     
+    
+    
     % if existing box was passed in, just figure out its density and return
     if exist('existing_box_r0rfc0cf','var') && ~isempty(existing_box_r0rfc0cf)
         
         lsf = sqrt( 1 / (im_dims(1)*im_dims(2)) ); % linear scaling factor
-        r0 = lsf * (existing_box_r0rfc0cf(1) - im_dims(1)/2);
-        rf = lsf * (existing_box_r0rfc0cf(2) - im_dims(1)/2);
-        c0 = lsf * (existing_box_r0rfc0cf(3) - im_dims(2)/2);
-        cf = lsf * (existing_box_r0rfc0cf(4) - im_dims(2)/2);
+        r0 = lsf * (existing_box_r0rfc0cf(:,1) - im_dims(1)/2);
+        rf = lsf * (existing_box_r0rfc0cf(:,2) - im_dims(1)/2);
+        c0 = lsf * (existing_box_r0rfc0cf(:,3) - im_dims(2)/2);
+        cf = lsf * (existing_box_r0rfc0cf(:,4) - im_dims(2)/2);
         rc = (r0 + rf) / 2;
         cc = (c0 + cf) / 2;
         w = cf - c0;
         h = rf - r0;
-        log_aspect_ratio = log( w / h );
-        log_area_ratio   = log( w * h ); % already normed to unit area image
+        log_aspect_ratio = log( w ./ h );
+        log_area_ratio   = log( w .* h ); % already normed to unit area image
         box_vect = [ r0 rc rf c0 cc cf log(w) log(h) log_aspect_ratio log_area_ratio ];
 
         if model.is_conditional
@@ -68,7 +74,6 @@ function [boxes_r0rfc0cf, sample_density] = normal_sample( model, object_type, n
         
         return;
     end
-    
     
     
     raw_samples = mvnrnd( model.mu, model.Sigma, n);
@@ -106,10 +111,11 @@ function [boxes_r0rfc0cf, sample_density] = normal_sample( model, object_type, n
     if isempty(im_dims)
         boxes_r0rfc0cf = boxes_r0rfc0cf_unit;
         sample_density = mvnpdf( raw_samples, model.mu, model.Sigma );
+        % note: boxes based on the unit sized image are assumed to be in-bounds, so not checking happens
     else
         r_mid = im_dims(1) / 2;
         c_mid = im_dims(2) / 2;
-        lsf = sqrt(im_dims(1) * im_dims(2));
+        lsf = sqrt(im_dims(1) * im_dims(2)); % linear scaling factor
         
         r0 = round( lsf * boxes_r0rfc0cf_unit(:,1) + r_mid );
         rf = round( lsf * boxes_r0rfc0cf_unit(:,2) + r_mid );
@@ -121,17 +127,23 @@ function [boxes_r0rfc0cf, sample_density] = normal_sample( model, object_type, n
        
         c0 = max( c0, 1 );
         cf = min( cf, im_dims(2) );
-        
+       
         boxes_r0rfc0cf = [r0 rf c0 cf];
         
-        % recompute density based on changes
-        [~, sample_density] = situation_models.normal_sample( model, object_type, n, im_dims, [r0 rf c0 cf] );
-        
-        % ugh, if you've goofed this bad, just do it over
-        %   (you sampled a box that was entirely outside of the image)
-        if (r0>=rf) || (c0>=cf)
-            [boxes_r0rfc0cf, sample_density] = situation_models.normal_sample( model, object_type, n, im_dims, [], recursion_depth + 1 );
+        % remove out-of-bounds boxes and generate replacements
+        if any(r0>=rf) || any(c0>=cf)
+            inds_remove = r0>=rf | c0>=cf;
+            boxes_r0rfc0cf(inds_remove,:) = [];
+            
+            if size(boxes_r0rfc0cf,1) < n
+                m = n - size(boxes_r0rfc0cf,1);
+                boxes_r0rfc0cf_append = situation_models.normal_sample( model, object_type, m, im_dims, [], recursion_depth + 1 );
+                boxes_r0rfc0cf = [boxes_r0rfc0cf; boxes_r0rfc0cf_append];
+            end
         end
+        
+        % recompute density based on changes
+        [~, sample_density] = situation_models.normal_sample( model, object_type, n, im_dims, boxes_r0rfc0cf );
         
     end
 

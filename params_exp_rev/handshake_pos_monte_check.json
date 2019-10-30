@@ -1,32 +1,28 @@
 {
-	"situation_definition_fname" : "situation_definitions/dogwalking.json",
-			
+	"situation_definition_fname" : "situation_definitions/handshaking.json",
+	
 	"situate_parameterizations_fnames" : [
-		"params_run/default.json"
-		//"params_run/normal_model.json"
-		//"params_run/homebrew_rcnn_priming.json"
-		//"params_run/faster_rcnn_priming.json"
-		//"params_run/uniform.json"
+		"params_run/situate_v3_monte_500.json"
 	],	
 
 	"experiment_settings" : {
 
-		"description" : "dogwalking positives check",
+		"description" : "handshake, monte",
 
 		// training params for vision model
 		"vision_model" : {
-			"directory_train" : "DogWalking_PortlandSimple_train/",
-			"training_testing_split_directory" : "data_splits/dogwalking_validation/"
+			"directory_train" : "Handshaking_train/",
+			"training_testing_split_directory" : "data_splits/handshaking_validation"
 		},
 
 		// training params for situation model
 		"situation_model" : {
-			"directory_train" : "DogWalking_PortlandSimple_train/",
-			"training_testing_split_directory" : "data_splits/dogwalking_validation_reduced/"
+			"directory_train" : "Handshaking_train/",
+			"training_testing_split_directory" : "data_splits/handshaking_validation"
 		},
 
 		// testing image directory
-		"directory_test"  : "DogWalking_PortlandSimple_train/",
+		"directory_test"  : "Handshaking_train/",
 
 		// experiment running parameters
 		"use_parallel"					: 0, 
@@ -40,7 +36,7 @@
 		//	max_testing_images: first n images, respects specified fold information
 		"num_folds"                     : 1,
 		"specific_folds"                : [1],
-		"max_testing_images"            : 10,
+		"max_testing_images"            : 100,
 		"testing_seed"                  : "",
 
 		// visualization options

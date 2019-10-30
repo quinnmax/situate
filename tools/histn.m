@@ -1,6 +1,6 @@
 
 
-function histn( x, label, bins )
+function c = histn( x, label, bins )
 
 % histn( x, label, bins );
 %
@@ -35,17 +35,23 @@ function histn( x, label, bins )
 %     axis([ xmin xmax ymin ymax ]);
 %     
     
-    
+
+    hold_was_on = ishold;
+
     data1 = x(label);
     data2 = x(~label);
     hist(data1, bins);
-    hold on; hist(data2, bins);
+    hold on; 
+    hist(data2, bins);
     c = get(gca, 'children');
     numfaces = size(get(c(1), 'Vertices'),1);
     set(c(1), 'FaceVertexCData', repmat([1 0 0], [numfaces 1]), 'Cdatamapping', 'direct', 'facealpha', 0.5, 'edgecolor', 'none');
     numfaces = size(get(c(2), 'Vertices'),1);
     set(c(2), 'FaceVertexCData', repmat([0 0 1], [numfaces 1]), 'Cdatamapping', 'direct', 'facealpha', 0.5, 'edgecolor', 'none');
-    ylabel('Number of values');
+    
+    if ~hold_was_on
+        hold off;
+    end
     
 end
 

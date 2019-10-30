@@ -1,7 +1,7 @@
 function agent_pool = pool_initialize_covering_rcnn_like( p, im, ~, learned_models, varargin )
 % primed_agent_pool = situate.agent.pool_initialize_covering_rcnn_like( p, im, im_fname, learned_models, [max_boxes_per_obj_type], [additional_unassigned_agents] );
 
-    % process in puts
+    % process inputs
     max_boxes_per_obj_type = [];
     num_unassigned_agents = 0;
 
@@ -16,8 +16,8 @@ function agent_pool = pool_initialize_covering_rcnn_like( p, im, ~, learned_mode
 
     
     % define anchor points for rcnn
-    box_area_ratios   = [ 1/4 1/9 1/16 ];
-    box_aspect_ratios = [ 1/2 1/1  2/1 ];
+    box_area_ratios   = [ 1/4 1/16 ];
+    box_aspect_ratios = [ 3/2 2/3 ];
     box_overlap_ratio = .5;
     % situation_struct  = p;
     

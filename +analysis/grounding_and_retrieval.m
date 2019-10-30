@@ -15,6 +15,24 @@ function [] = grounding_and_retrieval( input, varargin )
 
 
 
+%linespec = {'k-','k--','k:','k-.','k-o','k--o','k:o','k-.o'};
+%linespec = {'b','r','g','c','m','k','k:'};
+linespec = {'k-', 'k--', 'k:', 'r-', 'r--', 'r:', 'b-', 'b--', 'b:', 'g-', 'g--', 'g:'};
+    
+linewidth_val = 1;
+      
+
+
+% note: still a strangeness when comparing to RCNN
+%
+% some things are based on how many boxes had iou > .5, others are based on internal support > .5,
+% some are based on both being over .5
+%
+
+
+
+
+
     %% process the input, get cell of mat file names 
 
     if isfile(input) 
@@ -58,6 +76,23 @@ function [] = grounding_and_retrieval( input, varargin )
     if ~isempty( varargin ) && ischar(varargin{1}) && isdir(varargin{1})
         additional_results_directory = varargin{1}; 
     end
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     %% group on condition 
@@ -116,6 +151,15 @@ function [] = grounding_and_retrieval( input, varargin )
 
 
 
+
+
+
+
+
+
+
+
+
     %% generate a results directory, if necessary 
 
         % see if they share a results directory already
@@ -129,6 +173,18 @@ function [] = grounding_and_retrieval( input, varargin )
             % generate a list of mat files used, put file in new directory
             % send a message to the console
         end
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -188,7 +244,7 @@ function [] = grounding_and_retrieval( input, varargin )
                 end
             end
       
-        % rescore workspaces (account for objects of the same type that are arbitrarily assigned a number)
+        % rescore workspaces (account for objects of the same type, party to the situation,  that are arbitrarily assigned distinct labels)
             for ci = 1:num_conditions
                 for imi = 1:num_images
                     workspaces_final{ci}(imi) = situate.workspace_score( workspaces_final{ci}(imi), label_structs{imi}, condition_structs_unique{ci} );
@@ -231,6 +287,122 @@ function [] = grounding_and_retrieval( input, varargin )
             end
 
 
+
+
+
+
+
+
+
+
+
+
+
+%% what did they think they'd found?
+
+figure;
+for ci = 1:num_conditions
+for oi = 1:num_situation_objects
+    
+    subplot2(num_situation_objects,num_conditions,oi,ci);
+    temp = final_support_internal{ci}(:,oi);
+    temp(isnan(temp)) = 0;
+    hist( temp, 10 );
+    xlim([0,1.25]);
+    % ylim([0 32]);
+    
+    if oi == 1
+        title(descriptions{ci});
+    end
+    if ci == 1
+        ylabel(situation_objects{oi})
+    end
+    
+    xlabel('final internal support');
+    
+end
+end
+
+
+figure;
+for ci = 1:num_conditions
+for oi = 1:num_situation_objects
+    
+    subplot2(num_situation_objects,num_conditions,oi,ci);
+    temp = final_ious{ci}(:,oi);
+    temp(isnan(temp)) = 0;
+    hist( temp, 10 );
+    xlim([0,1.25]);
+    % ylim([0 32]);
+    
+    if oi == 1
+        title(descriptions{ci});
+    end
+    if ci == 1
+        ylabel(situation_objects{oi})
+    end
+    
+    xlabel('final gt IOUs');
+    
+end
+end
+
+
+h = figure('color','white');
+for ci = 1
+for oi = 1:num_situation_objects
+    
+    subplot2(2,num_situation_objects,1,oi);
+    
+    temp = final_support_internal{ci}(:,oi);
+    temp(isnan(temp)) = 0;
+    hist( temp, 10 );
+    xlim([0,1.25]);
+    xlabel('final internal support');
+    if oi == 1, ylabel('data frequency'); end
+    
+    title(situation_objects{oi});
+    
+    subplot2(2,num_situation_objects,2,oi);
+    
+    temp = final_ious{ci}(:,oi);
+    temp(isnan(temp)) = 0;
+    hist( temp, 10 );
+    xlim([0,1.25]);
+    xlabel('final gt IOU');
+    if oi == 1, ylabel('data frequency'); end
+    
+    
+    
+end
+end
+
+
+figure;
+for ci = 1:num_conditions
+for oi = 1:num_situation_objects
+    
+    subplot2(num_situation_objects,num_conditions,oi,ci);
+    temp = final_support_internal{ci}(:,oi);
+    temp(isnan(temp)) = 0;
+    
+    plot( temp, final_ious{ci}(:,oi),'.');
+    xlim([-.1 1.25])
+    ylim([-.1 1.25]);
+    
+    if oi == 1
+        title(descriptions{ci});
+    end
+    if ci == 1
+        ylabel({situation_objects{oi}, 'gt iou'})
+    else
+        ylabel('gt iou');
+    end
+    xlabel('est iou');
+end
+end
+
+            
 
     %% load additional results from external folder 
 
@@ -310,22 +482,182 @@ function [] = grounding_and_retrieval( input, varargin )
 
         end
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    %% hypothesis testing
+        display(descriptions);
+        fig_title = 'hypothesis testing';
+        % warning('hand specified control ind');
+        % control_ind = 3;
+        
+        hypoth_diffs = linspace(0,.3,50); % hypothesized differences
+        
+        % is_situation_instance
+        
+        % using matched pair t-test
+        p_val = cell(num_conditions,num_conditions,numel(hypoth_diffs));
+        for ci = 1:num_conditions
+        for cj = 1:num_conditions
+            
+            ious_i = final_ious{ci};
+            ious_i( isnan(ious_i) ) = 0;
+            
+            ious_j = final_ious{cj};
+            ious_j( isnan(ious_j) ) = 0;
+           
+            for di = 1:numel(hypoth_diffs)
+            for oi = 1:size(ious_i,2)
+                [~,p] = ttest( ious_i(is_situation_instance,oi) - hypoth_diffs(di),ious_j(is_situation_instance,oi),'tail','right' );
+                p_val{ci,cj,di}(oi) = p;
+            end
+            end
+        
+        end
+        end
+        
+        if exist('control_ind','var') && ~isempty(control_ind)
+            treatments = setdiff(1:num_conditions,control_ind)';
+            comparisons_0 = [ treatments,   control_ind * ones(numel(treatments),1) ];
+        else
+            treatments = (1:num_conditions)';
+            comparisons_0 = [];
+        end
+        comparisons_1 = [ sort(repmat(treatments,numel(treatments),1)) repmat(treatments,numel(treatments),1) ];
+        comparisons_1( comparisons_1(:,1) == comparisons_1(:,2), : ) = [];
+        
+        %warning('using hand specified comparisons');
+        %comparisons_1 = [2,1; 4,1; 2,4; 4,2];
+        %comparisons_1 = [3,5; 3,4; 5,3; 4,3; 5,4; 4,5];
+        
+        
+        if ~isempty(comparisons_0)
+            h = figure('color','white');
+            for comp_i = 1:size(comparisons_0,1)
+            
+                ci = comparisons_0(comp_i,1);
+                cj = comparisons_0(comp_i,2);
       
+                if size(comparisons_0,1) <= 4
+                    subplot(1,4,comp_i);
+                    h.Position = [ 390         496        1200         250];
+                else
+                    subplot_lazy( size(comparisons,1), comp_i);
+                end
+                
+                temp = vertcat(p_val{ci,cj,:});
+                for oi = 1:num_situation_objects
+                    plot( hypoth_diffs, temp(:,oi), linespec{oi} )
+                    hold on;
+                end
+                hold on; plot([min(hypoth_diffs) max(hypoth_diffs)],[.05 .05],'--r'); hold off;
+                temp_title = [descriptions{ci} ' > ' descriptions{cj}];
+                if numel(temp_title) > 30
+                    temp_title = {descriptions{ci}, ['> ' descriptions{cj}]};
+                end
+                title(temp_title);
+                xlabel('hypothesized difference');
+                ylabel('p val');
+                ylim([0 .5]);
+                if comp_i == size(comparisons_0,1)
+                    legend(situation_objects,'location','southeast');
+                end
+            end
+        
+            saveas(h,fullfile(results_directory,[fig_title ' null']),'png');
+            if ~keep_figs_open, close(h); end
+            
+        end
+        
+            
+        h = figure('color','white');
+        for comp_i = 1:size(comparisons_1,1)
+            
+            ci = comparisons_1(comp_i,1);
+            cj = comparisons_1(comp_i,2);
+      
+            if ci == cj
+                continue
+            end
+            
+            if size(comparisons_1,1) <= 4
+                subplot(1,4,comp_i);
+                h.Position = [ 390         496        1200         250];
+            else
+                subplot_lazy( size(comparisons_1,1), comp_i);
+            end
+            temp = vertcat(p_val{ci,cj,:});
+            for oi = 1:num_situation_objects
+                plot( hypoth_diffs, temp(:,oi), linespec{oi} )
+                hold on;
+            end
+            hold on; plot([min(hypoth_diffs) max(hypoth_diffs)],[.05 .05],'--r'); hold off;
+            temp_title = [descriptions{ci} ' > ' descriptions{cj}];
+            if numel(temp_title) > 30
+                temp_title = {descriptions{ci}, ['> ' descriptions{cj}]};
+            end
+            title(temp_title);
+            xlabel('hypothesized difference');
+            ylabel('p val');
+            ylim([0 .5]);
+            if comp_i == size(comparisons_1,1)
+                    legend(situation_objects,'location','southeast');
+            end
+        end
+        
+        saveas(h,fullfile(results_directory,fig_title),'png');
+        if ~keep_figs_open, close(h); end
+            
+            
+        
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     %% grounding analysis 
 
         % detections at various IOU thresholds
-            num_thresholds = 10;
+            num_thresholds = 20;
             iou_thresholds = sort(unique([linspace(0,1,num_thresholds+1) .5])); % make sure .5 is in there
             iou_thresholds = iou_thresholds(2:end);
             num_thresholds = length(iou_thresholds);
 
+            object_justified_true_belief = cell(1,num_conditions);
             object_detections_at_iou_true_pos  = cell(1,num_conditions);
             object_detections_at_iou_false_pos = cell(1,num_conditions);
             object_detections_at_iou_true_neg  = cell(1,num_conditions);
             object_detections_at_iou_false_neg = cell(1,num_conditions);
 
+            full_situation_justified_true_belief       = cell(1,num_conditions);
             full_situation_detections_at_iou_true_pos  = cell(1,num_conditions);
             full_situation_detections_at_iou_false_pos = cell(1,num_conditions);
             full_situation_detections_at_iou_true_neg  = cell(1,num_conditions);
@@ -335,11 +667,13 @@ function [] = grounding_and_retrieval( input, varargin )
 
             for ci = 1:num_conditions
 
+                object_justified_true_belief{ci}       = nan( num_images, num_thresholds, num_situation_objects);
                 object_detections_at_iou_true_pos{ci}  = nan( num_images, num_thresholds, num_situation_objects);
                 object_detections_at_iou_false_pos{ci} = nan( num_images, num_thresholds, num_situation_objects);
                 object_detections_at_iou_true_neg{ci}  = nan( num_images, num_thresholds, num_situation_objects);
                 object_detections_at_iou_false_neg{ci} = nan( num_images, num_thresholds, num_situation_objects);
 
+                full_situation_justified_true_belief{ci}       = nan( num_images, num_thresholds );
                 full_situation_detections_at_iou_true_pos{ci}  = nan( num_images, num_thresholds );
                 full_situation_detections_at_iou_false_pos{ci} = nan( num_images, num_thresholds );
                 full_situation_detections_at_iou_true_neg{ci}  = nan( num_images, num_thresholds );
@@ -351,11 +685,15 @@ function [] = grounding_and_retrieval( input, varargin )
 
                     for oi = 1:num_situation_objects
 
-                        object_detections_at_iou_true_pos{ci}(:,ti,oi) = ...
+                        object_justified_true_belief{ci}(:,ti,oi) = ...
                                  is_situation_instance ...
                                & final_ious{ci}(:,oi) >= iou_thresholds(ti) ...
                                & final_support_total{ci}(:,oi) >= iou_thresholds(ti);
 
+                       object_detections_at_iou_true_pos{ci}(:,ti,oi) = ...
+                                 is_situation_instance ...
+                               & final_ious{ci}(:,oi) >= iou_thresholds(ti);
+                        
                         object_detections_at_iou_false_pos{ci}(:,ti,oi) = ...
                                 ~is_situation_instance ...
                                & final_support_total{ci}(:,oi) >= iou_thresholds(ti);
@@ -370,10 +708,14 @@ function [] = grounding_and_retrieval( input, varargin )
 
                     end
 
-                    full_situation_detections_at_iou_true_pos{ci}(:,ti) = ...
+                    full_situation_justified_true_belief{ci}(:,ti) = ...
                              is_situation_instance ...
                            & all( final_ious{ci} >= iou_thresholds(:,ti), 2 ) ...
                            & all( final_support_total{ci} >= iou_thresholds(ti), 2 );
+
+                    full_situation_detections_at_iou_true_pos{ci}(:,ti) = ...
+                             is_situation_instance ...
+                           & all( final_ious{ci} >= iou_thresholds(:,ti), 2 );
 
                     full_situation_detections_at_iou_false_pos{ci}(:,ti) = ...
                             ~is_situation_instance ...
@@ -387,7 +729,11 @@ function [] = grounding_and_retrieval( input, varargin )
                              is_situation_instance ... 
                            & any( final_support_total{ci} < iou_thresholds(ti), 2 );
 
-                    stop_times = [workspaces_final{ci}.iteration];
+                    if isfield( workspaces_final{ci}, 'iteration')
+                        stop_times = [workspaces_final{ci}.iteration];
+                    elseif isfield(workspaces_final{ci},'total_iterations')
+                        stop_times = [workspaces_final{ci}.total_iterations];
+                    end
                     detection_inds = logical( full_situation_detections_at_iou_true_pos{ci}(:,ti) );
                     detection_iteration{ci}(detection_inds,ti) = stop_times(detection_inds);
 
@@ -426,6 +772,26 @@ function [] = grounding_and_retrieval( input, varargin )
             results_struct_grounding.full_situation_detections_at_iou_false_neg   = full_situation_detections_at_iou_false_neg;
 
             save( fullfile(results_directory, ['results_grounding.mat']), '-struct', 'results_struct_grounding' );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -513,10 +879,16 @@ function [] = grounding_and_retrieval( input, varargin )
 
 
 
+
+
+
+
+
+
     %% visualize 
 
         % visualize grounding
-        linespec = {'k-','k--','k:','k-.','k-o','k--o','k:o','k-.o'};
+        
 
         % successful groundings 
         %   x axis, threshold
@@ -534,24 +906,25 @@ function [] = grounding_and_retrieval( input, varargin )
             for oi = 1:num_situation_objects
                 subplot2(1,num_situation_objects+1,1,oi);
                 for ci = 1:num_conditions
-                    plot( iou_thresholds, sum( object_detections_at_iou_true_pos{ci}(:,:,oi), 1 ), linespec{ci} );
+                    plot( iou_thresholds, sum( object_detections_at_iou_true_pos{ci}(:,:,oi), 1 ), linespec{ci}, 'linewidth', linewidth_val );
                     hold on;
                 end
                 title( situation_objects{oi});
                 xlabel('IOU thresholds');
-                ylabel('detection count');
+                if oi==1
+                    ylabel('detection count');
+                end
                 xlim([0 1]);
                 ylim([0 1.05*num_pos_images]);
             end
 
             subplot2(1,num_situation_objects+1,1,num_situation_objects+1);
             for ci = 1:num_conditions
-                plot( iou_thresholds, sum(full_situation_detections_at_iou_true_pos{ci},1), linespec{ci} );
+                plot( iou_thresholds, sum(full_situation_detections_at_iou_true_pos{ci},1), linespec{ci}, 'linewidth', linewidth_val );
                 hold on;
             end
             title( 'full situation' );
             xlabel('IOU thresholds');
-            ylabel('detection count');
             xlim([0 1]);
             ylim([0 1.05*num_pos_images]);
 
@@ -568,29 +941,28 @@ function [] = grounding_and_retrieval( input, varargin )
         end
 
             
-            
-        % detections over iteration
-        %   x axis, iteration
-        %   y axis, cummulative full detections
-        %   lines, conditions
-        if any(is_situation_instance)
-            fig_title = 'detections over iteration';
-            h = figure('color','white','Name',fig_title,'position',[720 2 500 400]);
-            x = 1:max(cellfun( @(x) x.num_iterations, condition_structs_unique ));
-            for ci = 1:num_conditions
-                y = arrayfun( @(x) sum( detection_iteration{ci}(:,5) < x ), x );
-                plot( x,y, linespec{ci} );
-                hold on;
-            end
-            plot( x,repmat(num_pos_images,1,length(x)), '--','Color',[.75 .75 .75] );
-            legend( descriptions, 'Location', 'northeast');
-            ylim([0 1.1*num_pos_images])
-            xlabel('iteration');
-            ylabel({'situation detections','(cumulative)'})
-            saveas(h,fullfile(results_directory,fig_title),'png');
-            if ~keep_figs_open, close(h); end
-            
-        end
+% % this has problems. need to give detection_iteration another look
+%         % detections over iteration
+%         %   x axis, iteration
+%         %   y axis, cummulative full detections
+%         %   lines, conditions
+%         if any(is_situation_instance)
+%             fig_title = 'detections over iteration';
+%             h = figure('color','white','Name',fig_title,'position',[720 2 500 400]);
+%             x = 1:max(cellfun( @(x) x.num_iterations, condition_structs_unique ));
+%             for ci = 1:num_conditions
+%                 y = arrayfun( @(x) sum( detection_iteration{ci}(:,5) <= x ), x );
+%                 plot( x,y, linespec{ci} );
+%                 hold on;
+%             end
+%             plot( x,repmat(num_pos_images,1,length(x)), '--','Color',[.75 .75 .75] );
+%             legend( descriptions, 'Location', 'northeast');
+%             ylim([0 1.1*num_pos_images])
+%             xlabel('iteration');
+%             ylabel({'situation detections','(cumulative)'})
+%             saveas(h,fullfile(results_directory,fig_title),'png');
+%             if ~keep_figs_open, close(h); end
+%         end
 
             
             
@@ -717,8 +1089,25 @@ function [] = grounding_and_retrieval( input, varargin )
             saveas(h,fullfile(results_directory,fig_title),'png');
             if ~keep_figs_open, close(h); end
         end
-            
-            
+         
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+%% example workspaces
+        
+show_example_workspaces = true;
+if show_example_workspaces
             
         % pos images
         num_examples = 4;
@@ -790,6 +1179,40 @@ function [] = grounding_and_retrieval( input, varargin )
 
             end
         end
+        
+        % high conf, low truth
+        num_examples = 4;
+        if any(is_situation_instance) && isfield(workspaces_final{1}, 'GT_IOU')
+            num_examples_pos = min( num_examples, num_images_pos );
+            for ci = 1:num_conditions
+                
+                gt_situation_support = cell2mat( cellfun( @(x) prod( padarray_to(x,[1,3],0) + .01 ), {workspaces_final{ci}.GT_IOU}, 'UniformOutput', false ) );
+                est_situation_support = final_support_full_situation{ci};
+                
+                error_mag = (gt_situation_support - est_situation_support').^2;
+                
+                [~,sort_order_error] = sort( error_mag, 'descend' );
+                % remove neg instances
+                sort_order_error = setsub( sort_order_error, find(~is_situation_instance ) );
+                
+                fig_title = ['high support, low ground truth score, positive instances, ' descriptions{ci}];
+                h = figure('color','white','Name',fig_title,'position',[720 2 1400 600]);
+
+                for imi = 1:num_examples_pos
+                    subplot2(1,num_examples_pos,1,imi);
+                    cur_ind = sort_order_error(imi);
+                    situate.workspace_draw( im_fnames{cur_ind}, condition_structs_unique{ci}, workspaces_final{ci}(cur_ind) );
+                    xlabel(sprintf('situation support: %f', final_support_full_situation{ci}(cur_ind)));
+                    if imi == 1, ylabel(sprintf('%s\n%s\n%s',descriptions{ci},'positive instances','high support')); end
+                end
+
+                saveas(h,fullfile(results_directory,fig_title),'png');
+                if ~keep_figs_open, close(h); end
+
+            end
+        end
+        
+end
 
 
 

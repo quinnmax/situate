@@ -8,8 +8,11 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
 
     %% initialization 
         
+<<<<<<< HEAD
+=======
     situate.setup();
    
+>>>>>>> 66a92cfd48d5e7317934298699d9a699c1c377e4
     % load an image, label
     
         label = situate.labl_load( im_fname, p ); % may return empty array if label file wasn't found
@@ -37,7 +40,7 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
     
         global visualizer_run_status;
         visualizer_run_status = 'unstarted'; % this does need to be here. it is looked at from within the visualizer
-        if p.viz_options.use_visualizer
+        if p.use_visualizer
         
             [~,visualization_description] = fileparts(im_fname);
             [viz_handle, visualizer_run_status] = situate.visualize( [], im, p, dist_structs, workspace, [], agent_pool, records.agent_record, visualization_description );
@@ -110,7 +113,7 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
             records = situate.records_update( records, iteration, workspace_snapshot, p, current_agent_snapshot );
        
         % update visualization
-            if p.viz_options.use_visualizer ...
+            if p.use_visualizer ...
             && ( p.viz_options.on_iteration_mod ~= 0 && mod(iteration, p.viz_options.on_iteration_mod)==0 ) ...
             || ( p.viz_options.on_workspace_change && workspace_changed )
     
@@ -185,7 +188,7 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
         records.workspace_final = workspace;
         
         % update visualization
-        if p.viz_options.use_visualizer && p.viz_options.on_end
+        if p.use_visualizer && p.viz_options.on_end
             
             if ~exist('viz_handle','var'), viz_handle = []; end
             [~,fname_no_path] = fileparts(im_fname);

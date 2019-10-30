@@ -57,9 +57,7 @@ function [boxes_r0rfc0cf, sample_density] = uniform_normal_mix_sample( model, ob
             sample_density   = mvnpdf( box_vect_limited, mu_marginalized, Sigma_marginalized );
             boxes_r0rfc0cf   = existing_box_r0rfc0cf;
         else
-            % give the mvn density
-            sample_density = mvnpdf( box_vect, model.mu, model.Sigma );
-            boxes_r0rfc0cf = existing_box_r0rfc0cf;
+            [boxes_r0rfc0cf, sample_density] = situation_models.normal_sample( model, object_type, n, im_dims, existing_box_r0rfc0cf); 
         end
         
         return;

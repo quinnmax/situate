@@ -13,14 +13,13 @@ function [agent_pool] = evaluate_reviewer( agent_pool, agent_index, p, learned_m
     cur_agent = agent_pool(agent_index);
     assert( isequal( cur_agent.type, 'reviewer' ) );
     
-    if length(p.external_support_function) == 1
-        cur_agent.support.external = p.external_support_function( agent_pool(agent_index).support.sample_densities ); 
-    else
-        obj_ind = strcmp(agent_pool(agent_index).interest,p.situation_objects);
-        cur_agent.support.external = p.external_support_function{obj_ind}( agent_pool(agent_index).support.sample_densities ); 
-    end
-    
     oi = strcmp( p.situation_objects, cur_agent.interest );
+    
+    if nargin( p.external_support_function ) == 1
+        cur_agent.support.external = p.external_support_function( agent_pool(agent_index).support.sample_densities ); 
+    elseif abs(nargin(p.external_support_function)) == 2
+        cur_agent.support.external = p.external_support_function( agent_pool(agent_index).support.sample_densities, learned_models, oi ); 
+    end
     
     switch class( p.total_support_function )
         case 'function_handle'

@@ -79,7 +79,8 @@ function [agent_pool,d] = evaluate_scout( agent_pool, agent_index, p, d, im, lab
     % density evaluation happens here so any changes to the box are take into account
     if update_density
         di = find(strcmp({d.interest},cur_agent.interest));
-        [~, cur_agent.support.sample_densities] = p.situation_model.sample( d(di).distribution, d(di).interest, 1, [size(im,1), size(im,2)], agent_pool(agent_index).box.r0rfc0cf ); 
+        [~, cur_agent.support.sample_densities]       = p.situation_model.sample( d(di).distribution,  d(di).interest, 1, [size(im,1), size(im,2)], cur_agent.box.r0rfc0cf ); 
+        [~, cur_agent.support.sample_densities_prior] = p.situation_model.sample( d(end).distribution, d(di).interest, 1, [size(im,1), size(im,2)], cur_agent.box.r0rfc0cf ); 
     end
     
     assert( isequal( cur_agent.type, 'scout' ) );

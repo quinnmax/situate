@@ -1,6 +1,6 @@
 function [ new_agent, adjusted_box_r0rfc0cf, delta_xywh ] = bb_regression_apply( model, input_agent, ~, image, cnn_features )
 
-    % [ new_agent, adjusted_box_r0rfc0cf, delta_xywh ] = apply( model, input_agent, ~, image, cnn_features );
+    % [ new_agent, adjusted_box_r0rfc0cf, delta_xywh ] = bb_regression_apply( model, input_agent, ~, image, cnn_features );
     %
     % adjusted_box_r0rfc0cf: the adjusted bounding box is returned in r0rfc0cf format
     % delta_xywh: the delta used to generate the adjusted box

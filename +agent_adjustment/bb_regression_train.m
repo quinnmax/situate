@@ -5,6 +5,8 @@ function model = bb_regression_train( situation_struct, fnames_in, saved_models_
 %
 % load or train a box_adjust model. currently requires an existing
 % cnn_features file that's hard coded in
+%
+% training_IOU_threshold is a floor. boxes with IOU above will be used
  
     situation_objects = situation_struct.situation_objects;
 
@@ -83,7 +85,10 @@ function model = bb_regression_train( situation_struct, fnames_in, saved_models_
             data.IOUs_with_source < max( data.IOUs_with_each_gt_obj(:,object_equivalence_matrix(oi,:)), [], 2 );
     end
     
-    boxes_over_IOU_threshold_inds = ge( data.IOUs_with_source, training_IOU_threshold );
+    boxes_over_IOU_threshold_inds = ge( data.IOUs_with_source, min(training_IOU_threshold) );
+    if numel(training_IOU_threshold) > 1
+        boxes_over_IOU_threshold_inds = boxes_over_IOU_threshold_inds & le( data.IOUs_with_source, max(training_IOU_threshold) );
+    end
     
     lambda = 1000; % ridge regression parameter
     

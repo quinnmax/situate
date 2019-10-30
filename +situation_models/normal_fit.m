@@ -78,7 +78,7 @@ function situation_model = normal_fit( situation_struct, fnames_in, saved_models
                 end
                 data_pile(ii,:) = cur_row;
             end
-
+    
         % see if the covariance matrix satisfies old man cholesky
             mu = mean(data_pile);
             Sigma = cov(data_pile);
@@ -94,9 +94,119 @@ function situation_model = normal_fit( situation_struct, fnames_in, saved_models
             situation_model.fnames_lb_train = sort(fnames_in_stripped);
             situation_model.model_description = model_description;
             situation_model.is_conditional = false;
+            
+            
 
-        
-    
+        % get estimates of priors for box over .5 iou
+            %iou_over_50_rate = nan(numel(image_data),numel(situation_model.situation_objects));
+            n = 500;
+            num_objs = numel(situation_model.situation_objects);
+            num_images = numel(image_data);
+            model_normal = situation_model;
+            ooi = nan( num_images * n * num_objs, 1 );
+            density_normal_sampled_normal_scored                 = nan( numel(image_data) * n, 1 );
+            density_conditioned_1a_sampled_conditioned_1a_scored = nan( numel(image_data) * n, 1 );
+            density_conditioned_1b_sampled_conditioned_1b_scored = nan( numel(image_data) * n, 1 );
+            density_conditioned_2_sampled_conditioned_2_scored   = nan( numel(image_data) * n, 1 );
+            ious_normal         = nan( numel(image_data) * n, 1 );
+            ious_conditioned_1a = nan( numel(image_data) * n, 1 );
+            ious_conditioned_1b = nan( numel(image_data) * n, 1 );
+            ious_conditioned_2  = nan( numel(image_data) * n, 1 );
+
+            rows_per_image = n * num_objs;
+            
+            for ii = 1:num_images
+                
+                cur_labl = image_data(ii);
+                im_row = cur_labl.im_h;
+                im_col = cur_labl.im_w;
+              
+%                 [workspaces_dummy, detected_object_matrix] = make_dummy_workspaces( cur_labl, situation_struct );
+
+                row_start_im = (ii-1) * rows_per_image + 1;
+                
+                for oi = 1:num_objs
+            
+                    cur_rows = row_start_im + ( n*(oi-1) : n*oi-1 );
+                    
+                    % object of interest
+                    ooi(cur_rows) = oi;
+                    object_type = situation_struct.situation_objects{oi};
+
+                    % get gt box
+                    li = strcmp( object_type, cur_labl.labels_adjusted);
+                    cur_gt_box_r0rfc0cf = cur_labl.boxes_r0rfc0cf(li,:);
+
+%                     % build conditioning models
+%                         other_obj_inds = setsub(1:num_objs,oi);
+%                         % obj 1a
+%                         workspace_dummy_ind = ~logical(detected_object_matrix(:,oi)) & ~logical(detected_object_matrix(:,other_obj_inds(1))) &  logical(detected_object_matrix(:,other_obj_inds(2)));
+%                         model_conditional_1a_dummy = situation_models.normal_condition( model_normal, object_type, workspaces_dummy{workspace_dummy_ind} );
+%                         % obj 1b
+%                         workspace_dummy_ind = ~logical(detected_object_matrix(:,oi)) &  logical(detected_object_matrix(:,other_obj_inds(1))) & ~logical(detected_object_matrix(:,other_obj_inds(2)));
+%                         model_conditional_1b_dummy = situation_models.normal_condition( model_normal, object_type, workspaces_dummy{workspace_dummy_ind} );
+%                         % objs 2
+%                         workspace_dummy_ind = ~logical(detected_object_matrix(:,oi)) &  logical(detected_object_matrix(:,other_obj_inds(1))) &  logical(detected_object_matrix(:,other_obj_inds(2)));
+%                         model_conditional_2_dummy = situation_models.normal_condition( model_normal, object_type, workspaces_dummy{workspace_dummy_ind} );
+
+                    % sample from the models
+                        
+                        % Normal samples, Normal scores
+                        [boxes_r0rfc0cf_normal, temp] = situation_models.normal_sample( model_normal, object_type, n, [im_row im_col]); 
+                        density_normal_sampled_normal_scored(cur_rows) = temp;
+
+%                         % Conditional 1a samples, Conditional 1a scores
+%                         [boxes_r0rfc0cf_conditioned_1a, temp] = situation_models.normal_sample( model_conditional_1a_dummy, object_type, n, [im_row im_col]); 
+%                         density_conditioned_1a_sampled_conditioned_1a_scored(cur_rows) = temp;
+% 
+%                         % Conditional 1b samples, Conditional 1b scores
+%                         [boxes_r0rfc0cf_conditioned_1b, temp] = situation_models.normal_sample( model_conditional_1b_dummy, object_type, n, [im_row im_col]); 
+%                         density_conditioned_1b_sampled_conditioned_1b_scored(cur_rows) = temp;
+% 
+%                         % Conditional 2 samples, Conditional 2 scores
+%                         [boxes_r0rfc0cf_conditioned_2, temp] = situation_models.normal_sample( model_conditional_2_dummy, object_type, n, [im_row im_col]); 
+%                         density_conditioned_2_sampled_conditioned_2_scored(cur_rows) = temp;
+
+                    % get gt ious of samples
+                    
+                        % get gt iou of normal samples
+                        temp = intersection_over_union( boxes_r0rfc0cf_normal, cur_gt_box_r0rfc0cf, 'r0rfc0cf','r0rfc0cf');
+                        ious_normal(cur_rows) = temp;
+
+%                         % get gt iou of conditioned samples samples
+%                         temp = intersection_over_union( boxes_r0rfc0cf_conditioned_1a, cur_gt_box_r0rfc0cf, 'r0rfc0cf','r0rfc0cf');
+%                         ious_conditioned_1a(cur_rows) = temp;
+% 
+%                         temp = intersection_over_union( boxes_r0rfc0cf_conditioned_1b, cur_gt_box_r0rfc0cf, 'r0rfc0cf','r0rfc0cf');
+%                         ious_conditioned_1b(cur_rows) = temp;
+% 
+%                         temp = intersection_over_union( boxes_r0rfc0cf_conditioned_2, cur_gt_box_r0rfc0cf, 'r0rfc0cf','r0rfc0cf');
+%                         ious_conditioned_2(cur_rows) = temp;
+
+                end
+                
+                progress(ii,num_images);
+                
+            end
+            
+            p_x = nan(1,num_objs);
+            bx = nan(1,num_objs);
+            iou_dist = cell(1,num_objs);
+            bx_dist = cell(1,num_objs);
+            for oi = 1:num_objs
+                ci = oi == ooi;
+                iou_dist{oi} = ious_normal(ci);
+                p_x(oi) = mean( ious_normal(ci) > .5 );
+                bx(oi) = median( density_normal_sampled_normal_scored(ci) );
+                bx_dist{oi} = density_normal_sampled_normal_scored(ci);
+            end
+
+            situation_model.p_x = p_x;
+            situation_model.bx  = bx;
+            situation_model.iou_dist = iou_dist;
+            situation_model.bx_dist = bx_dist;
+                    
+          
      %% save the model
         
         iter = 0;

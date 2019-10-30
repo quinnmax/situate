@@ -1,9 +1,15 @@
 function agent_pool = pool_initialize_covering( p, im, im_fname, learned_models )
 % primed_agent_pool = situate.agent.pool_initialize_covering( p, im, im_fname, learned_models );
 
-    box_area_ratios = [1/16 1/9 1/4];
-    box_aspect_ratios = [1/2 1/1 2/1];
+    %box_area_ratios = [1/16 1/9 1/4];
+    %box_aspect_ratios = [1/2 1/1 2/1];
+    %overlap_ratio = .5;
+    
+    box_area_ratios = [1/16 1/4];
+    box_aspect_ratios = [2/3 3/2];
     overlap_ratio = .5;
+    
+    
     
     [primed_boxes_r0rfc0cf, params] = boxes_covering( size(im), box_aspect_ratios, box_area_ratios, overlap_ratio );
 
@@ -19,6 +25,7 @@ function agent_pool = pool_initialize_covering( p, im, im_fname, learned_models 
                 | primed_boxes_r0rfc0cf(:,4) > size(im,2);
             
     primed_boxes_r0rfc0cf(inds_remove,:) = [];
+    primed_boxes_r0rfc0cf = primed_boxes_r0rfc0cf(randperm(size(primed_boxes_r0rfc0cf,1)),:);
     primed_box_urgencies(inds_remove) = [];
     
     cur_agent = situate.agent.initialize();

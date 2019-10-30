@@ -213,7 +213,7 @@ and
 
 #### Specifying separate directories and including file lists
 
-If you would like to use a subset of the available training and testing data present in separate directories, you can specify both separate directories and a directory contain file lists.  Parameters should be set as below:
+If you would like to use a subset of the available training and testing data present in separate directories, you can specify both separate directories and a directory containing file lists.  Parameters should be set as below:
 
 	"directory_train"                  : "folder_a/",
 	"directory_test"                   : "folder_b/",

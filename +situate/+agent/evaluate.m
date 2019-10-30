@@ -6,6 +6,7 @@ function [agent_pool, d, workspace, object_was_added] = evaluate( agent_pool, ag
     switch( agent_pool(agent_index).type )
         case 'scout'
             % sampling from d may change it, so we include it as an output
+            assert(size(agent_pool,1)==1);
             [agent_pool, d] = situate.agent.evaluate_scout( agent_pool, agent_index, p, d, im, label, learned_models );
         case 'reviewer'
             % reviewers do not modify the distributions
@@ -91,5 +92,7 @@ function [agent_pool, d, workspace, object_was_added] = evaluate( agent_pool, ag
         end
        
     end
+    
+    assert(size(agent_pool,1)==1);
     
 end

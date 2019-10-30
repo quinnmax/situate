@@ -34,6 +34,9 @@ function [inds_out, vals_out] = resample_to_uniform( vals_in, n, num_bins )
     
     for bi = 1:length(bin_bounds)-1
         inds_in_cur_range = find( ge( vals_in, bin_bounds(bi) ) & lt( vals_in, bin_bounds(bi+1) ) );
+        if isempty(inds_in_cur_range)
+            error('too many bins, some are empty');
+        end
         inds_out(end+1:end+vals_out_per_bin) = inds_in_cur_range( randi(length(inds_in_cur_range),1,vals_out_per_bin) );
     end
     

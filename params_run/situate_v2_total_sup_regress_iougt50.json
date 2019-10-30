@@ -1,0 +1,72 @@
+{ 
+	
+	"situate_parameterization":{
+
+		"description" : "dissertation_fit (IOU estimator, bb regression, total support regress to iou_over_50)",
+
+		// situation model
+		"situation_model" : {
+			"description" : "normal model",
+			"learn"  : "situation_models.normal_fit",
+			"update" : "situation_models.normal_condition",
+			"sample" : "situation_models.normal_sample",
+			"draw"   : "situation_models.normal_draw"
+		},	
+
+		// pipeline options
+		"use_direct_scout_to_workspace_pipeline" : "true",
+		"maximum_iterations" : 300,
+		"stopping_condition" : "situate.stopping_condition_null",
+		//"stopping_condition" : "situate.stopping_condition_situation_found", 
+		"min_number_of_scouts" : 10,
+		"agent_urgency_defaults" : {
+			"scout"    : 1,
+			"reviewer" : 5,
+			"builder"  : 10
+		},
+
+		// classifier
+		"classifier" : {
+			"train" : "classifiers.IOU_ridge_regression_train", 
+			"apply" : "classifiers.IOU_ridge_regression_apply",
+			"store" : "saved_models/"
+		},
+		
+		// support functions
+		//"support_function_external" : "support_functions_external.expcdf_fit",
+		//"support_function_external" : "support_functions_external.beta_cdf",
+		"support_function_external" : "support_functions_external.p_x_bx",
+		//"support_function_total"    : "support_functions_total.AUROC_based",
+		"support_function_total"    : "support_functions_total.logistic_fit_over_50",
+		"support_function_full_situation" : "support_functions_situation.geometric_mean_padded",
+
+		// support thresholds
+		"support_thresholds" : {
+			"internal_support"          : ".2",
+			"internal_support_retain"   : "inf",
+			"total_support_provisional" : "inf",
+			"total_support_final"       : ".25"
+		},
+
+		// agent pool initialization function
+		"agent_pool_initialization_function" : "situate.agent.pool_initialize_default",
+
+		// agent pool adjustment rules
+		"agent_pool_adjustment_rule" : "@(x) x;",
+		
+		// agent adjustment model
+		"agent_adjustment_model" : {
+			"activation_logic" 	: "@(cur_agent,workspace,p) agent_adjustment.activation_logic( cur_agent, workspace, .2, 1.0 )",
+			"train"				: "@(a,b,c) agent_adjustment.bb_regression_two_tone_train(a,b,c,[.1 .6])",
+			"apply" 			: "agent_adjustment.bb_regression_two_tone_w_decay_apply",
+			"store" 			: "saved_models/" 
+		},
+
+		// temperature adjustment rules
+		"temperature" : {
+			"initial" : 1, 
+			"update_rule"  : "@(workspace,iteration,total_iterations) (1-iteration/total_iterations)"
+		}
+		
+	}
+}

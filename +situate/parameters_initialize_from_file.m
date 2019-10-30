@@ -1,5 +1,9 @@
 function p = parameters_initialize_from_file( params_situate_fname )
 
+% p = parameters_initialize_from_file( params_situate_fname );
+% should be a running parameters file (not an experiment parameters file)
+% likely from situate/params_run/
+
 
 
     %% parameters from situate param file
@@ -71,7 +75,11 @@ function p = parameters_initialize_from_file( params_situate_fname )
         p.temperature.initial = params_in.temperature.initial;
         p.temperature.update = str2func( params_in.temperature.update_rule );
     
-    
+    if isfield(params_in,'use_monte')
+        p.use_monte =  params_in.use_monte;
+    else
+        p.use_monte =  false;
+    end
     
     %% parameters from situation definition
     

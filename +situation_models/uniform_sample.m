@@ -20,25 +20,21 @@ function [boxes_r0rfc0cf, sample_density] = uniform_sample( model, object_type, 
         location_density = 1;
         
         % shape density
-        box_w = existing_box_r0rfc0cf(4) - existing_box_r0rfc0cf(3);
-        box_h = existing_box_r0rfc0cf(2) - existing_box_r0rfc0cf(1);
-        aspect_ratio = box_w / box_h;
-        if aspect_ratio >= model.aspect_min && aspect_ratio <= model.aspect_max
-            shape_density = 1 / (log(model.aspect_max) - log(model.aspect_min));
-        else
-            shape_density = 0;
-        end
+        box_w = existing_box_r0rfc0cf(:,4) - existing_box_r0rfc0cf(:,3);
+        box_h = existing_box_r0rfc0cf(:,2) - existing_box_r0rfc0cf(:,1);
+        aspect_ratio = box_w ./ box_h;
+        shape_density = zeros(size(aspect_ratio));
+        shape_density( aspect_ratio >= model.aspect_min & aspect_ratio <= model.aspect_max ) = ...
+            1 / (log(model.aspect_max) - log(model.aspect_min));
         
         % size density
-        area_ratio = (box_w * box_h) / (im_dims(1) * im_dims(2));
-        if aspect_ratio >= model.area_ratio_min && area_ratio <= model.area_ratio_max
-            size_density = 1 / (log(model.area_ratio_max) - log(model.area_ratio_min));
-        else
-            size_density = 0;
-        end
+        area_ratio = (box_w .* box_h) ./ (im_dims(1) * im_dims(2));
+        size_density = zeros( size(area_ratio) );
+        size_density( aspect_ratio >= model.area_ratio_min & area_ratio <= model.area_ratio_max ) = ...
+            1 / (log(model.area_ratio_max) - log(model.area_ratio_min));
         
         boxes_r0rfc0cf = existing_box_r0rfc0cf;
-        sample_density = location_density * shape_density * size_density;
+        sample_density = location_density .* shape_density .* size_density;
         
         return;
         
@@ -47,12 +43,12 @@ function [boxes_r0rfc0cf, sample_density] = uniform_sample( model, object_type, 
     %% otherwise, actually generate a bounding box
     
     % location density is with respect to a unit area, so the density at each point is just 1
-        aspect_ratio = exp( log(model.aspect_min)     + rand() * (log(model.aspect_max)     - log(model.aspect_min)) );
-        area_ratio   = exp( log(model.area_ratio_min) + rand() * (log(model.area_ratio_max) - log(model.area_ratio_min)) );
+        aspect_ratio = exp( log(model.aspect_min)     + rand(n,1) * (log(model.aspect_max)     - log(model.aspect_min)) );
+        area_ratio   = exp( log(model.area_ratio_min) + rand(n,1) * (log(model.area_ratio_max) - log(model.area_ratio_min)) );
         [w,h] = box_aa2wh(aspect_ratio,area_ratio*im_dims(1)*im_dims(2));
         
-        rc = round( 1 + h/2 + rand() * (im_dims(1)-h/2) );
-        cc = round( 1 + w/2 + rand() * (im_dims(2)-w/2) );
+        rc = round( 1 + rand(n,1) * (im_dims(1)-1) );
+        cc = round( 1 + rand(n,1) * (im_dims(2)-1) );
         
         r0 = rc - h/2 +.5;
         rf = r0 + h - 1;
@@ -64,10 +60,11 @@ function [boxes_r0rfc0cf, sample_density] = uniform_sample( model, object_type, 
         [~, sample_density] = situation_models.uniform_sample( model, object_type, 1, im_dims, boxes_r0rfc0cf );
         
         % if we have a violation, recall the function until we get something
-        if r0 < 1 || c0 < 1 || rf > im_dims(1) || cf > im_dims(2)
-            [boxes_r0rfc0cf, sample_density] = situation_models.uniform_sample( model, object_type, n, im_dims, [] );
+        if any( r0 < 1 | c0 < 1 | rf > im_dims(1) | cf > im_dims(2) )
+            bad_boxes = r0 < 1 | c0 < 1 | rf > im_dims(1) | cf > im_dims(2);
+            [boxes_r0rfc0cf(bad_boxes,:), sample_density(bad_boxes)] = situation_models.uniform_sample( model, object_type, sum(bad_boxes), im_dims, [] );
         end
-        
+         
 end
 
 
