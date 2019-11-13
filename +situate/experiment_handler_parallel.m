@@ -61,6 +61,9 @@ function experiment_handler_parallel( experiment_struct, situation_struct, situa
             cur_parameterization = situate_params_array(parameters_ind);
             rng( cur_parameterization.seed_test );
             
+            cur_param_desc = fileparts_mq(cur_parameterization.description,'name');
+            save_fname = fullfile(experiment_struct.results_directory, [cur_param_desc '_fold_' num2str(fi,'%02d') '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
+
             % load or learn the vision models
             if ~isfield( learned_models, 'classifier_model') ...
             || ~isequal( learned_models_training_functions.classifier, cur_parameterization.classifier.train )
@@ -105,60 +108,66 @@ function experiment_handler_parallel( experiment_struct, situation_struct, situa
                 im_ind_start = 1;
             end
             
-            fprintf(['params                           image       steps      time(s)            [ '  repmat('%-15s',1,3) '] \n'], situation_struct.situation_objects{:})
-            parfor cur_image_ind = im_ind_start : experiment_struct.experiment_settings.max_testing_images
+            inds_per_save = 200;
+            ind_range_0s = im_ind_start:inds_per_save:experiment_struct.experiment_settings.max_testing_images;
+            ind_range_fs = min( (ind_range_0s-1)+inds_per_save, experiment_struct.experiment_settings.max_testing_images);
+            
+            for range_ind = 1:numel(ind_range_0s)
 
-                % run on the current image
-                cur_fname_im = fnames_im_test{cur_image_ind};
+                fprintf(['params                           image       steps      time(s)            [ '  repmat('%-15s',1,3) '] \n'], situation_struct.situation_objects{:})
+                parfor cur_image_ind = ind_range_0s(range_ind) : ind_range_fs(range_ind)
 
-                tic;
-                [ ~, run_data_cur ] = situate.run( cur_fname_im, cur_parameterization, learned_models );
+                    % run on the current image
+                    cur_fname_im = fnames_im_test{cur_image_ind};
 
-                % try to reconcile workspace with GT boxes
-                cur_fname_lb = [fileparts_mq(cur_fname_im,'path/name') '.json'];
-                if exist(cur_fname_lb,'file')
-                    reconciled_workspace = situate.workspace_score(run_data_cur.workspace_final, cur_fname_lb, cur_parameterization );
-                else
-                    reconciled_workspace = run_data_cur.workspace_final;
+                    tic;
+                    [ ~, run_data_cur ] = situate.run( cur_fname_im, cur_parameterization, learned_models );
+
+                    % try to reconcile workspace with GT boxes
+                    cur_fname_lb = [fileparts_mq(cur_fname_im,'path/name') '.json'];
+                    if exist(cur_fname_lb,'file')
+                        reconciled_workspace = situate.workspace_score(run_data_cur.workspace_final, cur_fname_lb, cur_parameterization );
+                    else
+                        reconciled_workspace = run_data_cur.workspace_final;
+                    end
+                    labels_missed = setdiff(cur_parameterization.situation_objects,run_data_cur.workspace_final.labels);
+                    labels_temp = [run_data_cur.workspace_final.labels labels_missed];
+                    GT_IOUs = [reconciled_workspace.GT_IOU nan(1,length(labels_missed))];
+                    [~,sort_order_2] = sort( labels_temp );
+                    [~,sort_order_1] = sort( cur_parameterization.situation_objects);
+                    IOUs_of_last_run = sprintf(repmat('%1.4f         ',1,length(GT_IOUs)),GT_IOUs(sort_order_2(sort_order_1)));
+
+                    % display update to console
+                    num_iterations_run = sum(~eq(0,[run_data_cur.agent_record.interest]));
+                    fprintf('%-28s %3d /%4d        %4d      %6.2f       IOUs: [ %s] \n', ...
+                        cur_parameterization.description, ...
+                        cur_image_ind, ...
+                        num_images, ...
+                        num_iterations_run, ...
+                        toc, ...
+                        IOUs_of_last_run );
+
+                    % store results
+                    workspaces_final{cur_image_ind} = run_data_cur.workspace_final;
+                    agent_records{cur_image_ind}    = run_data_cur.agent_record;
+
                 end
-                labels_missed = setdiff(cur_parameterization.situation_objects,run_data_cur.workspace_final.labels);
-                labels_temp = [run_data_cur.workspace_final.labels labels_missed];
-                GT_IOUs = [reconciled_workspace.GT_IOU nan(1,length(labels_missed))];
-                [~,sort_order_2] = sort( labels_temp );
-                [~,sort_order_1] = sort( cur_parameterization.situation_objects);
-                IOUs_of_last_run = sprintf(repmat('%1.4f         ',1,length(GT_IOUs)),GT_IOUs(sort_order_2(sort_order_1)));
-                
-                % display update to console
-                num_iterations_run = sum(~eq(0,[run_data_cur.agent_record.interest]));
-                fprintf('%-28s %3d /%4d        %4d      %6.2f       IOUs: [ %s] \n', ...
-                    cur_parameterization.description, ...
-                    cur_image_ind, ...
-                    num_images, ...
-                    num_iterations_run, ...
-                    toc, ...
-                    IOUs_of_last_run );
-                
-                % store results
-                workspaces_final{cur_image_ind} = run_data_cur.workspace_final;
-                agent_records{cur_image_ind}    = run_data_cur.agent_record;
+
+                % save off results, each condition and fold pair gets a file
+
+                results_struct = [];
+                results_struct.p_condition               = cur_parameterization;
+                results_struct.workspaces_final          = workspaces_final;
+                results_struct.agent_records             = agent_records;
+                results_struct.fnames_lb_train_vision    = fnames_lb_train_vision;
+                results_struct.fnames_lb_train_situation = fnames_lb_train_situation;
+                results_struct.fnames_im_test            = fnames_im_test;
+
+                save(save_fname, '-v7', '-struct','results_struct');
+                fprintf('saved to:\n    %s\n', save_fname);
 
             end
-
-            % save off results, each condition and fold pair gets a file
-            cur_param_desc = fileparts_mq(cur_parameterization.description,'name');
-            save_fname = fullfile(experiment_struct.results_directory, [cur_param_desc '_fold_' num2str(fi,'%02d') '_' datestr(now,'yyyy.mm.dd.HH.MM.SS') '.mat']);
-
-            results_struct = [];
-            results_struct.p_condition               = cur_parameterization;
-            results_struct.workspaces_final          = workspaces_final;
-            results_struct.agent_records             = agent_records;
-            results_struct.fnames_lb_train_vision    = fnames_lb_train_vision;
-            results_struct.fnames_lb_train_situation = fnames_lb_train_situation;
-            results_struct.fnames_im_test            = fnames_im_test;
-
-            save(save_fname, '-v7', '-struct','results_struct');
-            fprintf('saved to:\n    %s\n', save_fname);
-          
+            
         end
 
     end

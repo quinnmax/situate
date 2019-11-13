@@ -1,0 +1,51 @@
+{
+	"situation_definition_fname" : "situation_definitions/handshaking.json",
+			
+	"situate_parameterizations_fnames" : [
+			"params_run/situate_v3_monte_500.json"
+		],	
+
+	"experiment_settings" : {
+
+		"description" : "handshaking, monte, negatives, test",
+
+		// training params for vision model
+		"vision_model" : {
+			"directory_train" : "Handshaking_train/",
+			"training_testing_split_directory" : ""
+		},
+
+		// training params for situation model
+		"situation_model" : {
+			"directory_train" : "Handshaking_train/",
+			"training_testing_split_directory" : ""
+		},
+
+		// testing image directory
+		"directory_test"  : "Negatives_general/",
+
+		// experiment running parameters
+		"use_parallel"					: 1, 
+		"run_analysis_after_completion"	: 0,
+		
+		// split parameters
+		//	num_folds: 
+		//		either defines the folds generated (if no folds given) 
+		//  	or limits the folds run (if there are more existing folds specified)
+		//	specified_folds: list of specific folds to run, shadows num_folds
+		//	max_testing_images: first n images, respects specified fold information
+		"num_folds"                     : 1,
+		"specific_folds"                : [1],
+		"max_testing_images"            : "",
+		"testing_seed"                  : "",
+
+		// visualization options
+		"viz_options" : {
+			"use_visualizer"      : 0,
+	 		"on_iteration_mod"    : 1,
+	 		"on_workspace_change" : 0,
+	 		"on_end"              : 1,
+	 		"start_paused"        : 1
+ 		}
+	}
+}

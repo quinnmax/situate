@@ -24,7 +24,7 @@ model_url     = 'http://www.vlfeat.org/matconvnet/models/imagenet-vgg-f.mat';
 if ~exist(fullfile(matconvnetdir,version,'matlab','vl_nnconv.m'),'file')
     
     % http://www.vlfeat.org/matconvnet/install/
-    display('setting-up matconvnet');
+    disp('setting-up matconvnet');
     
     % download matconvnet
     mkdir(matconvnetdir);
@@ -42,20 +42,16 @@ if ~exist(fullfile(matconvnetdir,version,'matlab','vl_nnconv.m'),'file')
     
 end
 
-
-
-% check for the pre-trained model
-if ~exist(fullfile(matconvnetdir,fileparts_mq(model_url,'name.ext')),'file')
-    display(['downloading ' model_url]);
-    websave(fullfile(matconvnetdir,fileparts_mq(model_url,'name.ext')),model_url);
-end
-  
-
-
 % add tools to path
 addpath(fullfile(pwd,'tools'));
 addpath(fullfile(pwd,matconvnetdir, version, 'matlab'))
 addpath(fullfile(pwd,matconvnetdir, version, 'matlab/simplenn'))
 addpath(fullfile(pwd,matconvnetdir, version, 'matlab/mex'))
 
-    
+% check for the pre-trained model
+if ~exist(fullfile(matconvnetdir,fileparts_mq(model_url,'name.ext')),'file')
+    disp(['downloading ' model_url]);
+    websave(fullfile(matconvnetdir,fileparts_mq(model_url,'name.ext')),model_url);
+end
+  
+
