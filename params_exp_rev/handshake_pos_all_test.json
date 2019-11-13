@@ -4,7 +4,7 @@
 	"situate_parameterizations_fnames" : [
 		"params_run/situate_v0_control.json",
 		"params_run/situate_v1.json",
-		"params_run/situate_v2.json",
+		"params_run/situate_v2_total_sup_auroc.json",
 		"params_run/situate_v3_monte.json"
 	],	
 
@@ -39,7 +39,7 @@
 		//	max_testing_images: first n images, respects specified fold information
 		"num_folds"                     : 1,
 		"specific_folds"                : [1],
-		"max_testing_images"            : 100,
+		"max_testing_images"            : "",
 		"testing_seed"                  : "",
 
 		// visualization options

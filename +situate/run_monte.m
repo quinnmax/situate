@@ -9,94 +9,86 @@ function [ workspace, records, all_workspaces ] = run_monte( im_fname, running_p
         situation_objects = learned_models.situation_model.situation_objects;
         num_objs = numel(situation_objects);
         
-        cur_iter_count = 0;
-        iterations_per_attention_period = 10;
-        iterations_before_deprioritize = 20; % if n iters are evaluated with no updated to workspace, sandbag
+        iterations_per_attention_period = 20;
+        iterations_before_deprioritize = 2 * iterations_per_attention_period; % if n iters are evaluated with no updated to workspace, sandbag
           
         running_params_per_agent = running_params;
         running_params_per_agent.use_monte = false;
         
-        [ ~, ~, ~, state_prototype ] = situate.run( im_fname, running_params_per_agent, learned_models, [], 1 );
+        temp_params = running_params_per_agent;
+        temp_params.agent_pool_initialization_function = @situate.agent.pool_initialize_default;
+        [ ~, ~, ~, state_prototype ] = situate.run( im_fname, temp_params, learned_models, [], 1 );
         empty_workspace = situate.workspace_initialize(running_params_per_agent, im_size );
         state_prototype.workspace = empty_workspace;
-            
-        use_rcnn_like_priming = true;
-        if use_rcnn_like_priming
-            % initial search
-            box_area_ratios = [1/4 1/16];
-            box_aspect_ratios = [3/2 2/3];
-            box_overlap_ratio = .25;
-            show_viz = false;
-            show_progress = false;
-            use_non_max_suppression = true;
-            num_box_adjust_iterations = 2;
-            [boxes_r0rfc0cf_return, class_assignments_return, confidences_return, cnn_features_return, total_cnn_calls] = rcnn_homebrew( im, box_area_ratios, box_aspect_ratios, box_overlap_ratio,  learned_models.classifier_model, learned_models.adjustment_model, use_non_max_suppression, num_box_adjust_iterations, show_viz, show_progress );
-            
-            % keep a small supset
-            rows_keep = false(1,numel(confidences_return));
-            max_init_objs_per_type = 3;
-            init_score_cutoff = .25;
-            for oi = 1:num_objs
-                cur_obj_scores = sort(confidences_return(class_assignments_return == oi),'descend');
-                if sum(cur_obj_scores>init_score_cutoff) > max_init_objs_per_type
-                    score_cutoff = cur_obj_scores(max_init_objs_per_type);
-                elseif sum(cur_obj_scores>init_score_cutoff) == 0
-                    score_cutoff = cur_obj_scores(1);
-                    % keep one of each object type, even if it's under score
-                else
-                    score_cutoff = init_score_cutoff;
-                end
-                rows_keep( class_assignments_return == oi & confidences_return >= score_cutoff ) = true;
-            end
-            rows_remove = setsub(1:size(boxes_r0rfc0cf_return,1),find(rows_keep));
-            boxes_r0rfc0cf_return(rows_remove,:) = [];
-            class_assignments_return(rows_remove) = [];
-            cur_iter_count = cur_iter_count + total_cnn_calls;
-            confidences_return(rows_remove) = [];
+           
+        % initialize the agent pool using the method specified in the running parameters
+        min_boxes_per_obj_type = 3;
+        [primed_agent_pool, cur_iter_count] = running_params.agent_pool_initialization_function( running_params, im, im_fname, learned_models, min_boxes_per_obj_type );
+        inds_remove = cellfun(@isempty,{primed_agent_pool.interest});
+        primed_agent_pool(inds_remove) = [];
+        
+        temp_boxes_r0rfc0cf = arrayfun( @(x) x.r0rfc0cf, [primed_agent_pool.box], 'UniformOutput',false );
+        boxes_r0rfc0cf_return = vertcat(temp_boxes_r0rfc0cf{:});
+        class_assignments_return = cellfun( @(x) find(strcmp(x,situation_objects)), {primed_agent_pool.interest} );
+        % cur_iter_count = cur_iter_count + total_cnn_calls;
+        confidences_return = arrayfun( @(x) x.internal, [primed_agent_pool.support]);
 
-            % see what came out
-            visualize = false;
-            if visualize
-                figure
-                for oi = 1:num_objs
-                    subplot(1,num_objs,oi);
-                    imshow(im); hold on;
-                    cur_rows = find(class_assignments_return==oi);
-                    for bi = 1:numel(cur_rows)
-                        ci = cur_rows(bi);
-                        draw_box( boxes_r0rfc0cf_return(ci,:),'r0rfc0cf','linewidth',2 );
-                        text( boxes_r0rfc0cf_return(ci,3), boxes_r0rfc0cf_return(ci,1), num2str( confidences_return(ci) ) );
-                    end
+        % visualize initial objects
+        visualize = false;
+        if visualize
+            figure
+            for oi = 1:num_objs
+                subplot(1,num_objs,oi);
+                imshow(im); hold on;
+                cur_rows = find(class_assignments_return==oi);
+                for bi = 1:numel(cur_rows)
+                    ci = cur_rows(bi);
+                    draw_box( boxes_r0rfc0cf_return(ci,:),'r0rfc0cf','linewidth',2 );
+                    text( boxes_r0rfc0cf_return(ci,3), boxes_r0rfc0cf_return(ci,1), num2str( confidences_return(ci) ) );
                 end
             end
+        end
+
+        % prime workspaces and agent pools
+        %   put each found object into its own context, then fill the agent pool with each
+        %   instance of other objects
+        state_pool = repmat(state_prototype,1,size(boxes_r0rfc0cf_return,1));
+        for si = 1:size(boxes_r0rfc0cf_return,1)
+            state_pool(si).agent_pool(1).box.r0rfc0cf = boxes_r0rfc0cf_return(si,:);
             
-            % put each found object into its own context, then fill the agent pool with each
-            % instance of other objects
-            state_pool = repmat(state_prototype,1,size(boxes_r0rfc0cf_return,1));
-            for si = 1:size(boxes_r0rfc0cf_return,1)
-                state_pool(si).agent_pool(1).box.r0rfc0cf = boxes_r0rfc0cf_return(si,:);
-                % first agent pool entry into the first state is a bounding box from the initial search
-                state_pool(si).agent_pool(1).interest = [];
-                % clear the rest of the agent pool so we know the current addition is evaluated
-                state_pool(si).agent_pool(2:end) = [];
-                % eval to see if it goes into the workspace (it should if we set the threshold
-                % reasonably)
-                [ ~, ~, ~, state_pool(si) ] = situate.run( im_fname, running_params_per_agent, learned_models, state_pool(si), 1 );
-                % now the cur state pool should have a workspace (maybe not)
-                other_obj_init_rows = find(class_assignments_return ~= class_assignments_return(si))';
-                % now fill the pool up with the other detected objects
-                state_pool(si).agent_pool = repmat(state_prototype.agent_pool(1),1,numel(other_obj_init_rows));
-                for bi = 1:numel(other_obj_init_rows)
-                    state_pool(si).agent_pool(bi).box.r0rfc0cf = boxes_r0rfc0cf_return( other_obj_init_rows(bi),: );
-                end
+            % first agent pool entry into the first state is a bounding box from the initial search
+            state_pool(si).agent_pool(1).interest = [];
+            
+            % clear the rest of the agent pool so we know the current addition is evaluated
+            state_pool(si).agent_pool(2:end) = [];
+            
+            % eval to see if it goes into the workspace (it should if we set the threshold reasonably)
+            [ ~, ~, ~, state_pool(si) ] = situate.run( im_fname, running_params_per_agent, learned_models, state_pool(si), 1 );
+            cur_iter_count = cur_iter_count + 1;
+            
+            % now the cur state pool should have a workspace (maybe not)
+            other_obj_init_rows = find(class_assignments_return ~= class_assignments_return(si))';
+            
+            % now fill the pool up with detected objects of other types
+            state_pool(si).agent_pool = repmat(state_prototype.agent_pool(1),1,numel(other_obj_init_rows));
+            for bi = 1:numel(other_obj_init_rows)
+                state_pool(si).agent_pool(bi).box.r0rfc0cf = boxes_r0rfc0cf_return( other_obj_init_rows(bi),: );
+                state_pool(si).agent_pool(bi).interest = situation_objects{class_assignments_return(other_obj_init_rows(bi))};
+                state_pool(si).agent_pool(bi).support.internal = confidences_return(other_obj_init_rows(bi));
             end
-                   
+            if isempty( state_pool(si).agent_pool), state_pool(si).agent_pool = situate.agent.initialize(); end
+        end
+
+        % remove states with empty workspaces
+        empty_workspace_inds = arrayfun( @(x) isempty(x.labels), [state_pool.workspace]);
+        if ~all(empty_workspace_inds) && ~isempty(state_pool)
+            state_pool(empty_workspace_inds) = [];
         else
-            state_pool = repmat(state_prototype,1,4);
+            state_pool(2:end) = [];
         end
         
-        temp = [state_pool.workspace];
-        state_support = [temp.situation_support];
+        % initialize the sampling table
+        state_support = arrayfun( @(x) x.situation_support, [state_pool.workspace] );
         sampling_table = state_support;
         
         
@@ -116,6 +108,7 @@ function [ workspace, records, all_workspaces ] = run_monte( im_fname, running_p
             if numel(state_out.workspace.labels) ~= numel(state_pool(si).workspace.labels)
                 % if a new object was added, branch and put the node on ice
                 state_pool(end+1)     = state_out;
+                state_pool(end).iterations_since_last_update = 0;
                 state_support(end+1)  = state_out.workspace.situation_support;
                 sampling_table(end+1) = state_out.workspace.situation_support; 
                 sampling_table(si)    = 0;
@@ -137,7 +130,7 @@ function [ workspace, records, all_workspaces ] = run_monte( im_fname, running_p
             % pool management
             empty_workspace_inds = arrayfun( @(x) isempty( x.labels ), [state_pool.workspace] );
 
-            % short circuit
+            % short circuit for all empty workspaces
             if all(empty_workspace_inds)
                 records = state_pool(1).records;
                 workspace = state_pool(1).workspace;
@@ -161,10 +154,18 @@ function [ workspace, records, all_workspaces ] = run_monte( im_fname, running_p
                 sampling_table(dup_inds) = [];
             end
 
-            % if everyone is in cold storage, wake them all up
+            % if everyone is in cold storage, wake them all up? or just short circuit?
             if all( sampling_table == 0 )
-                % give them attention back
-                sampling_table = state_support;
+%                 % give them attention back
+%                 sampling_table = state_support;
+                
+                % or short circuit?
+                workspace = state_pool(argmax(state_support)).workspace;
+                workspace.total_iterations = cur_iter_count;
+                records = state_pool(argmax(state_support)).records;
+                all_workspaces = [state_pool.workspace];
+                return;
+
             end
 
         end
@@ -179,6 +180,7 @@ function [ workspace, records, all_workspaces ] = run_monte( im_fname, running_p
         end
         
         workspace = state_pool(argmax(state_support)).workspace;
+        workspace.total_iterations = cur_iter_count;
         records = state_pool(argmax(state_support)).records;
         all_workspaces = [state_pool.workspace];
         

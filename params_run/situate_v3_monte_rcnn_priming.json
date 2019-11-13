@@ -2,7 +2,7 @@
 	
 	"situate_parameterization":{
 
-		"description" : "v2, updated support, initial covering",
+		"description" : "v3 monte (parallel competitive search), rcnn primed",
 
 		// situation model
 		"situation_model" : {
@@ -11,14 +11,14 @@
 			"update" : "situation_models.normal_condition",
 			"sample" : "situation_models.normal_sample",
 			"draw"   : "situation_models.normal_draw"
-		},	
+		},
 
 		// pipeline options
 		"use_direct_scout_to_workspace_pipeline" : "true",
-		"maximum_iterations" : 300,
+		"maximum_iterations" : 500,
+		"use_monte": true,
 		"stopping_condition" : "situate.stopping_condition_null",
-		//"stopping_condition" : "situate.stopping_condition_situation_found", 
-		"min_number_of_scouts" : 10,
+		"min_number_of_scouts" : 1,
 		"agent_urgency_defaults" : {
 			"scout"    : 1,
 			"reviewer" : 5,
@@ -33,11 +33,8 @@
 		},
 		
 		// support functions
-		//"support_function_external" : "support_functions_external.expcdf_fit",
-		//"support_function_external" : "support_functions_external.beta_cdf",
-		"support_function_external" : "support_functions_external.p_x_bx",
-		//"support_function_total"    : "support_functions_total.AUROC_based",
-		"support_function_total"    : "support_functions_total.logistic_fit_over_50",
+		"support_function_external" : "support_functions_external.expcdf_fit",
+		"support_function_total"    : "support_functions_total.AUROC_based",
 		"support_function_full_situation" : "support_functions_situation.geometric_mean_padded",
 
 		// support thresholds
@@ -45,11 +42,11 @@
 			"internal_support"          : ".2",
 			"internal_support_retain"   : "inf",
 			"total_support_provisional" : "inf",
-			"total_support_final"       : ".2"
+			"total_support_final"       : ".5"
 		},
 
 		// agent pool initialization function
-		"agent_pool_initialization_function" : "situate.agent.pool_initialize_covering",
+		"agent_pool_initialization_function" : "situate.agent.pool_initialize_rcnn",
 
 		// agent pool adjustment rules
 		"agent_pool_adjustment_rule" : "@(x) x;",

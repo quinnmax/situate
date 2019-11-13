@@ -34,7 +34,6 @@ function [ workspace, records, visualizer_return_status, state, alternative_work
     
         % initialize agent pool
         state.agent_pool = running_params.agent_pool_initialization_function( running_params, state.im, im_fname, learned_models );
-        assert(size(state.agent_pool,1)==1);
         
         % initialize record keeping 
         state.records = situate.records_initialize(running_params,state.agent_pool);
@@ -88,7 +87,6 @@ function [ workspace, records, visualizer_return_status, state, alternative_work
             agent_index = sample_1d( [state.agent_pool.urgency], 1 );
             
             workspace_snapshot = state.workspace;
-            assert(size(state.agent_pool,1)==1);
             [state.agent_pool,state.dist_structs,state.workspace] = situate.agent.evaluate( state.agent_pool, agent_index, state.im, state.label, state.dist_structs, running_params, state.workspace, learned_models );
             current_agent_snapshot = state.agent_pool(agent_index);
         

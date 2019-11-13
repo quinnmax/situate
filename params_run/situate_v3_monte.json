@@ -2,7 +2,7 @@
 	
 	"situate_parameterization":{
 
-		"description" : "v3 monte (parallel competitive search)",
+		"description" : "v3 monte (parallel competitive search), covering primed",
 
 		// situation model
 		"situation_model" : {
@@ -18,7 +18,7 @@
 		"maximum_iterations" : 500,
 		"use_monte": true,
 		"stopping_condition" : "situate.stopping_condition_null",
-		"min_number_of_scouts" : 10,
+		"min_number_of_scouts" : 1,
 		"agent_urgency_defaults" : {
 			"scout"    : 1,
 			"reviewer" : 5,
@@ -46,7 +46,7 @@
 		},
 
 		// agent pool initialization function
-		"agent_pool_initialization_function" : "situate.agent.pool_initialize_default",
+		"agent_pool_initialization_function" : "situate.agent.pool_initialize_covering_rcnn_like",
 
 		// agent pool adjustment rules
 		"agent_pool_adjustment_rule" : "@(x) x;",

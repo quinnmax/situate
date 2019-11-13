@@ -1,4 +1,4 @@
-function primed_agent_pool = pool_initialize_rcnn( situation_struct, im, im_fname, ~, varargin )
+function [primed_agent_pool,total_cnn_calls] = pool_initialize_rcnn( situation_struct, im, im_fname, ~, varargin )
 
 % primed_agent_pool = pool_initialize_rcnn( situation_struct, im, im_fname, learned_models, [num_rcnn_agents_per_obj], [num_non_rcnn_agents] );
 %
@@ -11,19 +11,19 @@ function primed_agent_pool = pool_initialize_rcnn( situation_struct, im, im_fnam
 %   external box data/rcnn boxes/[situation desc]/[object desc]/[image name].csv
 %
 
-
+    total_cnn_calls = 0;
 
     % process inputs
     if length(varargin) >= 1
-        num_rcnn_agents_per_obj = varargin{1};
+        min_num_rcnn_agents_per_obj = varargin{1};
     else
-        num_rcnn_agents_per_obj = 10;
+        min_num_rcnn_agents_per_obj = 3;
     end
     
     if length(varargin) >= 2
         num_non_rcnn_agents = varargin{2};
     else
-        num_non_rcnn_agents = 30; % total in initial pool
+        num_non_rcnn_agents = 0; % total in initial pool
     end
     
     
@@ -39,11 +39,23 @@ function primed_agent_pool = pool_initialize_rcnn( situation_struct, im, im_fnam
         assert( isfile(csv_fname) );
         csv_data_columns = {'x','y','w','h','confidence','gt iou initial'}; % note to self
         conf_column = find( strcmp( csv_data_columns, 'confidence' ) );
-        temp = importdata( csv_fname );
-        temp = sortrows( temp, -conf_column );
-        num_boxes = min( num_rcnn_agents_per_obj, size(temp,1));
-        csv_data{oi} = temp(1:num_boxes,:);
+        cur_csv_data = importdata( csv_fname );
+        
+        % do non-max supression
+        rows_supress = non_max_supression( cur_csv_data(:,1:4), cur_csv_data(:,conf_column), .5, 'xywh' );
+        cur_csv_data(rows_supress,:) = [];
+        
+        rows_keep = cur_csv_data(conf_column) > .5;
+        if sum(rows_keep) < min_num_rcnn_agents_per_obj
+            rows_keep = 1:min_num_rcnn_agents_per_obj;
+        end
+        cur_csv_data = cur_csv_data(rows_keep,:);
+        
+        cur_csv_data = sortrows( cur_csv_data, -conf_column );
+        num_boxes = min( min_num_rcnn_agents_per_obj, size(cur_csv_data,1));
+        csv_data{oi} = cur_csv_data(1:num_boxes,:);
     end
+    
   
     % consider resizing
     im_info = imfinfo(im_fname);
@@ -65,6 +77,11 @@ function primed_agent_pool = pool_initialize_rcnn( situation_struct, im, im_fnam
         end
         hold off;
     end
+    
+    
+    
+    
+    
     
     % turn boxes into an actual primed agent pool
     num_rcnn_primed_agents = sum( cellfun( @(x) size( x, 1 ), csv_data ) );
@@ -127,6 +144,8 @@ function primed_agent_pool = pool_initialize_rcnn( situation_struct, im, im_fnam
     end
     
     primed_agent_pool( agents_remove ) = [];
+    
+    
     
 end
 

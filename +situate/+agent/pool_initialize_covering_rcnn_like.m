@@ -1,5 +1,5 @@
-function agent_pool = pool_initialize_covering_rcnn_like( p, im, ~, learned_models, varargin )
-% primed_agent_pool = situate.agent.pool_initialize_covering_rcnn_like( p, im, im_fname, learned_models, [max_boxes_per_obj_type], [additional_unassigned_agents] );
+function [agent_pool,total_cnn_calls] = pool_initialize_covering_rcnn_like( p, im, ~, learned_models, varargin )
+% [primed_agent_pool,total_cnn_calls] = situate.agent.pool_initialize_covering_rcnn_like( p, im, im_fname, learned_models, [max_boxes_per_obj_type], [additional_unassigned_agents] );
 
     % process inputs
     max_boxes_per_obj_type = [];
@@ -13,13 +13,10 @@ function agent_pool = pool_initialize_covering_rcnn_like( p, im, ~, learned_mode
         num_unassigned_agents = varargin{2};
     end
         
-
-    
     % define anchor points for rcnn
     box_area_ratios   = [ 1/4 1/16 ];
     box_aspect_ratios = [ 3/2 2/3 ];
-    box_overlap_ratio = .5;
-    % situation_struct  = p;
+    box_overlap_ratio = .25;
     
     switch learned_models.adjustment_model.model_description
         case 'box_adjust_two_tone'
@@ -35,14 +32,14 @@ function agent_pool = pool_initialize_covering_rcnn_like( p, im, ~, learned_mode
     
     use_non_max_suppression = true;
     show_viz = false;
-    if p.use_parallel, show_progress = false; else show_progress = true; end
+    num_box_adjust_iterations = 2;
+    show_progress = false;
     
-    [primed_boxes_r0rfc0cf, class_assignments, confidences] = rcnn_homebrew( ...
-            im, box_area_ratios, box_aspect_ratios, box_overlap_ratio, learned_models.classifier_model, temp_adjust_model, ...
-            use_non_max_suppression, show_viz, show_progress );
+    [primed_boxes_r0rfc0cf, class_assignments, confidences, ~, total_cnn_calls] = rcnn_homebrew( ...
+            im, box_area_ratios, box_aspect_ratios, box_overlap_ratio, ...
+            learned_models.classifier_model, temp_adjust_model, ...
+            use_non_max_suppression, num_box_adjust_iterations, show_viz, show_progress );
     
-        
-        
         
     if any(isnan(primed_boxes_r0rfc0cf(:)))
         error('nan boxes');
@@ -99,8 +96,6 @@ function agent_pool = pool_initialize_covering_rcnn_like( p, im, ~, learned_mode
     temp = vertcat(temp.r0rfc0cf);
     assert( all( temp(:,2) > temp(:,1) ) );
     assert( all( temp(:,4) > temp(:,3) ) );
-    
-    
     
 end
     

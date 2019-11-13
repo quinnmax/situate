@@ -1,4 +1,4 @@
-function agent_pool = pool_initialize_covering( p, im, im_fname, learned_models )
+function [agent_pool,total_cnn_calls] = pool_initialize_covering( p, im, im_fname, learned_models )
 % primed_agent_pool = situate.agent.pool_initialize_covering( p, im, im_fname, learned_models );
 
     %box_area_ratios = [1/16 1/9 1/4];
@@ -9,7 +9,7 @@ function agent_pool = pool_initialize_covering( p, im, im_fname, learned_models 
     box_aspect_ratios = [2/3 3/2];
     overlap_ratio = .5;
     
-    
+    total_cnn_calls = 0;
     
     [primed_boxes_r0rfc0cf, params] = boxes_covering( size(im), box_aspect_ratios, box_area_ratios, overlap_ratio );
 

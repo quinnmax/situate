@@ -1,4 +1,7 @@
 function support = expcdf_fit( x, varargin )
+
+% support = expcdf_fit( x, model_in, object_of_interest_ind );
+% support = expcdf_fit( x );
  
     if numel(varargin) > 0
         model_in = varargin{1};
@@ -27,8 +30,6 @@ function support = expcdf_fit( x, varargin )
         exp_param =   0.0644;
     end
        
-    
-    
     psi = double( log( pbx_nx ) + log(1-p_x) - log( x + .00001 ) - log( p_x ) );
     p_x_bxyby = ( 1 + exp(psi) ).^(-1);
 

@@ -14,7 +14,7 @@
   
 % split into training / testing sets
 
-    experiment_file_fname = 'params_exp_rev/dogwalking_pos_check.json';
+    experiment_file_fname = 'params_exp_rev/dogwalking_pos_v2_updated_support_check.json';
     experiment_struct = jsondecode_file( experiment_file_fname );
     [data_split_struct, fold_inds, experiment_settings_out] = situate.experiment_process_data_splits( experiment_struct.experiment_settings );
 
@@ -43,7 +43,9 @@
     d = load( existing_features_fname );
   
     
-%% get rows for training classifier
+%% get training rows, train (or load) classifiers, eval on validation crops
+
+% get rows for training classifier
 
     % get indices for:
     %   training images
@@ -168,6 +170,7 @@
     
     % AUC_test is .9988, so basically still perfect. thumbs up, good job. we made a good human/not
     % human classifier for this data set
+    
     
 %% visualize classifier output over an image
 do_this = true;

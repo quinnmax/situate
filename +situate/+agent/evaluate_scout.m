@@ -1,7 +1,6 @@
 
 function [agent_pool,d] = evaluate_scout( agent_pool, agent_index, p, d, im, label_struct, learned_models ) 
-% function [agents_out, updated_distribution_structure ] = agents.evaluate_scout( agent_pool,
-% agent_index, param_struct, dist_struct, image, label_file, learned_models );
+% [agents_out, updated_distribution_structure,updated_agent ] = agents.evaluate_scout( agent_pool, agent_index, param_struct, dist_struct, image, label_file, learned_models );
 %
 % a few different behaviors depending on what the scout has coming in.
 %
@@ -76,8 +75,8 @@ function [agent_pool,d] = evaluate_scout( agent_pool, agent_index, p, d, im, lab
          cur_agent.box.area_ratio] = box_fix( sampled_box_r0rfc0cf, 'r0rfc0cf', [size(im,1) size(im,2)] );
     end
     
-    % density evaluation happens here so any changes to the box are take into account
-    if update_density
+    % density evaluation happens here so any changes to the box are taken into account
+    if update_density && ~isempty( d )
         di = find(strcmp({d.interest},cur_agent.interest));
         [~, cur_agent.support.sample_densities]       = p.situation_model.sample( d(di).distribution,  d(di).interest, 1, [size(im,1), size(im,2)], cur_agent.box.r0rfc0cf ); 
         [~, cur_agent.support.sample_densities_prior] = p.situation_model.sample( d(end).distribution, d(di).interest, 1, [size(im,1), size(im,2)], cur_agent.box.r0rfc0cf ); 
@@ -165,7 +164,5 @@ function [agent_pool,d] = evaluate_scout( agent_pool, agent_index, p, d, im, lab
             agent_pool(end).type = 'reviewer';
             agent_pool(end).urgency = p.agent_urgency_defaults.reviewer;
         end
-   
-        
-        
+    
 end

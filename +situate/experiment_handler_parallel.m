@@ -112,24 +112,24 @@ function experiment_handler_parallel( experiment_struct, situation_struct, situa
                 cur_fname_im = fnames_im_test{cur_image_ind};
 
                 tic;
-                [ ~, run_data_cur ] = situate.run( cur_fname_im, cur_parameterization, learned_models );
+                [ workspace_final, run_data_cur ] = situate.run( cur_fname_im, cur_parameterization, learned_models );
 
                 % try to reconcile workspace with GT boxes
                 cur_fname_lb = [fileparts_mq(cur_fname_im,'path/name') '.json'];
                 if exist(cur_fname_lb,'file')
-                    reconciled_workspace = situate.workspace_score(run_data_cur.workspace_final, cur_fname_lb, cur_parameterization );
+                    reconciled_workspace = situate.workspace_score(workspace_final, cur_fname_lb, cur_parameterization );
                 else
-                    reconciled_workspace = run_data_cur.workspace_final;
+                    reconciled_workspace = workspace_final;
                 end
-                labels_missed = setdiff(cur_parameterization.situation_objects,run_data_cur.workspace_final.labels);
-                labels_temp = [run_data_cur.workspace_final.labels labels_missed];
+                labels_missed = setdiff(cur_parameterization.situation_objects,reconciled_workspace.labels);
+                labels_temp = [reconciled_workspace.labels labels_missed];
                 GT_IOUs = [reconciled_workspace.GT_IOU nan(1,length(labels_missed))];
                 [~,sort_order_2] = sort( labels_temp );
                 [~,sort_order_1] = sort( cur_parameterization.situation_objects);
                 IOUs_of_last_run = sprintf(repmat('%1.4f         ',1,length(GT_IOUs)),GT_IOUs(sort_order_2(sort_order_1)));
                 
                 % display update to console
-                num_iterations_run = sum(~eq(0,[run_data_cur.agent_record.interest]));
+                num_iterations_run = reconciled_workspace.total_iterations;
                 fprintf('%-28s %3d /%4d        %4d      %6.2f       IOUs: [ %s] \n', ...
                     cur_parameterization.description, ...
                     cur_image_ind, ...
@@ -139,7 +139,7 @@ function experiment_handler_parallel( experiment_struct, situation_struct, situa
                     IOUs_of_last_run );
                 
                 % store results
-                workspaces_final{cur_image_ind} = run_data_cur.workspace_final;
+                workspaces_final{cur_image_ind} = reconciled_workspace;
                 agent_records{cur_image_ind}    = run_data_cur.agent_record;
 
             end
