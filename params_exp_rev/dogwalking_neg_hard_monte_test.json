@@ -2,7 +2,7 @@
 	"situation_definition_fname" : "situation_definitions/dogwalking.json",
 			
 	"situate_parameterizations_fnames" : [
-			"params_run/situate_v3_monte_500.json"
+			"params_run/situate_v3_monte.json"
 			//"params_run/normal_model.json"
 			//"params_run/homebrew_rcnn_priming.json"
 			//"params_run/faster_rcnn_priming.json"

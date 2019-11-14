@@ -2,7 +2,7 @@
 	
 	"situate_parameterization":{ 
 
-		"description" : "v1 control (SVM, no conditioning, all internal support)", 
+		"description" : "v0 control (SVM, no conditioning, all internal support)", 
 
 		// situation model 
 		"situation_model" : { 

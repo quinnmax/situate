@@ -1,6 +1,8 @@
 
 function [agent_pool, d, workspace, object_was_added] = evaluate( agent_pool, agent_index, im, label, d, p, workspace, learned_models )
 
+% [agent_pool, d, workspace, object_was_added] = evaluate( agent_pool, agent_index, im, label, d, p, workspace, learned_models )
+
     object_was_added = false;
 
     switch( agent_pool(agent_index).type )

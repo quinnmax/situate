@@ -107,7 +107,7 @@ function experiment_handler_parallel( experiment_struct, situation_struct, situa
             else
                 im_ind_start = 1;
             end
-            
+          
             inds_per_save = 200;
             ind_range_0s = im_ind_start:inds_per_save:experiment_struct.experiment_settings.max_testing_images;
             ind_range_fs = min( (ind_range_0s-1)+inds_per_save, experiment_struct.experiment_settings.max_testing_images);
@@ -152,6 +152,7 @@ function experiment_handler_parallel( experiment_struct, situation_struct, situa
                     agent_records{cur_image_ind}    = run_data_cur.agent_record;
 
                 end
+
 
                 % save off results, each condition and fold pair gets a file
 

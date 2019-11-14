@@ -109,7 +109,10 @@ linewidth_val = 1;
             cur_condition.description    = [];
             cur_condition.use_visualizer = [];
             cur_condition.use_parallel   = [];
-
+            
+            warning('ignoring diff in number of initial scouts');
+            cur_condition.num_scouts     = [];
+            
             cur_condition_assignment = find( cellfun( @(x) isequal_struct( cur_condition, x ), condition_structs_unique ) );
             if isempty(cur_condition_assignment)
                 condition_structs_unique{end+1}  = cur_condition;
@@ -188,7 +191,7 @@ linewidth_val = 1;
 
 
 
-    %% data work 
+    %% reconcile with ground truth, score workspaces
 
         % get fnames
             im_fnames = cell(1,num_conditions);
@@ -299,112 +302,112 @@ linewidth_val = 1;
 
 
 %% what did they think they'd found?
-
-figure;
-for ci = 1:num_conditions
-for oi = 1:num_situation_objects
-    
-    subplot2(num_situation_objects,num_conditions,oi,ci);
-    temp = final_support_internal{ci}(:,oi);
-    temp(isnan(temp)) = 0;
-    hist( temp, 10 );
-    xlim([0,1.25]);
-    % ylim([0 32]);
-    
-    if oi == 1
-        title(descriptions{ci});
-    end
-    if ci == 1
-        ylabel(situation_objects{oi})
-    end
-    
-    xlabel('final internal support');
-    
-end
-end
-
-
-figure;
-for ci = 1:num_conditions
-for oi = 1:num_situation_objects
-    
-    subplot2(num_situation_objects,num_conditions,oi,ci);
-    temp = final_ious{ci}(:,oi);
-    temp(isnan(temp)) = 0;
-    hist( temp, 10 );
-    xlim([0,1.25]);
-    % ylim([0 32]);
-    
-    if oi == 1
-        title(descriptions{ci});
-    end
-    if ci == 1
-        ylabel(situation_objects{oi})
-    end
-    
-    xlabel('final gt IOUs');
-    
-end
-end
-
-
-h = figure('color','white');
-for ci = 1
-for oi = 1:num_situation_objects
-    
-    subplot2(2,num_situation_objects,1,oi);
-    
-    temp = final_support_internal{ci}(:,oi);
-    temp(isnan(temp)) = 0;
-    hist( temp, 10 );
-    xlim([0,1.25]);
-    xlabel('final internal support');
-    if oi == 1, ylabel('data frequency'); end
-    
-    title(situation_objects{oi});
-    
-    subplot2(2,num_situation_objects,2,oi);
-    
-    temp = final_ious{ci}(:,oi);
-    temp(isnan(temp)) = 0;
-    hist( temp, 10 );
-    xlim([0,1.25]);
-    xlabel('final gt IOU');
-    if oi == 1, ylabel('data frequency'); end
-    
-    
-    
-end
-end
-
-
-figure;
-for ci = 1:num_conditions
-for oi = 1:num_situation_objects
-    
-    subplot2(num_situation_objects,num_conditions,oi,ci);
-    temp = final_support_internal{ci}(:,oi);
-    temp(isnan(temp)) = 0;
-    
-    plot( temp, final_ious{ci}(:,oi),'.');
-    xlim([-.1 1.25])
-    ylim([-.1 1.25]);
-    
-    if oi == 1
-        title(descriptions{ci});
-    end
-    if ci == 1
-        ylabel({situation_objects{oi}, 'gt iou'})
-    else
-        ylabel('gt iou');
-    end
-    xlabel('est iou');
-end
-end
+% 
+% figure;
+% for ci = 1:num_conditions
+% for oi = 1:num_situation_objects
+%     
+%     subplot2(num_situation_objects,num_conditions,oi,ci);
+%     temp = final_support_internal{ci}(:,oi);
+%     temp(isnan(temp)) = 0;
+%     hist( temp, 10 );
+%     xlim([0,1.25]);
+%     % ylim([0 32]);
+%     
+%     if oi == 1
+%         title(descriptions{ci});
+%     end
+%     if ci == 1
+%         ylabel(situation_objects{oi})
+%     end
+%     
+%     xlabel('final internal support');
+%     
+% end
+% end
+% 
+% 
+% figure;
+% for ci = 1:num_conditions
+% for oi = 1:num_situation_objects
+%     
+%     subplot2(num_situation_objects,num_conditions,oi,ci);
+%     temp = final_ious{ci}(:,oi);
+%     temp(isnan(temp)) = 0;
+%     hist( temp, 10 );
+%     xlim([0,1.25]);
+%     % ylim([0 32]);
+%     
+%     if oi == 1
+%         title(descriptions{ci});
+%     end
+%     if ci == 1
+%         ylabel(situation_objects{oi})
+%     end
+%     
+%     xlabel('final gt IOUs');
+%     
+% end
+% end
+% 
+% 
+% h = figure('color','white');
+% for ci = 1
+% for oi = 1:num_situation_objects
+%     
+%     subplot2(2,num_situation_objects,1,oi);
+%     
+%     temp = final_support_internal{ci}(:,oi);
+%     temp(isnan(temp)) = 0;
+%     hist( temp, 10 );
+%     xlim([0,1.25]);
+%     xlabel('final internal support');
+%     if oi == 1, ylabel('data frequency'); end
+%     
+%     title(situation_objects{oi});
+%     
+%     subplot2(2,num_situation_objects,2,oi);
+%     
+%     temp = final_ious{ci}(:,oi);
+%     temp(isnan(temp)) = 0;
+%     hist( temp, 10 );
+%     xlim([0,1.25]);
+%     xlabel('final gt IOU');
+%     if oi == 1, ylabel('data frequency'); end
+%     
+%     
+%     
+% end
+% end
+% 
+% 
+% figure;
+% for ci = 1:num_conditions
+% for oi = 1:num_situation_objects
+%     
+%     subplot2(num_situation_objects,num_conditions,oi,ci);
+%     temp = final_support_internal{ci}(:,oi);
+%     temp(isnan(temp)) = 0;
+%     
+%     plot( temp, final_ious{ci}(:,oi),'.');
+%     xlim([-.1 1.25])
+%     ylim([-.1 1.25]);
+%     
+%     if oi == 1
+%         title(descriptions{ci});
+%     end
+%     if ci == 1
+%         ylabel({situation_objects{oi}, 'gt iou'})
+%     else
+%         ylabel('gt iou');
+%     end
+%     xlabel('est iou');
+% end
+% end
 
             
 
-    %% load additional results from external folder 
+    %% load results from external methods (greedy rcnn boxes)
 
         if ~isempty( additional_results_directory )
 
@@ -412,20 +415,21 @@ end
             
             if exist( fullfile( additional_results_directory, 'processed_box_data.mat'), 'file' )
 
+                % see if existing workspaces have already been generated
                 data_fname = situate.check_for_existing_model(additional_results_directory, ...
                     'im_fnames',im_fnames, @(a,b) isempty(setxor(fileparts_mq(a,'name.ext'),fileparts_mq(b,'name.ext'))) );
                 
                 if ~isempty(data_fname)
                     
                     additional_results = load( data_fname );
-                    display([ 'loaded addtional results from : ' data_fname ]);
                     need_to_make_workspaces_from_external_boxes = false;
+                    display([ 'loaded addtional results from : ' data_fname ]);
                     
-                    % sort the data in the additional results so they are consistent with the
-                    % ordering we have now
-                    [~,order_a]     = sort(im_fnames);
-                    [~,order_a_inv] = sort(order_a);
-                    [~,order_b]     = sort(additional_results.im_fnames);
+                    % sort the data in the additional results so they are consistent with the image
+                    % ordering of the situate workspaces
+                    order_a     = sortorder(im_fnames);
+                    order_a_inv = sortorder(order_a);
+                    order_b     = sortorder(additional_results.im_fnames);
                     
                     additional_results.im_fnames = additional_results.im_fnames(order_b( order_a_inv ));
                     additional_results.lb_fnames = additional_results.lb_fnames(order_b( order_a_inv ));
@@ -434,7 +438,7 @@ end
                 end
                 
             end
-                    
+               
             if need_to_make_workspaces_from_external_boxes
 
                 additional_results = [];
@@ -442,27 +446,56 @@ end
                 additional_results.lb_fnames = lb_fnames;
                 additional_results.situation_struct = situation_struct;
                 
+                failed_to_find = true(1,numel(additional_results.im_fnames));
+                
                 for imi = 1:num_images
-
                     im_fname = im_fnames{imi};
-                    additional_results.workspaces_final(imi) = csvs2workspace( additional_results_directory, im_fname, situation_struct  );
-
-                    additional_results.workspaces_final(imi) = ...
-                        situate.workspace_score( ...
-                            additional_results.workspaces_final(imi), ...
-                            additional_results.lb_fnames{imi}, ...
-                            additional_results.situation_struct );
-
-                    additional_results.workspaces_final(imi).iteration = 0;
+                    temp = csvs2workspace( additional_results_directory, im_fname, situation_struct  );
+                    if ~isempty(temp)
+                        failed_to_find(imi) = false;
+                        additional_results.workspaces_final(imi) = temp;
+                        additional_results.workspaces_final(imi) = ...
+                            situate.workspace_score( ...
+                                additional_results.workspaces_final(imi), ...
+                                additional_results.lb_fnames{imi}, ...
+                                additional_results.situation_struct );
+                        additional_results.workspaces_final(imi).iteration = 0;
+                    end
 
                     progress(imi,num_images,['processing boxes loaded from ' additional_results_directory]);
 
                 end
-
+                
                 save( fullfile( additional_results_directory, 'processed_box_data.mat'), '-struct', 'additional_results' );
                 
             end
+            
+            % this happens if there's a mismatch between fnames?
+            failed_to_find = arrayfun( @(x) numel(x.im_size)==0, additional_results.workspaces_final );
 
+            if any(failed_to_find)
+                warning('some images mismatched between rcnn source and situate. removing mismatches from all conditions');
+                additional_results.im_fnames(failed_to_find) = [];
+                additional_results.lb_fnames(failed_to_find) = [];
+                additional_results.workspaces_final(failed_to_find) = [];
+                
+                for ci = 1:num_conditions
+                    final_ious{ci}(failed_to_find,:) = [];
+                    final_support_internal{ci}(failed_to_find,:) = [];
+                    final_support_external{ci}(failed_to_find,:) = [];
+                    final_support_total{ci}(failed_to_find,:) = [];
+                    final_support_full_situation{ci}(failed_to_find,:) = [];
+                    workspaces_final{ci}(failed_to_find) = [];
+                end
+                
+                is_situation_instance(failed_to_find) = [];
+                
+                num_images = numel(workspaces_final{1});
+            end
+            
+            
+            
+            
             num_conditions = num_conditions + 1;
 
             final_ious{num_conditions}                   = vertcat(additional_results.workspaces_final.GT_IOU);

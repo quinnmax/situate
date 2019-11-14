@@ -115,19 +115,21 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
 
                 tic;
                 
-                [ ~, run_data_cur, visualizer_status_string, ~, alternative_workspaces ] = situate.run( cur_fname_im, cur_parameterization, learned_models );
+                [ workspace_final, run_data_cur, visualizer_status_string, ~, alternative_workspaces ] = situate.run( cur_fname_im, cur_parameterization, learned_models );
+                
+                
                 
                 if ~experiment_struct.experiment_settings.viz_options.use_visualizer 
                 
                     % try to reconcile workspace with GT boxes
                     cur_fname_lb = [fileparts_mq(cur_fname_im,'path/name') '.json'];
                     if exist(cur_fname_lb,'file')
-                        reconciled_workspace = situate.workspace_score(run_data_cur.workspace_final, cur_fname_lb, cur_parameterization );
+                        reconciled_workspace = situate.workspace_score(workspace_final, cur_fname_lb, cur_parameterization );
                     else
-                        reconciled_workspace = run_data_cur.workspace_final;
+                        reconciled_workspace = workspace_final;
                     end
-                    labels_missed = setdiff(cur_parameterization.situation_objects,run_data_cur.workspace_final.labels);
-                    labels_temp = [run_data_cur.workspace_final.labels labels_missed];
+                    labels_missed = setdiff(cur_parameterization.situation_objects,reconciled_workspace.labels);
+                    labels_temp = [reconciled_workspace.labels labels_missed];
                     GT_IOUs = [reconciled_workspace.GT_IOU nan(1,length(labels_missed))];
                     [~,sort_order_2] = sort( labels_temp );
                     [~,sort_order_1] = sort( cur_parameterization.situation_objects);
@@ -136,17 +138,16 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
                     IOUs_of_last_run = sprintf(repmat('%1.4f         ',1,length(GT_IOUs)), GT_IOUs_sorted );
 
                     % display update to console
-                    num_iterations_run = sum(~eq(0,[run_data_cur.agent_record.interest]));
                     fprintf('%-28s %3d /%4d        %4d      %6.2f       IOUs: [ %s] \n', ...
                         cur_parameterization.description, ...
                         cur_image_ind, ...
                         num_images, ...
-                        num_iterations_run, ...
+                        reconciled_workspace.total_iterations, ...
                         toc, ...
                         IOUs_of_last_run );
 
                     % store results
-                    workspaces_final{cur_image_ind} = run_data_cur.workspace_final;
+                    workspaces_final{cur_image_ind} = reconciled_workspace;
                     agent_records{cur_image_ind}    = run_data_cur.agent_record;
                     workspaces_alternatives{cur_image_ind} = alternative_workspaces;
                     

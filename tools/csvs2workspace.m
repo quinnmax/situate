@@ -14,10 +14,18 @@ function [workspace_return, imported_data] = csvs2workspace( csv_directory, im_f
 
     num_objects = length(situation_struct.situation_objects);            
 
-    w = warning('off','all'); % i don't care about the gps info missing
-    im_info = imfinfo(im_fname);
-    warning(w);
-    im_size = [im_info.Height im_info.Width];
+    try
+        w = warning('off','all'); % i don't care about the gps info missing
+        im_info = imfinfo(im_fname);
+        warning(w);
+        im_size = [im_info.Height im_info.Width];
+    catch
+        warning('image missing');
+        display(im_fname);
+        workspace_return = [];
+        imported_data = [];
+        return;
+    end
     
 
     cur_image_boxes_r0rfc0cf = nan( num_objects, 4 ); 
@@ -27,37 +35,28 @@ function [workspace_return, imported_data] = csvs2workspace( csv_directory, im_f
     
     for oi = 1:num_objects
 
+        % load boxes for cur obj
         cur_obj = situation_struct.situation_objects{oi};
-        try
-            cur_csv_name = fullfile( csv_directory, situation_struct.situation_description, cur_obj, [fileparts_mq(im_fname,'name'), '.csv']);
-        catch
-            cur_csv_name = fullfile( csv_directory, situation_struct.desc, cur_obj, [fileparts_mq(im_fname,'name'), '.csv']);
-        end
+        cur_csv_name = fullfile( csv_directory, situation_struct.situation_description, cur_obj, [fileparts_mq(im_fname,'name'), '.csv']);
         assert( isfile( cur_csv_name ) );
-
         % csv_data_columns = {'x','y','w','h','confidence','gt iou maybe'};
-        temp = importdata( cur_csv_name );
-        temp = sortrows(temp,-5);
-        imported_data{oi} = temp;
-
-        ti = 1;
-        [success,proposed_box_r0rfc0cf] = box_fix( temp(ti,1:4), 'xywh', im_size);
+        csv_data = importdata( cur_csv_name );
+        csv_data = sortrows(csv_data,-5);
+        imported_data{oi} = csv_data;
         
-        if isempty(cur_image_boxes_r0rfc0cf)
-            cur_image_ious = [];
+        % get intersection with boxes already selected and remove high overlap boxes
+        cur_box_ious = intersection_over_union( cur_image_boxes_r0rfc0cf(1:oi-1,:), csv_data(:,1:4), 'r0rfc0cf','xywh' );
+        if size(cur_box_ious,1)>1, cur_box_ious = max(cur_box_ious); end
+        if isempty(cur_box_ious)
+            bi = 1;
         else
-            cur_image_ious = intersection_over_union( proposed_box_r0rfc0cf, cur_image_boxes_r0rfc0cf, 'r0rfc0cf','r0rfc0cf' );
+            bi = find(~(cur_box_ious>.5),1,'first');
         end
-
-        while any( cur_image_ious > .5 )
-            ti = ti + 1;
-            [~,proposed_box_r0rfc0cf] = box_fix( temp(ti,1:4), 'xywh', im_size);
-            cur_image_ious = intersection_over_union( proposed_box_r0rfc0cf, cur_image_boxes_r0rfc0cf, 'r0rfc0cf','r0rfc0cf' );
-        end
-
-        cur_image_boxes_r0rfc0cf(oi,:) = proposed_box_r0rfc0cf;
-        conf_values(oi)                = temp(ti,5);
-
+        
+        % select the highest scoring, remaining box
+        [~,cur_image_boxes_r0rfc0cf(oi,:)] = box_fix( csv_data(bi,1:4), 'xywh', im_size);
+        conf_values(oi) = csv_data(bi,5);
+        
     end
 
     workspace_return = [];
@@ -65,7 +64,7 @@ function [workspace_return, imported_data] = csvs2workspace( csv_directory, im_f
     workspace_return.labels = situation_struct.situation_objects; 
     workspace_return.im_size = im_size;
     workspace_return.internal_support = conf_values;
-    workspace_return.external_support = zeros(size(conf_values));;
+    workspace_return.external_support = zeros(size(conf_values));
     workspace_return.total_support = conf_values;
     workspace_return.situation_support = situation_support_func( conf_values );
     workspace_return.iteration = nan;
