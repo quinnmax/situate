@@ -67,7 +67,7 @@ function [agent_pool,total_cnn_calls] = pool_initialize_covering_rcnn_like( p, i
     cur_agent.urgency = 1;
     total_agents = size( primed_boxes_r0rfc0cf,1 ) + num_unassigned_agents;
     agent_pool   = repmat( cur_agent, total_agents, 1 );
-    for ai = 1:size(primed_boxes_r0rfc0cf,1)
+    parfor ai = 1:size(primed_boxes_r0rfc0cf,1)
         
         r0 = primed_boxes_r0rfc0cf(ai,1);
         rf = primed_boxes_r0rfc0cf(ai,2);

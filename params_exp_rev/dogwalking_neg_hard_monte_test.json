@@ -2,19 +2,13 @@
 	"situation_definition_fname" : "situation_definitions/dogwalking.json",
 			
 	"situate_parameterizations_fnames" : [
-			"params_run/situate_v3_monte.json"
-			//"params_run/normal_model.json"
-			//"params_run/homebrew_rcnn_priming.json"
-			//"params_run/faster_rcnn_priming.json"
-			//"params_run/uniform.json"
-			//"params_run/gmm_model.json"
-			//"params_run/old_school.json"
-			//"params_run/default_1iter.json"
+			// "params_run/situate_v3_monte.json"
+			"params_run/situate_v3_monte_rcnn_priming.json"
 		],	
 
 	"experiment_settings" : {
 
-		"description" : "dogwalking, monte, test",
+		"description" : "dogwalking, monte rcnn, test",
 
 		// training params for vision model
 		"vision_model" : {
@@ -32,7 +26,7 @@
 		"directory_test"  : "DogWalking_hard_neg/",
 
 		// experiment running parameters
-		"use_parallel"					: 0, 
+		"use_parallel"					: 1, 
 		"run_analysis_after_completion"	: 0,
 		
 		// split parameters

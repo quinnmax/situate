@@ -25,7 +25,7 @@
 		"directory_test"  : "Handshaking_test/",
 
 		// experiment running parameters
-		"use_parallel"					: 0, 
+		"use_parallel"					: 1, 
 		"run_analysis_after_completion"	: 0,
 		
 		// split parameters
