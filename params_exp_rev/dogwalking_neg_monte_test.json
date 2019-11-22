@@ -2,7 +2,7 @@
 	"situation_definition_fname" : "situation_definitions/dogwalking.json",
 			
 	"situate_parameterizations_fnames" : [
-			"params_run/situate_v3_monte.json"
+			"params_run/situate_v3_monte_rcnn_priming_long_run.json"
 			//"params_run/normal_model.json"
 			//"params_run/homebrew_rcnn_priming.json"
 			//"params_run/faster_rcnn_priming.json"
@@ -32,7 +32,7 @@
 		"directory_test"  : "Negatives_general/",
 
 		// experiment running parameters
-		"use_parallel"					: 0, 
+		"use_parallel"					: 1, 
 		"run_analysis_after_completion"	: 0,
 		
 		// split parameters

@@ -38,7 +38,6 @@ function [ workspace, records, visualizer_return_status, state, alternative_work
         % initialize record keeping 
         state.records = situate.records_initialize(running_params,state.agent_pool);
         
-        state.iterations_since_last_update = 0;
     end
     
     if ~exist('num_iterations','var') || isempty(num_iterations)
@@ -110,31 +109,14 @@ function [ workspace, records, visualizer_return_status, state, alternative_work
                 % update external and total support for existing state.workspace objects
                 %   note: learned_models added for classifier quality-based weighting of internal and external support
                 state.workspace = situate.workspace_update_support( state.workspace, running_params, state.dist_structs, learned_models );
-                state.iterations_since_last_update = 0;
-                
-            else
-                state.iterations_since_last_update = state.iterations_since_last_update + 1;
-                break_everything = false;
-                if state.iterations_since_last_update == 50 && break_everything
-                    running_params2 = running_params;
-                    running_params2.num_iterations = running_params.num_iterations - iteration;
-                    [ workspace2, records2, visualizer_return_status2 ] = situate.run( im_fname, running_params2, learned_models );
-                    if workspace2.situation_support > state.workspace.situation_support
-                        state.workspace = workspace2;
-                        state.records = records2;
-                        visualizer_return_status = visualizer_return_status2;
-                        return;
-                    end
-                    delayed_break = true;
-                    % finish out the loop, but you're done.
-                end
+               
             end
 
         % update situation support score iteration count
             total_support_values = padarray_to( state.workspace.total_support, [1 length(running_params.situation_objects)] );
             state.workspace.situation_support = running_params.situation_grounding_function(total_support_values, iteration, running_params.num_iterations);
             
-            state.workspace.total_iterations = state.workspace.total_iterations + iteration;
+            state.workspace.total_iterations = state.workspace.total_iterations + 1;
 
             if isfield(running_params,'temperature')
                 state.workspace.temperature = running_params.temperature.update(state.workspace, state.workspace.total_iterations, running_params.num_iterations );

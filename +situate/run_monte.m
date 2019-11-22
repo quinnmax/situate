@@ -10,7 +10,7 @@ function [ workspace, records, all_workspaces ] = run_monte( im_fname, running_p
         num_objs = numel(situation_objects);
         
         iterations_per_attention_period = 20;
-        iterations_before_deprioritize = 2 * iterations_per_attention_period; % if n iters are evaluated with no updated to workspace, sandbag
+        iterations_before_deprioritize = 3 * iterations_per_attention_period; % if n iters are evaluated with no updated to workspace, sandbag
           
         running_params_per_agent = running_params;
         running_params_per_agent.use_monte = false;
@@ -18,64 +18,56 @@ function [ workspace, records, all_workspaces ] = run_monte( im_fname, running_p
         temp_params = running_params_per_agent;
         temp_params.agent_pool_initialization_function = @situate.agent.pool_initialize_default;
         [ ~, ~, ~, state_prototype ] = situate.run( im_fname, temp_params, learned_models, [], 1 );
+        state_prototype.agent_pool = [];
         empty_workspace = situate.workspace_initialize(running_params_per_agent, im_size );
         state_prototype.workspace = empty_workspace;
            
         % initialize the agent pool using the method specified in the running parameters
-        min_boxes_per_obj_type = 3;
+        min_boxes_per_obj_type = 0;
         [primed_agent_pool, cur_iter_count] = running_params.agent_pool_initialization_function( running_params, im, im_fname, learned_models, min_boxes_per_obj_type );
         inds_remove = cellfun(@isempty,{primed_agent_pool.interest});
         primed_agent_pool(inds_remove) = [];
         
-        temp_boxes_r0rfc0cf = arrayfun( @(x) x.r0rfc0cf, [primed_agent_pool.box], 'UniformOutput',false );
-        boxes_r0rfc0cf_return = vertcat(temp_boxes_r0rfc0cf{:});
-        class_assignments_return = cellfun( @(x) find(strcmp(x,situation_objects)), {primed_agent_pool.interest} );
-        % cur_iter_count = cur_iter_count + total_cnn_calls;
-        confidences_return = arrayfun( @(x) x.internal, [primed_agent_pool.support]);
-
-        % visualize initial objects
+        % get the internal support for each of these initial agents
+        for ai = 1:numel(primed_agent_pool)
+            [~, ~,updated_agent ] = situate.agent.evaluate_scout( primed_agent_pool, ai, running_params, [], im, label, learned_models );
+            primed_agent_pool(ai) = updated_agent;
+        end
+        cur_iter_count = cur_iter_count + numel(primed_agent_pool);
+        
+        % visualize initial object pool
         visualize = false;
         if visualize
-            figure
-            for oi = 1:num_objs
-                subplot(1,num_objs,oi);
-                imshow(im); hold on;
-                cur_rows = find(class_assignments_return==oi);
-                for bi = 1:numel(cur_rows)
-                    ci = cur_rows(bi);
-                    draw_box( boxes_r0rfc0cf_return(ci,:),'r0rfc0cf','linewidth',2 );
-                    text( boxes_r0rfc0cf_return(ci,3), boxes_r0rfc0cf_return(ci,1), num2str( confidences_return(ci) ) );
-                end
+            figure('Name','returned objects w internal support')
+            for oi = 1:num_objs 
+                subplot(1,num_objs,oi); 
+                imshow(im); hold on; 
+            end
+            for ai = 1:numel(primed_agent_pool)
+                cur_box_r0rfc0cf = primed_agent_pool(ai).box.r0rfc0cf;
+                subplot( 1, num_objs, find(strcmp( primed_agent_pool(ai).interest, situation_objects )) );
+                draw_box( cur_box_r0rfc0cf, 'r0rfc0cf','linewidth',2);
+                text( cur_box_r0rfc0cf(3)+2, cur_box_r0rfc0cf(1)+2, 2, num2str( primed_agent_pool(ai).support.internal ),'color',[1 1 1]);
+                text( cur_box_r0rfc0cf(3), cur_box_r0rfc0cf(1), 1, num2str( primed_agent_pool(ai).support.internal ) );
             end
         end
 
         % prime workspaces and agent pools
         %   put each found object into its own context, then fill the agent pool with each
         %   instance of other objects
-        state_pool = repmat(state_prototype,1,size(boxes_r0rfc0cf_return,1));
-        for si = 1:size(boxes_r0rfc0cf_return,1)
-            state_pool(si).agent_pool(1).box.r0rfc0cf = boxes_r0rfc0cf_return(si,:);
+        state_pool = repmat(state_prototype,1,numel(primed_agent_pool));
+        for si = 1:numel(primed_agent_pool)
             
-            % first agent pool entry into the first state is a bounding box from the initial search
-            state_pool(si).agent_pool(1).interest = [];
-            
-            % clear the rest of the agent pool so we know the current addition is evaluated
-            state_pool(si).agent_pool(2:end) = [];
+            state_pool(si).agent_pool = primed_agent_pool(si);
             
             % eval to see if it goes into the workspace (it should if we set the threshold reasonably)
             [ ~, ~, ~, state_pool(si) ] = situate.run( im_fname, running_params_per_agent, learned_models, state_pool(si), 1 );
-            cur_iter_count = cur_iter_count + 1;
+            %cur_iter_count = cur_iter_count + 1;
             
-            % now the cur state pool should have a workspace (maybe not)
-            other_obj_init_rows = find(class_assignments_return ~= class_assignments_return(si))';
-            
-            % now fill the pool up with detected objects of other types
-            state_pool(si).agent_pool = repmat(state_prototype.agent_pool(1),1,numel(other_obj_init_rows));
-            for bi = 1:numel(other_obj_init_rows)
-                state_pool(si).agent_pool(bi).box.r0rfc0cf = boxes_r0rfc0cf_return( other_obj_init_rows(bi),: );
-                state_pool(si).agent_pool(bi).interest = situation_objects{class_assignments_return(other_obj_init_rows(bi))};
-                state_pool(si).agent_pool(bi).support.internal = confidences_return(other_obj_init_rows(bi));
-            end
+            % now the cur state pool should have a workspace
+            % fill its agent pool with primed agents from the other object types
+            other_obj_init_rows = ~strcmp({primed_agent_pool.interest},primed_agent_pool(si).interest );
+            state_pool(si).agent_pool = primed_agent_pool( other_obj_init_rows );
             if isempty( state_pool(si).agent_pool), state_pool(si).agent_pool = situate.agent.initialize(); end
         end
 
@@ -90,47 +82,92 @@ function [ workspace, records, all_workspaces ] = run_monte( im_fname, running_p
         % initialize the sampling table
         state_support = arrayfun( @(x) x.situation_support, [state_pool.workspace] );
         sampling_table = state_support;
+        state_iterations_since_update = zeros(size(state_support));
+        state_total_iterations = zeros(size(state_support));
         
         
         
+        debug = false;
         
-        
-        
-        
+        % if no detections to start, just return
+        if isempty(sampling_table)
+            workspace = empty_workspace;
+            records = situate.records_initialize(running_params_per_agent,[]);
+            records.workspace_final = workspace;
+            all_workspaces = workspace;
+            return;
+        end
         
         % now monte it up
-        while cur_iter_count < running_params.num_iterations
+        keep_going = true;
+        while keep_going 
+            keep_going = cur_iter_count < running_params.num_iterations;
             
             si = sample_1d( sampling_table, 1 );
             [ ~, ~, ~, state_out ] = situate.run( im_fname, running_params_per_agent, learned_models, state_pool(si), iterations_per_attention_period );
+        
             cur_iter_count = cur_iter_count + iterations_per_attention_period;
+            state_total_iterations(si) = state_total_iterations(si)               + iterations_per_attention_period;
+            state_iterations_since_update(si) = state_iterations_since_update(si) + iterations_per_attention_period;
             
+            % update based on results
             if numel(state_out.workspace.labels) ~= numel(state_pool(si).workspace.labels)
-                % if a new object was added, branch and put the node on ice
-                state_pool(end+1)     = state_out;
-                state_pool(end).iterations_since_last_update = 0;
-                state_support(end+1)  = state_out.workspace.situation_support;
-                sampling_table(end+1) = state_out.workspace.situation_support; 
-                sampling_table(si)    = 0;
-            else
-                % just update the state support and sampling probability
+                
+                % a new object was added
+                
+                % check for collision
+                dup_threshold = .5;
+                [~, dup_inds] = duplicate_workspace_inds( [state_out.workspace, state_pool.workspace], situation_objects, dup_threshold );
+                
+                if isempty(dup_inds)
+                    
+                    % branch
+                    state_pool     = [state_out, state_pool];
+                    state_support  = [state_out.workspace.situation_support, state_support];
+                    sampling_table = [state_out.workspace.situation_support, sampling_table];
+                    state_total_iterations = [0 state_total_iterations];
+                    state_iterations_since_update = [0 state_iterations_since_update];
+                    
+                    % current state is productive, refresh its lifetime
+                    state_iterations_since_update(si) = 0;
+                   
+                else
+                    
+                    % it's a duplicate of a known state
+                    state_iterations_since_update(si) = state_iterations_since_update(si) + iterations_per_attention_period;
+                    
+                end
+                
+            else % no object added
+                
+                state_iterations_since_update(si) = state_iterations_since_update(si) + iterations_per_attention_period;
+                
+                if ~isequal( state_out.workspace.boxes_r0rfc0cf, state_pool(si).workspace.boxes_r0rfc0cf)
+                    
+                    % then an existing object was updated
+                    % could refresh, could just keep going
+                    % state_pool(si).iterations_since_last_update = 0;
+                    
+                end
+                   
+                % update the state support and sampling probability
                 state_pool(si)     = state_out;
                 state_support(si)  = state_out.workspace.situation_support;
                 sampling_table(si) = state_out.workspace.situation_support;
                 
-                % if it's gone too long without an update, put the node on ice
-                if state_out.iterations_since_last_update >= iterations_before_deprioritize
-                    sampling_table(si) = 0; 
-                    state_pool(si).iterations_since_last_update = 0;
-                end
-                
             end
-          
+            
+            % check lifespan of states
+            sampling_table( [state_iterations_since_update] >= iterations_before_deprioritize ) = 0;
+            % display([sampling_table;state_total_iterations;state_iterations_since_update]);
             
             % pool management
             empty_workspace_inds = arrayfun( @(x) isempty( x.labels ), [state_pool.workspace] );
 
             % short circuit for all empty workspaces
+            %   if everything was empty, the initial search found no related objects, then we really
+            %   don't have any reason to believe that search the image more will reveal a foothold
+            %   for us to understand this image
             if all(empty_workspace_inds)
                 records = state_pool(1).records;
                 workspace = state_pool(1).workspace;
@@ -138,15 +175,16 @@ function [ workspace, records, all_workspaces ] = run_monte( im_fname, running_p
                 return;
             end
 
-            % remove empties
-            workspaces_remove = find( empty_workspace_inds );
-            %workspaces_remove = workspaces_remove(2:end);
-            state_pool(workspaces_remove) = [];
-            sampling_table(workspaces_remove) = [];
-            state_support(workspaces_remove) = [];
+            % remove empty workspaces
+            state_pool(empty_workspace_inds)           = [];
+            sampling_table(empty_workspace_inds)       = [];
+            state_support(empty_workspace_inds)        = [];
+            state_total_iterations(empty_workspace_inds) = [];
 
             % de-dup workspaces
-            dup_threshold = .5;
+            %   if all boxes have IOU with corresponding obj over threshold, it's a dup
+            %   the versions with lower situation support are returned
+            dup_threshold = .5; 
             [~, dup_inds] = duplicate_workspace_inds( [state_pool.workspace], situation_objects, dup_threshold );
             if ~isempty(dup_inds)
                 state_pool(dup_inds)     = [];
@@ -156,33 +194,41 @@ function [ workspace, records, all_workspaces ] = run_monte( im_fname, running_p
 
             % if everyone is in cold storage, wake them all up? or just short circuit?
             if all( sampling_table == 0 )
-%                 % give them attention back
-%                 sampling_table = state_support;
+                % give them attention back
+                % sampling_table = state_support;
                 
-                % or short circuit?
-                workspace = state_pool(argmax(state_support)).workspace;
-                workspace.total_iterations = cur_iter_count;
-                records = state_pool(argmax(state_support)).records;
-                all_workspaces = [state_pool.workspace];
-                return;
-
+                % short circuit
+                keep_going = false;
             end
 
         end
         
-        visualize = false;
-        if visualize
-            figure;
-            for si = 1:numel(state_pool)
-                subplot_lazy(numel(state_pool),si);
-                situate.workspace_draw(im,running_params,state_pool(si).workspace);
-            end
-        end
-        
-        workspace = state_pool(argmax(state_support)).workspace;
+        winning_ind = argmax(state_support);
+        workspace = state_pool(winning_ind).workspace;
         workspace.total_iterations = cur_iter_count;
         records = state_pool(argmax(state_support)).records;
         all_workspaces = [state_pool.workspace];
+        
+%         
+%         sit_sup_1 = arrayfun( @(x) support_functions_situation.geometric_mean_padded( padarray_to(.8*[x.workspace.internal_support] + .2*[x.workspace.external_support],[1,3])), state_pool);
+%         sit_sup_2 = arrayfun( @(x) support_functions_situation.geometric_mean_padded( padarray_to(.5*[x.workspace.internal_support] + .5*[x.workspace.external_support],[1,3])), state_pool);
+%         sit_sup_gt = arrayfun(@(x) support_functions_situation.geometric_mean_padded(padarray_to(x.workspace.GT_IOU,[1 3])), state_pool);
+%         
+        if debug
+            figure('Name','final workspaces');
+            temp = [state_pool.workspace];
+            ordering = sortorder(-[temp.situation_support])
+            for si = 1:numel(state_pool)
+                subplot_lazy(numel(state_pool),si);
+                sj = ordering(si);
+                situate.workspace_draw(im,running_params,state_pool(sj).workspace);
+                if winning_ind == sj
+                    title('winner');
+                end
+                xlabel({ [ 'iters: ' num2str(state_pool(sj).workspace.total_iterations) ],...
+                         [ 'sit sup: ' num2str(state_pool(sj).workspace.situation_support) ] });
+            end
+        end
         
 end
 

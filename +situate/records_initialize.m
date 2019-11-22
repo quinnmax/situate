@@ -21,7 +21,11 @@ function records = records_initialize(p,agent_pool)
     
     records.population_count = repmat(records.population_count,p.num_iterations+1,1);
     for agent_type = {'scout','reviewer','builder'}
-        records.population_count(1).(agent_type{:}) = sum( strcmp( agent_type{:}, {agent_pool.type} ) );
+        if isempty(agent_pool)
+            records.population_count(1).(agent_type{:}) = 0;
+        else
+            records.population_count(1).(agent_type{:}) = sum( strcmp( agent_type{:}, {agent_pool.type} ) );
+        end
     end
     
 end

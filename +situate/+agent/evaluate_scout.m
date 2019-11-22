@@ -1,5 +1,5 @@
 
-function [agent_pool,d] = evaluate_scout( agent_pool, agent_index, p, d, im, label_struct, learned_models ) 
+function [agent_pool,d,updated_agent] = evaluate_scout( agent_pool, agent_index, p, d, im, label_struct, learned_models ) 
 % [agents_out, updated_distribution_structure,updated_agent ] = agents.evaluate_scout( agent_pool, agent_index, param_struct, dist_struct, image, label_file, learned_models );
 %
 % a few different behaviors depending on what the scout has coming in.
@@ -44,8 +44,9 @@ function [agent_pool,d] = evaluate_scout( agent_pool, agent_index, p, d, im, lab
         sample_interest = true;
         sample_box      = true;
         update_density  = true;
-        
     end
+    
+    
     
     
     
@@ -129,6 +130,7 @@ function [agent_pool,d] = evaluate_scout( agent_pool, agent_index, p, d, im, lab
         else
             
             classification_score = cur_agent.support.internal;
+            % warning('called situate.agent.evaluate_scout on an agent that already had an internal support score');
             
         end
     
@@ -164,5 +166,7 @@ function [agent_pool,d] = evaluate_scout( agent_pool, agent_index, p, d, im, lab
             agent_pool(end).type = 'reviewer';
             agent_pool(end).urgency = p.agent_urgency_defaults.reviewer;
         end
+        
+        updated_agent = cur_agent;
     
 end

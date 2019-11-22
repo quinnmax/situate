@@ -107,7 +107,13 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
                 cur_image_ind = 1;
             end
             
-            fprintf(['params                           image       steps      time(s)            [ '  repmat('%-15s',1,3) '] \n'], situation_struct.situation_objects{:})
+            fprintf(['%s         %s       %s       %s        IOUs: [ %s] \n'], ...
+                ['params' repmat(' ',1,numel(cur_parameterization.description)-6)], ...
+                'image ind', ...
+                'steps', ...
+                'time(s)', ...
+                sprintf('%-12s',situation_struct.situation_objects{:}) );
+                    
             while keep_going
 
                 % run on the current image
@@ -116,8 +122,6 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
                 tic;
                 
                 [ workspace_final, run_data_cur, visualizer_status_string, ~, alternative_workspaces ] = situate.run( cur_fname_im, cur_parameterization, learned_models );
-                
-                
                 
                 if ~experiment_struct.experiment_settings.viz_options.use_visualizer 
                 
@@ -138,8 +142,13 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
                     IOUs_of_last_run = sprintf(repmat('%1.4f         ',1,length(GT_IOUs)), GT_IOUs_sorted );
 
                     % display update to console
-                    fprintf('%-28s %3d /%4d        %4d      %6.2f       IOUs: [ %s] \n', ...
-                        cur_parameterization.description, ...
+                    if numel(cur_parameterization.description) > 32
+                        temp_desc = ['...' cur_parameterization.description(end-28:end)];
+                    else
+                        temp_desc = cur_parameterization.description;
+                    end
+                    fprintf('%-28s %3d /%4d        %4d       %6.2f       IOUs: [ %s] \n', ...
+                        temp_desc, ...
                         cur_image_ind, ...
                         num_images, ...
                         reconciled_workspace.total_iterations, ...

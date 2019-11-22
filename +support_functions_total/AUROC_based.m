@@ -27,8 +27,8 @@ function support = AUROC_based( internal, external, varargin )
     % the plan here is to make the average internal support weight 1-average_external, but to allow for
     % the most reliable classifier to keep a stronger bias toward interal support.
     
-    min_external = .10; % per object
-    average_external = .20; % over all objects
+    min_external = .1; % per object
+    average_external = .2; % over all objects
     
     w_external = min_external + ...
         length(AUROCs) * (average_external-min_external) * ...

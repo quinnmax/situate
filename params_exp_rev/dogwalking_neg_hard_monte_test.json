@@ -3,7 +3,8 @@
 			
 	"situate_parameterizations_fnames" : [
 			// "params_run/situate_v3_monte.json"
-			"params_run/situate_v3_monte_rcnn_priming.json"
+			//"params_run/situate_v3_monte_rcnn_priming.json"
+			"params_run/situate_v3_monte_rcnn_priming_long_run.json"
 		],	
 
 	"experiment_settings" : {

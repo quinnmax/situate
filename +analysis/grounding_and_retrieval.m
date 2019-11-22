@@ -110,7 +110,8 @@ linewidth_val = 1;
             cur_condition.use_visualizer = [];
             cur_condition.use_parallel   = [];
             
-            warning('ignoring diff in number of initial scouts');
+            warning(sprintf('ignoring diff in number of initial scouts: %d \n', cur_condition.num_scouts));
+            
             cur_condition.num_scouts     = [];
             
             cur_condition_assignment = find( cellfun( @(x) isequal_struct( cur_condition, x ), condition_structs_unique ) );
@@ -206,6 +207,9 @@ linewidth_val = 1;
                 error('looks like not all conditions ran the same images');
             end
             im_fnames = im_fnames{1};
+            im_fnames_repathed = repath(im_fnames,'base_image_directories.json');
+            im_fnames = im_fnames_repathed;
+            
             lb_fnames = cellfun( @(x) [fileparts_mq(x, 'path/name') '.json'], im_fnames, 'UniformOutput', false );
             lb_exists = cellfun( @(x) exist( x, 'file' ), lb_fnames );
             lb_fnames( ~lb_exists ) = cell(1,sum(~lb_exists)); % not deleting, just leaving empty

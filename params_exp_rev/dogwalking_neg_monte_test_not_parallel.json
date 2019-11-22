@@ -3,6 +3,13 @@
 			
 	"situate_parameterizations_fnames" : [
 			"params_run/situate_v3_monte_rcnn_priming_long_run.json"
+			//"params_run/normal_model.json"
+			//"params_run/homebrew_rcnn_priming.json"
+			//"params_run/faster_rcnn_priming.json"
+			//"params_run/uniform.json"
+			//"params_run/gmm_model.json"
+			//"params_run/old_school.json"
+			//"params_run/default_1iter.json"
 		],	
 
 	"experiment_settings" : {
@@ -22,7 +29,7 @@
 		},
 
 		// testing image directory
-		"directory_test"  : "DogWalking_PortlandSimple_test/",
+		"directory_test"  : "Negatives_general/",
 
 		// experiment running parameters
 		"use_parallel"					: 0, 
@@ -36,7 +43,7 @@
 		//	max_testing_images: first n images, respects specified fold information
 		"num_folds"                     : 1,
 		"specific_folds"                : [1],
-		"max_testing_images"            : 100,
+		"max_testing_images"            : "",
 		"testing_seed"                  : "",
 
 		// visualization options

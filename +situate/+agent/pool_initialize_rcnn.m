@@ -1,62 +1,77 @@
-function [primed_agent_pool,total_cnn_calls] = pool_initialize_rcnn( situation_struct, im, im_fname, ~, varargin )
+function [agent_pool,total_cnn_calls] = pool_initialize_rcnn( situation_struct, im, im_fname, ~, varargin )
 
-% primed_agent_pool = pool_initialize_rcnn( situation_struct, im, im_fname, learned_models, [num_rcnn_agents_per_obj], [num_non_rcnn_agents] );
-%
-% num_rcnn_agents_per_obj [optionally] sets how many of the top rcnn boxes are added to the initial agent pool
-%   default is 10
-% num_non_rcnn_agents [optionally] is the number of unassigned agents. they will sample and interest and location
-%   default is 30
+% primed_agent_pool = pool_initialize_rcnn( situation_struct, im, im_fname, learned_models );
 %
 % rcnn box data for each object in the image should be found in
 %   external box data/rcnn boxes/[situation desc]/[object desc]/[image name].csv
-%
+% 
 
     total_cnn_calls = 0;
 
-    % process inputs
-    if length(varargin) >= 1
-        min_num_rcnn_agents_per_obj = varargin{1};
-    else
-        min_num_rcnn_agents_per_obj = 3;
-    end
-    
-    if length(varargin) >= 2
-        num_non_rcnn_agents = varargin{2};
-    else
-        num_non_rcnn_agents = 0; % total in initial pool
-    end
-    
-    
+    debug_boxes = false;
     
     im_size = [ size(im,1), size(im,2) ];
     situation_objects = situation_struct.situation_objects;
     
     % get boxes for each situation object
-    csv_data = cell(1,length(situation_objects));
+    csv_data_raw = cell(1,length(situation_objects));
     for oi = 1:length(situation_objects)
         cur_obj = situation_objects{oi};
         csv_fname = fullfile( 'external box data/rcnn boxes', situation_struct.situation_description, cur_obj, [fileparts_mq( im_fname, 'name' ) '.csv'] );
         assert( isfile(csv_fname) );
-        csv_data_columns = {'x','y','w','h','confidence','gt iou initial'}; % note to self
-        conf_column = find( strcmp( csv_data_columns, 'confidence' ) );
-        cur_csv_data = importdata( csv_fname );
-        
-        % do non-max supression
-        rows_supress = non_max_supression( cur_csv_data(:,1:4), cur_csv_data(:,conf_column), .5, 'xywh' );
-        cur_csv_data(rows_supress,:) = [];
-        
-        rows_keep = cur_csv_data(conf_column) > .5;
-        if sum(rows_keep) < min_num_rcnn_agents_per_obj
-            rows_keep = 1:min_num_rcnn_agents_per_obj;
-        end
-        cur_csv_data = cur_csv_data(rows_keep,:);
-        
-        cur_csv_data = sortrows( cur_csv_data, -conf_column );
-        num_boxes = min( min_num_rcnn_agents_per_obj, size(cur_csv_data,1));
-        csv_data{oi} = cur_csv_data(1:num_boxes,:);
+        csv_data_raw{oi} = importdata( csv_fname );
+    end
+    csv_data_columns = {'x','y','w','h','confidence','gt iou initial'}; % note to self
+    conf_column = find( strcmp( csv_data_columns, 'confidence' ) );
+    
+    % remove 0 conf boxes
+    for oi = 1:length(situation_objects)
+        csv_data_raw{oi}( csv_data_raw{oi}(:,conf_column)<.1, : ) = [];
     end
     
-  
+    % debug
+    if debug_boxes
+        figure('Name', '1 raw proposal/rcnn conf, fixed conf threshold');
+        for oi = 1:length(situation_objects)
+            subplot(1,numel(situation_objects),oi);
+            imshow( im );
+            title(situation_struct.situation_objects{oi});
+            hold on;
+            draw_box( csv_data_raw{oi}(:,1:4),'xywh', 'LineWidth', 1 );
+        end
+        hold off;
+    end
+    
+    % do non-max supression
+    csv_data_nonmaxsupress = cell(1,length(situation_objects));
+    for oi = 1:length(situation_objects)
+        cur_csv_data = csv_data_raw{oi};
+        overlap_supression_threshold = .5;
+        rows_supress = non_max_supression( cur_csv_data(:,1:4), cur_csv_data(:,conf_column), overlap_supression_threshold, 'xywh' );
+        cur_csv_data(rows_supress,:) = [];
+
+        csv_data_nonmaxsupress{oi} = cur_csv_data;
+    end
+    
+    % debug
+    if debug_boxes
+        figure('Name', '2 post non-max supression');
+        for oi = 1:length(situation_objects)
+            subplot(1,numel(situation_objects),oi);
+            imshow( im );
+            title(situation_struct.situation_objects{oi});
+            hold on;
+            draw_box( csv_data_nonmaxsupress{oi}(:,1:4),'xywh', 'LineWidth', 1 );
+        end
+        hold off;
+    end
+    
+    csv_data = cell(1,length(situation_objects));
+    for oi = 1:length(situation_objects)
+        csv_data{oi} = sortrows( csv_data_nonmaxsupress{oi}, -conf_column );
+    end
+      
+    
     % consider resizing
     im_info = imfinfo(im_fname);
     if ~isequal( im_size, [im_info.Height im_info.Width] )
@@ -66,36 +81,35 @@ function [primed_agent_pool,total_cnn_calls] = pool_initialize_rcnn( situation_s
         end 
     end
      
-    % visualize boxes
-    visualize_boxes = false;
-    if visualize_boxes
-        imshow( im );
-        colors = hot(3);
-        hold on;
+    % debug
+    if debug_boxes
+        figure('Name', '3 post non-max supression, rescaled');
         for oi = 1:length(situation_objects)
-            draw_box( csv_data{oi}(:,1:4),'xywh', 'Color', colors(oi,:), 'LineWidth', 1 );
+            subplot(1,numel(situation_objects),oi);
+            imshow( im );
+            title(situation_struct.situation_objects{oi});
+            hold on;
+            draw_box( csv_data{oi}(:,1:4),'xywh', 'LineWidth', 1 );
         end
         hold off;
     end
     
     
+    % generate primed agent pool
+    total_scouts = sum(cellfun( @(x) size(x,1), csv_data ));
     
-    
-    
-    
-    % turn boxes into an actual primed agent pool
-    num_rcnn_primed_agents = sum( cellfun( @(x) size( x, 1 ), csv_data ) );
-    total_primed_agents = num_rcnn_primed_agents + num_non_rcnn_agents;
     cur_agent = situate.agent.initialize();
     cur_agent.urgency = 5;
-    primed_agent_pool = repmat( cur_agent, total_primed_agents, 1 );
-    agents_remove = false( size( primed_agent_pool ) );
+    agent_pool = repmat( cur_agent, 1, total_scouts );
+    agents_remove = false( size( agent_pool ) );
+    
     ai = 1;
     for oi = 1:length(situation_objects)
     for bi = 1:size( csv_data{oi}, 1 )
-        primed_agent_pool(ai).interest = situation_objects{oi};
+        
+        agent_pool(ai).interest = situation_objects{oi};
         if isfield(situation_struct,'situation_objects_urgency_pre')
-            primed_agent_pool(ai).urgency = situation_struct.situation_objects_urgency_pre(oi);
+            agent_pool(ai).urgency = situation_struct.situation_objects_urgency_pre(oi);
         end
         x  = csv_data{oi}(bi,1);
         y  = csv_data{oi}(bi,2);
@@ -125,7 +139,7 @@ function [primed_agent_pool,total_cnn_calls] = pool_initialize_rcnn( situation_s
         h = rf - r0 + 1;
         
         % see if it should get dropped
-        if ( r0 > rf ) || ( c0 > cf )
+        if ( r0 >= rf ) || ( c0 >= cf )
             agents_remove(ai) = true;
         end
         
@@ -133,19 +147,31 @@ function [primed_agent_pool,total_cnn_calls] = pool_initialize_rcnn( situation_s
         yc = y + h/2 - .5;
         aspect_ratio = w/h;
         area_ratio = (w*h) / prod(im_size);
-        primed_agent_pool(ai).box.r0rfc0cf = [r0 rf c0 cf];
-        primed_agent_pool(ai).box.xywh     = [ x  y  w  h];
-        primed_agent_pool(ai).box.xcycwh   = [xc yc  w  h];
-        primed_agent_pool(ai).box.aspect_ratio = aspect_ratio;
-        primed_agent_pool(ai).box.area_ratio   = area_ratio;
-        primed_agent_pool(ai).history = 'primedRCNN';
+        agent_pool(ai).box.r0rfc0cf = [r0 rf c0 cf];
+        agent_pool(ai).box.xywh     = [ x  y  w  h];
+        agent_pool(ai).box.xcycwh   = [xc yc  w  h];
+        agent_pool(ai).box.aspect_ratio = aspect_ratio;
+        agent_pool(ai).box.area_ratio   = area_ratio;
+        agent_pool(ai).history = 'primedRCNN';
         ai = ai + 1;
     end
     end
     
-    primed_agent_pool( agents_remove ) = [];
+    agent_pool( agents_remove ) = [];
     
-    
+    if debug_boxes
+        figure('Name', '4 as represented in pool');
+        for oi = 1:length(situation_objects)
+            subplot(1,numel(situation_objects),oi);
+            imshow( im );
+            title(situation_struct.situation_objects{oi});
+            is_cur_obj = strcmp(situation_objects{oi}, {agent_pool.interest});
+            temp = [agent_pool(is_cur_obj).box];
+            hold on;
+            draw_box( vertcat(temp.r0rfc0cf),'r0rfc0cf', 'LineWidth', 1 );
+        end
+        hold off;
+    end
     
 end
 
