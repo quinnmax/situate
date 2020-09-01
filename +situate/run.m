@@ -1,8 +1,8 @@
 
 
 
-function [ workspace, records, visualizer_return_status, state, alternative_workspaces ] = run( im_fname, running_params, learned_models, state, num_iterations )
-% [ workspace, records, visualizer_return_status, [state], [alternative_workspaces] ] = run( im_fname, running_params, learned_models, [state], [num_iterations_to_run] );
+function [ workspace, records, visualizer_return_status, state, alternative_workspaces, num_iterations_run ] = run( im_fname, running_params, learned_models, state, num_iterations )
+% [ workspace, records, visualizer_return_status, [state], [alternative_workspaces], [num_iterations_run] ] = run( im_fname, running_params, learned_models, [state], [num_iterations_to_run] );
 
     
 
@@ -27,6 +27,7 @@ function [ workspace, records, visualizer_return_status, state, alternative_work
         state.im_size = [size(state.im,1), size(state.im,2)];
         
         state.workspace = situate.workspace_initialize(running_params,state.im_size);
+        state.workspace.im_fname = im_fname;
     
         % initialize distributions struct
         [state.dist_structs,state.dist_struct_joint] = situate.distribution_struct_initialize(running_params,state.im,learned_models,state.workspace);
@@ -66,8 +67,6 @@ function [ workspace, records, visualizer_return_status, state, alternative_work
 
 
     %% the main iteration loop 
-    
-    delayed_break = false;
     
     for iteration = 1:num_iterations
 
@@ -114,6 +113,8 @@ function [ workspace, records, visualizer_return_status, state, alternative_work
 
         % update situation support score iteration count
             total_support_values = padarray_to( state.workspace.total_support, [1 length(running_params.situation_objects)] );
+            % situation support might care how far into the run you are, so it passes the current
+            % iteration and the total number of iterations
             state.workspace.situation_support = running_params.situation_grounding_function(total_support_values, iteration, running_params.num_iterations);
             
             state.workspace.total_iterations = state.workspace.total_iterations + 1;
@@ -190,11 +191,7 @@ function [ workspace, records, visualizer_return_status, state, alternative_work
                     end
                 end
                 
-                
-        if delayed_break
-            break;
-        end
-            
+             
     end
 
 

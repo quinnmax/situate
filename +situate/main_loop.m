@@ -8,11 +8,8 @@ function [ workspace, records, visualizer_return_status ] = main_loop( im_fname,
 
     %% initialization 
         
-<<<<<<< HEAD
-=======
     situate.setup();
-   
->>>>>>> 66a92cfd48d5e7317934298699d9a699c1c377e4
+
     % load an image, label
     
         label = situate.labl_load( im_fname, p ); % may return empty array if label file wasn't found

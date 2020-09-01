@@ -99,8 +99,9 @@ function experiment_handler_parallel( experiment_struct, situation_struct, situa
             progress( 0, length(fnames_im_test),cur_parameterization.description); 
 
             % loop through images
-            workspaces_final    = cell(1,length(fnames_im_test));
-            agent_records       = cell(1,length(fnames_im_test));
+            workspaces_final       = cell(1,length(fnames_im_test));
+            agent_records          = cell(1,length(fnames_im_test));
+            alternative_workspaces = cell(1,length(fnames_im_test));
 
             if isfield(experiment_struct.experiment_settings, 'starting_image_ind') && ~isempty(experiment_struct.experiment_settings.starting_image_ind)
                 im_ind_start = experiment_struct.experiment_settings.starting_image_ind;
@@ -127,8 +128,8 @@ function experiment_handler_parallel( experiment_struct, situation_struct, situa
                     cur_fname_im = fnames_im_test{cur_image_ind};
 
                     tic;
-                    [ ~, run_data_cur ] = situate.run( cur_fname_im, cur_parameterization, learned_models );
-
+                    [ ~, run_data_cur,~,~,alternative_workspaces_cur ] = situate.run( cur_fname_im, cur_parameterization, learned_models );
+                    
                     % try to reconcile workspace with GT boxes
                     cur_fname_lb = [fileparts_mq(cur_fname_im,'path/name') '.json'];
                     if exist(cur_fname_lb,'file')
@@ -159,6 +160,7 @@ function experiment_handler_parallel( experiment_struct, situation_struct, situa
                     
                     % store results
                     workspaces_final{cur_image_ind} = run_data_cur.workspace_final;
+                    alternative_workspaces{cur_image_ind} = alternative_workspaces_cur;
                     agent_records{cur_image_ind}    = run_data_cur.agent_record;
 
                 end
@@ -169,6 +171,7 @@ function experiment_handler_parallel( experiment_struct, situation_struct, situa
                 results_struct = [];
                 results_struct.p_condition               = cur_parameterization;
                 results_struct.workspaces_final          = workspaces_final;
+                results_struct.workspaces_alternatives   = alternative_workspaces;
                 results_struct.agent_records             = agent_records;
                 results_struct.fnames_lb_train_vision    = fnames_lb_train_vision;
                 results_struct.fnames_lb_train_situation = fnames_lb_train_situation;

@@ -9,6 +9,7 @@ function workspace = workspace_initialize(p,im_size)
     workspace.GT_IOU           = [];
     
     workspace.im_size = im_size;
+    workspace.im_fname = '';
     
     workspace.situation_support = 0;
     workspace.total_iterations = 0;

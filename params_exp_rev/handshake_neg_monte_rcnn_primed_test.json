@@ -1,5 +1,5 @@
 {
-	"situation_definition_fname" : "situation_definitions/pingpong.json",
+	"situation_definition_fname" : "situation_definitions/handshaking.json",
 			
 	"situate_parameterizations_fnames" : [
 			"params_run/situate_v3_monte_rcnn_priming_long_run.json"
@@ -7,17 +7,17 @@
 
 	"experiment_settings" : {
 
-		"description" : "pingpong, monte, negatives, test",
+		"description" : "handshake, monte, rcnn primed, neg test",
 
 		// training params for vision model
 		"vision_model" : {
-			"directory_train" : "PingPong_train/",
+			"directory_train" : "Handshaking_train/",
 			"training_testing_split_directory" : ""
 		},
 
 		// training params for situation model
 		"situation_model" : {
-			"directory_train" : "PingPong_train/",
+			"directory_train" : "Handshaking_train/",
 			"training_testing_split_directory" : ""
 		},
 

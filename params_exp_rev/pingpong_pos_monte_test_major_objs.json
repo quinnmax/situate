@@ -1,38 +1,31 @@
 {
-	"situation_definition_fname" : "situation_definitions/dogwalking.json",
+	"situation_definition_fname" : "situation_definitions/pingpong.json",
 			
 	"situate_parameterizations_fnames" : [
-			"params_run/situate_v3_monte_rcnn_priming_long_run.json"
-			//"params_run/normal_model.json"
-			//"params_run/homebrew_rcnn_priming.json"
-			//"params_run/faster_rcnn_priming.json"
-			//"params_run/uniform.json"
-			//"params_run/gmm_model.json"
-			//"params_run/old_school.json"
-			//"params_run/default_1iter.json"
+			"params_run/situate_v3_monte_rcnn_priming_major_obj.json"
 		],	
 
 	"experiment_settings" : {
 
-		"description" : "dogwalking, monte, test",
+		"description" : "pingpong, monte, positives, test",
 
 		// training params for vision model
 		"vision_model" : {
-			"directory_train" : "DogWalking_PortlandSimple_train/",
+			"directory_train" : "PingPong_train/",
 			"training_testing_split_directory" : ""
 		},
 
 		// training params for situation model
 		"situation_model" : {
-			"directory_train" : "DogWalking_PortlandSimple_train/",
+			"directory_train" : "PingPong_train/",
 			"training_testing_split_directory" : ""
 		},
 
 		// testing image directory
-		"directory_test"  : "Negatives_general/",
+		"directory_test"  : "PingPong_test/",
 
 		// experiment running parameters
-		"use_parallel"					: 0, 
+		"use_parallel"					: 1, 
 		"run_analysis_after_completion"	: 0,
 		
 		// split parameters

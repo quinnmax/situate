@@ -16,10 +16,13 @@ function [] = grounding_and_retrieval( input, varargin )
 
 
 %linespec = {'k-','k--','k:','k-.','k-o','k--o','k:o','k-.o'};
-%linespec = {'b','r','g','c','m','k','k:'};
-linespec = {'k-', 'k--', 'k:', 'r-', 'r--', 'r:', 'b-', 'b--', 'b:', 'g-', 'g--', 'g:'};
-    
-linewidth_val = 1;
+linespec = {'k','r','g','c','m','k','k:'};
+%linespec = {'k-', 'k--', 'k:', 'r-', 'r--', 'r:', 'b-', 'b--', 'b:', 'g-', 'g--', 'g:'};
+%linespec = {'k-','k--','r','k-.','k-o','k--o','k:o','k-.o'};
+
+
+
+linewidth_val = 1.5;
       
 
 
@@ -1066,9 +1069,9 @@ linewidth_val = 1;
             h = figure('color','white','Name',fig_title,'position',[720 2 500 400]);
 
             temp = descriptions;
-
+            
             for ci = 1:num_conditions
-                plot(results_struct_retrieval.FPR{ci}, results_struct_retrieval.TPR{ci},linespec{ci} );
+                plot(results_struct_retrieval.FPR{ci}, results_struct_retrieval.TPR{ci},linespec{ci}, 'linewidth', linewidth_val );
                 hold on;
                 temp{ci} = [temp{ci} ', AUROC: ' num2str(results_struct_retrieval.AUROC(ci))];
             end
@@ -1093,7 +1096,7 @@ linewidth_val = 1;
             temp = descriptions;
 
             for ci = 1:num_conditions
-                plot(results_struct_retrieval.recall{ci}, results_struct_retrieval.precision{ci},linespec{ci} );
+                plot(results_struct_retrieval.recall{ci}, results_struct_retrieval.precision{ci},linespec{ci}, 'linewidth', linewidth_val );
                 hold on;
             end
             legend( temp, 'Location', 'southwest' );
@@ -1115,7 +1118,7 @@ linewidth_val = 1;
             h = figure('color','white','Name',fig_title,'position',[720 2 500 400]);
             
             for ci = 1:num_conditions
-                plot( 1:num_images_neg, recall_at_n{ci}, linespec{ci} );
+                plot( 1:num_images_neg, recall_at_n{ci}, linespec{ci}, 'linewidth', linewidth_val );
                 hold on;
             end
             xlabel('number of images returned')

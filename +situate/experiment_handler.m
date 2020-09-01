@@ -202,6 +202,7 @@ function experiment_handler( experiment_struct, situation_struct, situate_params
             results_struct = [];
             results_struct.p_condition               = cur_parameterization;
             results_struct.workspaces_final          = workspaces_final;
+            results_struct.workspaces_alternatives   = alternative_workspaces;
             results_struct.agent_records             = agent_records;
             results_struct.fnames_lb_train_vision    = fnames_lb_train_vision;
             results_struct.fnames_lb_train_situation = fnames_lb_train_situation;

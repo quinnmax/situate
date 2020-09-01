@@ -1,6 +1,11 @@
 function [ workspace, records, all_workspaces ] = run_monte( im_fname, running_params, learned_models  )
 % [ workspace_best, records_best, all_workspaces ] = run_monte( im_fname, running_params, learned_models)
  
+
+        debug = true;
+        visualize = false;
+        
+
         im = imread( im_fname );
         if mean(im(:)) < 1, im = 255 * im; end
         label = situate.labl_load( im_fname, running_params ); % may return empty array if label file wasn't found
@@ -9,8 +14,8 @@ function [ workspace, records, all_workspaces ] = run_monte( im_fname, running_p
         situation_objects = learned_models.situation_model.situation_objects;
         num_objs = numel(situation_objects);
         
-        iterations_per_attention_period = 20;
-        iterations_before_deprioritize = 3 * iterations_per_attention_period; % if n iters are evaluated with no updated to workspace, sandbag
+        iterations_per_attention_period = 60;
+        iterations_before_deprioritize = 60; % if n iters are evaluated with no updated to workspace, sandbag
           
         running_params_per_agent = running_params;
         running_params_per_agent.use_monte = false;
@@ -36,12 +41,12 @@ function [ workspace, records, all_workspaces ] = run_monte( im_fname, running_p
         cur_iter_count = cur_iter_count + numel(primed_agent_pool);
         
         % visualize initial object pool
-        visualize = false;
         if visualize
             figure('Name','returned objects w internal support')
             for oi = 1:num_objs 
                 subplot(1,num_objs,oi); 
                 imshow(im); hold on; 
+                title( situation_objects{oi} );
             end
             for ai = 1:numel(primed_agent_pool)
                 cur_box_r0rfc0cf = primed_agent_pool(ai).box.r0rfc0cf;
@@ -62,7 +67,6 @@ function [ workspace, records, all_workspaces ] = run_monte( im_fname, running_p
             
             % eval to see if it goes into the workspace (it should if we set the threshold reasonably)
             [ ~, ~, ~, state_pool(si) ] = situate.run( im_fname, running_params_per_agent, learned_models, state_pool(si), 1 );
-            %cur_iter_count = cur_iter_count + 1;
             
             % now the cur state pool should have a workspace
             % fill its agent pool with primed agents from the other object types
@@ -87,7 +91,7 @@ function [ workspace, records, all_workspaces ] = run_monte( im_fname, running_p
         
         
         
-        debug = false;
+        
         
         % if no detections to start, just return
         if isempty(sampling_table)
@@ -208,27 +212,103 @@ function [ workspace, records, all_workspaces ] = run_monte( im_fname, running_p
         workspace.total_iterations = cur_iter_count;
         records = state_pool(argmax(state_support)).records;
         all_workspaces = [state_pool.workspace];
+     
+        
         
 %         
-%         sit_sup_1 = arrayfun( @(x) support_functions_situation.geometric_mean_padded( padarray_to(.8*[x.workspace.internal_support] + .2*[x.workspace.external_support],[1,3])), state_pool);
-%         sit_sup_2 = arrayfun( @(x) support_functions_situation.geometric_mean_padded( padarray_to(.5*[x.workspace.internal_support] + .5*[x.workspace.external_support],[1,3])), state_pool);
-%         sit_sup_gt = arrayfun(@(x) support_functions_situation.geometric_mean_padded(padarray_to(x.workspace.GT_IOU,[1 3])), state_pool);
 %         
-        if debug
-            figure('Name','final workspaces');
-            temp = [state_pool.workspace];
-            ordering = sortorder(-[temp.situation_support])
-            for si = 1:numel(state_pool)
-                subplot_lazy(numel(state_pool),si);
-                sj = ordering(si);
-                situate.workspace_draw(im,running_params,state_pool(sj).workspace);
-                if winning_ind == sj
-                    title('winner');
-                end
-                xlabel({ [ 'iters: ' num2str(state_pool(sj).workspace.total_iterations) ],...
-                         [ 'sit sup: ' num2str(state_pool(sj).workspace.situation_support) ] });
-            end
-        end
+%     % begin alternative situation support here    
+%         % look at the density of the workspaces from the perspective of the full distribution
+%         full_workspace_inds = find(arrayfun( @(x) numel(x.labels), all_workspaces ) == num_objs);
+%         workspaces_final_parameter_vectors = zeros(numel(full_workspace_inds),numel(learned_models.situation_model.mu) );
+%         row_description = {'r0' 'rc' 'rf' 'c0' 'cc' 'cf' 'log w' 'log h' 'log aspect ratio' 'log area ratio'};
+%         for wii = 1:length(full_workspace_inds)
+%             wi = full_workspace_inds(wii);
+%             cur_row = [];
+%             for oi = 1:length(learned_models.situation_model.situation_objects)
+%                 oii = find( strcmp( all_workspaces(wi).labels, learned_models.situation_model.situation_objects{oi}), 1);
+%                 cur_obj_box_data_r0rfc0cf = all_workspaces(wi).boxes_r0rfc0cf(oii,:);
+% 
+%                 im_h = im_size(1);
+%                 im_w = im_size(2);
+%                 r = sqrt(1./(im_w.*im_h)); % linear scaling factor
+%                 cur_box_normalized_r0rfc0cf = r * ([cur_obj_box_data_r0rfc0cf(1) cur_obj_box_data_r0rfc0cf(2) cur_obj_box_data_r0rfc0cf(3) cur_obj_box_data_r0rfc0cf(4)] - [im_h/2 im_h/2 im_w/2 im_w/2] );
+% 
+%                 r0 = cur_box_normalized_r0rfc0cf(1);
+%                 rf = cur_box_normalized_r0rfc0cf(2);
+%                 c0 = cur_box_normalized_r0rfc0cf(3);
+%                 cf = cur_box_normalized_r0rfc0cf(4);
+%                 w = cf - c0;
+%                 h = rf - r0;
+%                 rc = r0 + h/2;
+%                 cc = c0 + w/2;
+%                 log_aspect_ratio = log( w/h );
+%                 log_area_ratio   = log( w*h ); % image is unit area, so w*h is area ratio
+%                 new_entries = [r0 rc rf c0 cc cf log(w) log(h) log_aspect_ratio log_area_ratio];
+%                 cur_row = [cur_row new_entries ];
+%             end
+%             workspaces_final_parameter_vectors(wii,:) = cur_row;
+%         end
+%         full_param_densities_temp = mvnpdf( workspaces_final_parameter_vectors, learned_models.situation_model.mu, learned_models.situation_model.Sigma );
+%         full_param_densities = zeros(numel(all_workspaces),1);
+%         full_param_densities(full_workspace_inds) = full_param_densities_temp;
+%         
+% %         support_prod_internal_temp = prod(vertcat(all_workspaces(full_workspace_inds).internal_support),2);
+% %         support_prod_internal = zeros(numel(all_workspaces),1);
+% %         support_prod_internal(full_workspace_inds) = support_prod_internal_temp;
+% 
+% 
+%         tempfunc = @(x)1./(1+exp(-10*(x-.33)));
+% 
+%         support_prod_internal_temp = prod(tempfunc(vertcat(all_workspaces(full_workspace_inds).internal_support)),2);
+%         support_prod_internal = zeros(numel(all_workspaces),1);
+%         support_prod_internal(full_workspace_inds) = support_prod_internal_temp;
+%         
+%         support_prod_external_temp = prod(vertcat(all_workspaces(full_workspace_inds).external_support),2);
+%         support_prod_external = zeros(numel(all_workspaces),1);
+%         support_prod_external(full_workspace_inds) = support_prod_external_temp;
+%         
+%         support_prod_total_temp = prod(vertcat(all_workspaces(full_workspace_inds).total_support),2);
+%         support_prod_total = zeros(numel(all_workspaces),1);
+%         support_prod_total(full_workspace_inds) = support_prod_total_temp;
+%         
+%         alternative_total_support = support_prod_internal .* full_param_densities;
+%         
+%     
+%     
+%         
+% 
+%         if debug
+%             figure('Name','final workspaces');
+%             for si = 1:numel(state_pool)
+%                 subplot_lazy(numel(state_pool),si);
+%                 situate.workspace_draw(im,running_params,state_pool(si).workspace);
+%                 title( num2str( alternative_total_support(si) ) );
+%                 xlabel({ [ 'iters: ' num2str(state_pool(si).workspace.total_iterations) ],...
+%                          [ 'sit sup: ' num2str(state_pool(si).workspace.situation_support) ],...
+%                          [ 'log param density: ' num2str(log(full_param_densities(si))) ],...
+%                          [ 'est iou prod: ' num2str(support_prod_internal(si)) ]});
+%                      
+%                      
+%                      
+%             end
+%         end
+%         
+%         % end alternative situation support here
+        
+        
+%         winning_ind = argmax( alternative_total_support );
+        
+        winning_ind = argmax(state_support);
+        workspace = state_pool(winning_ind).workspace;
+        workspace.total_iterations = cur_iter_count;
+        records = state_pool(argmax(state_support)).records;
+        all_workspaces = [state_pool.workspace];
+     
+        
+        
+        
+        
         
 end
 

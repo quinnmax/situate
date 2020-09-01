@@ -1,13 +1,17 @@
 {
 	"situation_definition_fname" : "situation_definitions/handshaking.json",
-			
+	
 	"situate_parameterizations_fnames" : [
-			"params_run/situate_v3_monte_rcnn_priming_long_run.json"
-		],	
+		//"params_run/situate_v0_control.json",
+		//"params_run/situate_v1.json",
+		//"params_run/situate_v2_total_sup_auroc.json",
+		//"params_run/situate_v3_monte.json"
+		"params_run/situate_v3_monte_rcnn_priming_long_run.json"
+	],	
 
 	"experiment_settings" : {
 
-		"description" : "handshaking, monte with rcnn, test",
+		"description" : "handshake, monte, rcnn primed, pos test",
 
 		// training params for vision model
 		"vision_model" : {
@@ -22,10 +26,10 @@
 		},
 
 		// testing image directory
-		"directory_test"  : "Negatives_general/",
+		"directory_test"  : "Handshaking_test/",
 
 		// experiment running parameters
-		"use_parallel"					: 0, 
+		"use_parallel"					: 1, 
 		"run_analysis_after_completion"	: 0,
 		
 		// split parameters
